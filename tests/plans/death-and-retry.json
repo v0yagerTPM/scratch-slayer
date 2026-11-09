@@ -3,22 +3,7 @@
   "frames": 30
  },
  {
-  "frames": 3,
-  "keys": [
-   "space"
-  ]
- },
- {
-  "frames": 25
- },
- {
-  "frames": 3,
-  "keys": [
-   "space"
-  ]
- },
- {
-  "frames": 70
+  "startGame": true
  },
  {
   "frames": 1,
@@ -51,16 +36,7 @@
   "log": "death screen"
  },
  {
-  "frames": 20
- },
- {
-  "frames": 3,
-  "keys": [
-   "space"
-  ]
- },
- {
-  "frames": 70
+  "retryLevel": true
  },
  {
   "frames": 1,

@@ -167,22 +167,7 @@
   "frames": 4
  },
  {
-  "frames": 3,
-  "keys": [
-   "space"
-  ]
- },
- {
-  "frames": 25
- },
- {
-  "frames": 3,
-  "keys": [
-   "space"
-  ]
- },
- {
-  "frames": 70
+  "startGame": true
  },
  {
   "frames": 1,
@@ -259,10 +244,7 @@
   }
  },
  {
-  "frames": 3,
-  "keys": [
-   "space"
-  ]
+  "retryLevel": true
  },
  {
   "frames": 80,

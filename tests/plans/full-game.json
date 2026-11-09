@@ -111,22 +111,7 @@
   }
  },
  {
-  "frames": 3,
-  "keys": [
-   "space"
-  ]
- },
- {
-  "frames": 25
- },
- {
-  "frames": 3,
-  "keys": [
-   "space"
-  ]
- },
- {
-  "frames": 70
+  "startGame": true
  },
  {
   "frames": 1,
@@ -303,25 +288,7 @@
   ]
  },
  {
-  "frames": 70
- },
- {
-  "frames": 3,
-  "keys": [
-   "space"
-  ]
- },
- {
-  "frames": 25
- },
- {
-  "frames": 3,
-  "keys": [
-   "space"
-  ]
- },
- {
-  "frames": 70
+  "continueToNextLevel": true
  },
  {
   "frames": 1,
@@ -365,25 +332,7 @@
   }
  },
  {
-  "frames": 70
- },
- {
-  "frames": 3,
-  "keys": [
-   "space"
-  ]
- },
- {
-  "frames": 25
- },
- {
-  "frames": 3,
-  "keys": [
-   "space"
-  ]
- },
- {
-  "frames": 70
+  "continueToNextLevel": true
  },
  {
   "frames": 1,
@@ -505,29 +454,18 @@
   ]
  },
  {
-  "frames": 65
+  "until": {
+   "screen showing": "level complete"
+  },
+  "note": "reach the tally"
  },
  {
-  "frames": 1,
-  "snap": "episode_complete"
+  "frames": 40,
+  "snap": "episode_complete",
+  "note": "let the count-up finish"
  },
  {
-  "frames": 4,
-  "keys": [
-   "space"
-  ]
- },
- {
-  "frames": 25
- },
- {
-  "frames": 3,
-  "keys": [
-   "space"
-  ]
- },
- {
-  "frames": 70
+  "continueToNextLevel": true
  },
  {
   "frames": 1,
@@ -654,25 +592,7 @@
   }
  },
  {
-  "frames": 70
- },
- {
-  "frames": 3,
-  "keys": [
-   "space"
-  ]
- },
- {
-  "frames": 25
- },
- {
-  "frames": 3,
-  "keys": [
-   "space"
-  ]
- },
- {
-  "frames": 70
+  "continueToNextLevel": true
  },
  {
   "frames": 1,
@@ -709,25 +629,7 @@
   }
  },
  {
-  "frames": 70
- },
- {
-  "frames": 3,
-  "keys": [
-   "space"
-  ]
- },
- {
-  "frames": 25
- },
- {
-  "frames": 3,
-  "keys": [
-   "space"
-  ]
- },
- {
-  "frames": 70
+  "continueToNextLevel": true
  },
  {
   "frames": 1,
@@ -865,13 +767,23 @@
   ]
  },
  {
-  "frames": 70
+  "until": {
+   "screen showing": "level complete"
+  },
+  "note": "reach the last tally"
  },
  {
-  "frames": 3,
-  "keys": [
-   "space"
-  ]
+  "tap": "space",
+  "while": {
+   "screen showing": "level complete"
+  },
+  "note": "leave it"
+ },
+ {
+  "until": {
+   "screen showing": "you win"
+  },
+  "note": "the victory screen"
  },
  {
   "frames": 120,
