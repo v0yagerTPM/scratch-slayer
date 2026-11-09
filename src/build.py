@@ -82,6 +82,7 @@ CLEAR, SPAWN, UPDATE, DRAW_HUD, DRAW_NUMBERS, FIRE, PUNCH = (
     "draw HUD numbers", "fire weapon", "punch")
 SUMMON, START_MUSIC, APPLY_MUSIC = "summon monsters", "start music", "apply music setting"
 DRAW_OPTIONS_PANEL, DRAW_OPTIONS_WIDGETS = "draw options panel", "draw options widgets"
+DRAW_OPTIONS_HIGHLIGHT = "draw options highlight"
 OPTIONS = "options"   # 'screen showing' while the options menu is open
 # screens + game states
 NONE, TITLE, DIED, COMPLETE, WIN = "none", "title", "died", "level complete", "you win"
@@ -1071,15 +1072,17 @@ E.script(Def("options menu", warp=False),
     wait_until(not_(or_(key("o"), key("p")))),
     note("ONE MENU FRAME per pass: read the keys and mouse, then redraw.\n"
          "Plain broadcasts run in the order they're sent: panel, then the\n"
-         "sliders and switches on top, then the numbers on top of those.",
+         "highlight on the chosen row, then the sliders and switches on top,\n"
+         "then the numbers on top of those.",
          until(eq(V("options open"), 0),
                call("handle options input"), call("copy numbers to HUD"),
-               bcast(DRAW_OPTIONS_PANEL), bcast(DRAW_OPTIONS_WIDGETS), bcast(DRAW_NUMBERS))),
+               bcast(DRAW_OPTIONS_PANEL), bcast(DRAW_OPTIONS_HIGHLIGHT), bcast(DRAW_OPTIONS_WIDGETS),
+               bcast(DRAW_NUMBERS))),
     note("CLOSE: wait for the key to be let go (so the game doesn't pause again\n"
          "straight away), put the old screen back and hide the menu.",
          wait_until(not_(or_(key("o"), key("p"))))),
     setv("screen showing", V("screen before options")), play("menu click"),
-    bcast(DRAW_OPTIONS_PANEL), bcast(DRAW_OPTIONS_WIDGETS), bcast(DRAW_NUMBERS),
+    bcast(DRAW_OPTIONS_PANEL), bcast(DRAW_OPTIONS_HIGHLIGHT), bcast(DRAW_OPTIONS_WIDGETS), bcast(DRAW_NUMBERS),
     call("update camera"),
     note("Restart the level clock's frame timing, so time spent paused\n"
          "doesn't count toward your level time.",
@@ -2841,11 +2844,22 @@ def knob_at(setting, low, high, y):
 def switch_at(setting, y):
     return [ifelse(eq(V(setting), 1), [costume("switch on")], [costume("switch off")]), gotoxy(40, y)]
 
-OW.script(recv(DRAW_OPTIONS_WIDGETS), if_(eq(V("is clone"), 1),
+OW.script(recv(DRAW_OPTIONS_HIGHLIGHT), if_(eq(V("widget role"), 1),
     ifelse(options_up,
-           [if_(eq(V("widget role"), 1), costume("row highlight"),
-                gotoxy(0, sub(ROW_Y[0], mul(sub(V("options row"), 1), assets6.OPTION_ROW_STEP)))),
-            if_(eq(V("widget role"), 2), *knob_at("turn speed", 1, 10, ROW_Y[0])),
+           [costume("row highlight"), gotoxy(0, sub(ROW_Y[0], mul(sub(V("options row"), 1), assets6.OPTION_ROW_STEP))),
+            show(), front()],
+           [hide()])),
+    comment="DRAW OPTIONS HIGHLIGHT: the see-through box on the chosen row.\n"
+            "It has its own broadcast, sent BEFORE 'draw options widgets', so it\n"
+            "always goes to the front first and the knobs, switches and words end\n"
+            "up on top of it. Why not in the widgets script? Scratch runs a sprite's\n"
+            "clones in their layer order, so clones that all 'go to front' swap\n"
+            "places every frame, and the box would cover the words every other\n"
+            "frame (a flicker).")
+
+OW.script(recv(DRAW_OPTIONS_WIDGETS), if_(and_(eq(V("is clone"), 1), gt(V("widget role"), 1)),
+    ifelse(options_up,
+           [if_(eq(V("widget role"), 2), *knob_at("turn speed", 1, 10, ROW_Y[0])),
             if_(eq(V("widget role"), 3), *switch_at("mouse steering", ROW_Y[1])),
             if_(eq(V("widget role"), 4), *knob_at("mouse sensitivity", 1, 10, ROW_Y[2])),
             if_(eq(V("widget role"), 5), *knob_at("field of view", MIN_FOV, MAX_FOV, ROW_Y[3])),

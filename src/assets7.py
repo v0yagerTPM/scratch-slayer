@@ -26,6 +26,20 @@ PERCENT_X = 110          # stage x of the right edge of the percentages (and of 
 MINUTES_X = 48           # stage x of the right edge of the minutes, left of the colon
 DIGIT_RED = "#ff4a24"
 
+# A blocky % sign drawn exactly like the HUD digits (5 x 7 squares of 4 pixels, with a black
+# shadow), so it is as bright and as thick as the numbers next to it.
+PERCENT_GLYPH = "11001 11010 00010 00100 01000 01011 10011"
+
+def _percent_sign(baseline):
+    left, top = 240 + PERCENT_X + 9, baseline - 6 - 14      # a small gap right of the ones digit
+    squares = [(column, row) for row, bits in enumerate(PERCENT_GLYPH.split())
+               for column, bit in enumerate(bits) if bit == "1"]
+    shadow = "".join(f'<rect x="{left + column * 4 + 1}" y="{top + row * 4 + 1}" width="4" height="4" fill="#000"/>'
+                     for column, row in squares)
+    main = "".join(f'<rect x="{left + column * 4}" y="{top + row * 4}" width="4" height="4" fill="{DIGIT_RED}"/>'
+                   for column, row in squares)
+    return shadow + main
+
 def _colon(baseline):
     """Two pixel squares, styled like the digits (with a black shadow)."""
     center = baseline - 6
@@ -40,8 +54,7 @@ def tally_screen(title, subtitle=None, under_par=False):
         fill = "#9a9a9a" if label == "PAR" else "#d8d8d8"
         body += assets2._label(110, baseline, label, size=18, fill=fill)
     for _, baseline in TALLY_ROWS[:3]:
-        body += (f'<text x="{240 + PERCENT_X + 4}" y="{baseline + 4}" font-family="Sans Serif" font-weight="bold" '
-                 f'font-size="26" fill="{DIGIT_RED}" stroke="#000" stroke-width="1">%</text>')
+        body += _percent_sign(baseline)
     body += '<line x1="100" y1="244" x2="380" y2="244" stroke="#ffffff" stroke-opacity="0.2" stroke-width="2"/>'
     for _, baseline in TALLY_ROWS[3:]:
         body += _colon(baseline)

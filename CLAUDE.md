@@ -79,6 +79,9 @@ in `build.py`, never `chg("health", ...)` directly.
 - Scratch's clone limit is 300. The game currently uses about 105.
 - Front/back layering is "last `go to front` wins". Sprites that must stay on top (options
   menu, digits) call `front()` every frame after the others.
+- **Clones run in layer order, so clones that all `go to front` in one broadcast swap places
+  every frame.** If one must stay under its siblings (the options row highlight), give it its
+  own broadcast sent earlier: threads of an earlier plain broadcast always run first.
 
 ## Map letters (see `levels.py` docstring and the Stage guide)
 
