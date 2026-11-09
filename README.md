@@ -26,6 +26,7 @@ python3 src/build.py dist/scratch-slayer.sb3      # on Windows: python src\build
 npm install        # once: installs the headless Scratch VM used by the tests
 npm run build
 npm test           # builds, then plays the game headlessly and checks the results
+npm run compare    # checks the game you build is identical to main's (for refactors)
 ```
 
 Then open Scratch (scratch.mit.edu → Create, or the Scratch desktop app) and use

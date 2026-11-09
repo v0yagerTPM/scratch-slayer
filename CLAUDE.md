@@ -17,6 +17,9 @@ the blocks must stay readable.
   weapon tables, options, how to add a level) is what students read first. Update it with
   every feature.
 - After every change: `npm test` (it builds first). For a map change also run `python3 src/levels.py`.
+- **Refactors must not change the game.** For any change that shouldn't affect what students see
+  (renaming, moving code), `npm run compare` must say IDENTICAL. The build is deterministic, so
+  any difference it lists is real.
 - **Always ship a fresh `.sb3`.** After every significant code update, rebuild
   `dist/scratch-slayer.sb3` (`npm test` or `npm run build` does it) and commit it in the same commit
   as the change, so the downloadable game on GitHub always matches the source. Don't restore the
@@ -32,6 +35,7 @@ node tests/harness.js dist/scratch-slayer.sb3 tests/plans/sprint.json tests/out/
 node tests/render.js tests/out/sprint <snap names...>   # snapshots -> PNG (needs sharp)
 python3 src/levels.py                           # validate all maps
 python3 tests/test_levels.py                    # map checker tests (npm test runs them too)
+npm run compare                                 # is the built project identical to main's? (-- <ref> for another)
 ```
 
 ## Architecture

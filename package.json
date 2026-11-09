@@ -6,7 +6,8 @@
   "scripts": {
     "build": "node tests/build.js",
     "test": "node tests/run_tests.js",
-    "render": "node tests/render.js"
+    "render": "node tests/render.js",
+    "compare": "node tests/compare.js"
   },
   "dependencies": {
     "scratch-storage": "^6.2.1",
