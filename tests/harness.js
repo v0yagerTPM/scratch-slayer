@@ -147,6 +147,16 @@ function snapshot(name) {
                 if (!ok) { failures.push(`${step.log || 'frame ' + frame}: ${k} = ${JSON.stringify(got)}, expected ${JSON.stringify(want)}`); console.log('FAIL', failures[failures.length - 1]); }
             }
         }
+        if (step.expectMonsters) {   // {"type": 1, "monster health": 2}: every clone of that type must match
+            const {type, ...want} = step.expectMonsters;
+            const clones = vm.runtime.targets.filter(t => t.sprite.name === 'Monster' && !t.isOriginal &&
+                +Object.values(t.variables).find(v => v.name === 'monster type').value === type);
+            if (!clones.length) failures.push(`${step.log || 'frame ' + frame}: no monsters of type ${type}`);
+            for (const t of clones) for (const [k, val] of Object.entries(want)) {
+                const got = (Object.values(t.variables).find(v => v.name === k) || {}).value;
+                if (String(got) !== String(val)) { failures.push(`${step.log || 'frame ' + frame}: monster type ${type} ${k} = ${JSON.stringify(got)}, expected ${JSON.stringify(val)}`); console.log('FAIL', failures[failures.length - 1]); break; }
+            }
+        }
         if (step.dumpList) { const st = vm.runtime.getTargetForStage(); const l = Object.values(st.variables).find(v => v.name === step.dumpList); console.log('LIST', step.dumpList, JSON.stringify(l.value, null, 1)); const mon = vm.runtime._monitorState.find((m, id) => id === l.id); console.log('monitor visible:', mon ? mon.get('visible') : 'none'); }
         if (step.row !== undefined) { const st = vm.runtime.getTargetForStage(); const m = Object.values(st.variables).find(v => v.name === 'current map'); console.log('  map row', step.row, m.value[step.row]); }
     }

@@ -343,9 +343,13 @@ TOASTS = {
 }
 
 # =============================== OPTIONS MENU ===============================
-OPTION_ROWS = ["TURN SPEED", "MOUSE STEERING", "MOUSE SENSITIVITY", "FIELD OF VIEW", "MUSIC", "START AT LEVEL"]
-OPTION_ROW_Y = [80, 50, 20, -10, -40, -70]            # stage y of each row
+OPTION_ROWS = ["TURN SPEED", "MOUSE STEERING", "MOUSE SENSITIVITY", "FIELD OF VIEW", "MUSIC", "DIFFICULTY",
+               "START AT LEVEL"]
+OPTION_ROW_STEP = 27                                  # pixels between rows
+OPTION_ROW_Y = [88 - OPTION_ROW_STEP * row for row in range(len(OPTION_ROWS))]   # stage y of each row
 TRACK_LEFT, TRACK_RIGHT = 0, 120                    # stage x of the slider tracks
+# The < > arrows (stage x) for the two "pick one" rows. They are only drawn on the title screen.
+DIFFICULTY_ARROWS_X, LEVEL_ARROWS_X = (0, 100), (16, 84)
 
 def options_panel(paused):
     b = ('<rect width="480" height="360" fill="#000" fill-opacity="0.55"/>'
@@ -362,13 +366,17 @@ def options_panel(paused):
         if name in ("TURN SPEED", "MOUSE SENSITIVITY", "FIELD OF VIEW"):
             b += (f'<line x1="{240 + TRACK_LEFT}" y1="{sy}" x2="{240 + TRACK_RIGHT}" y2="{sy}" stroke="#4a3a34" '
                   'stroke-width="5" stroke-linecap="round"/>')
+    level_y = 180 - OPTION_ROW_Y[-1] + 5
     if paused:
-        b += ('<text x="300" y="255" font-family="Sans Serif" font-size="11" fill="#8a8a8a" text-anchor="middle">'
-              '(choose on the title screen)</text>')
+        b += (f'<text x="300" y="{level_y}" font-family="Sans Serif" font-size="11" fill="#8a8a8a" '
+              'text-anchor="middle">(change these two on the title screen)</text>')
     else:
-        b += ('<text x="256" y="255" font-family="Sans Serif" font-size="16" font-weight="bold" fill="#ffd23f" '
-              'text-anchor="middle">&lt;</text><text x="324" y="255" font-family="Sans Serif" font-size="16" '
-              'font-weight="bold" fill="#ffd23f" text-anchor="middle">&gt;</text>')
+        for arrows_x, row_y in ((DIFFICULTY_ARROWS_X, OPTION_ROW_Y[-2]), (LEVEL_ARROWS_X, OPTION_ROW_Y[-1])):
+            sy = 180 - row_y + 5
+            b += (f'<text x="{240 + arrows_x[0]}" y="{sy}" font-family="Sans Serif" font-size="16" font-weight="bold" '
+                  f'fill="#ffd23f" text-anchor="middle">&lt;</text><text x="{240 + arrows_x[1]}" y="{sy}" '
+                  'font-family="Sans Serif" font-size="16" font-weight="bold" fill="#ffd23f" '
+                  'text-anchor="middle">&gt;</text>')
     b += ('<text x="240" y="290" font-family="Sans Serif" font-size="11" fill="#cfcfcf" text-anchor="middle">'
           'UP / DOWN choose  •  LEFT / RIGHT change  •  or click and drag</text>')
     back = "P  to go back to the game" if paused else "O  to go back to the title screen"

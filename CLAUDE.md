@@ -37,15 +37,15 @@ python3 src/levels.py                           # validate all maps
   `join`, `costume(default, plug)`, pen blocks). `note()` attaches block comments. Layout of
   blocks on the canvas is estimated automatically.
 - `sb3extra.py`: extra helpers (mouse_x/y/down, tan_, set_volume, play_named, etc.).
-- `build.py`: top-level config tables (`MONSTER_TYPES`, `WEAPON_TYPES`, `WALLS`, `AMMO`,
-  per-level lists), stage variables and lists, then each sprite: Engine (main loop,
+- `build.py`: top-level config tables (`MONSTER_TYPES`, `WEAPON_TYPES`, `WALLS`, `AMMO`, `DIFFICULTIES`,
+  per-level lists incl. `LEVEL_PAR_SECONDS`), stage variables and lists, then each sprite: Engine (main loop,
   raycaster, input, options menu, level loader), Monster, Pickup, Barrel, Projectile, Weapon,
   Crosshair, HUD, Arms Panel, Boss Bar, Message, Screens, Digits, the title/card/death/victory
   sprites, Options Panel, Options Widgets, Music. Ends with sanity checks (unique names, etc.).
 - `levels.py`: maps are lists of strings. Levels 1-3 are hand-drawn plus `_edit()` patches;
   levels 4-6 are drawn with the `Grid` helper. `validate()` checks reachability, keys, and that
   a skull door (`Z`) really gates the exit behind the boss.
-- `assets.py` … `assets6.py`: SVG strings and synthesized WAVs, one file per feature round.
+- `assets.py` … `assets7.py`: SVG strings and synthesized WAVs, one file per feature round.
   Later files reuse earlier ones. No external images or sounds (keeps it copyright-safe).
 
 ## Game loop (Engine main script)
@@ -53,7 +53,13 @@ python3 src/levels.py                           # validate all maps
 One frame = input → movement/sprint → shooting → plain broadcasts in a fixed order:
 `update monsters and objects` → `draw HUD` → `draw HUD numbers`, plus the raycaster drawing
 with the pen. The level flow (title → card → melt → play → complete/died → next) is in the
-Engine's green-flag script.
+Engine's green-flag script. After the exit, `work out level stats` + `count up level stats` run the
+tally screen. 'level time' adds the timer difference each frame; closing the options menu resets
+'time at last frame' so pauses don't count.
+
+**Difficulty** (stage var `difficulty`, lists `difficulty ...`) scales monster health when a clone
+starts (`full health`) and every hit on the player: always damage the player with `hurt_player()`
+in `build.py`, never `chg("health", ...)` directly.
 
 ## Scratch quirks learned the hard way
 
@@ -70,7 +76,7 @@ Engine's green-flag script.
   (`build.py` checks this). Shared state goes on the Stage.
 - **Don't put boolean (hexagon) blocks in number slots.** Set a variable with an `if` instead.
 - Switching to a costume name that doesn't exist silently does nothing, so check names.
-- Scratch's clone limit is 300. The game currently uses about 100.
+- Scratch's clone limit is 300. The game currently uses about 105.
 - Front/back layering is "last `go to front` wins". Sprites that must stay on top (options
   menu, digits) call `front()` every frame after the others.
 
@@ -99,6 +105,7 @@ steps it frame by frame. A plan is a JSON list of steps:
 | `mouse` | `{"x":..,"y":..,"down":true}` in stage coordinates |
 | `log` / `snap` | print state / save a snapshot (render with `tests/render.js`) |
 | `dumpMonsters` | print every monster (or one type) |
+| `expectMonsters` | `{"type": 1, "monster health": 2}`: every clone of that monster type must have these local values |
 | `expect` | assertions: `{"current weapon": 3, "list:ammo counts": [48,7,0], "health": {"lt": 100}}` |
 
 The harness exits non-zero if any `expect` fails or the VM logs an error. Add a plan (or
