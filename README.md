@@ -44,7 +44,8 @@ python3 src/levels.py
 | `src/build.py` | The whole game: every sprite, script, variable and comment. Run it to build. |
 | `src/sb3lib.py` | A small compiler: Python functions that become Scratch blocks, written out as `project.json` inside the `.sb3`. |
 | `src/sb3extra.py` | More block helpers (mouse, sound, list and pen blocks). |
-| `src/levels.py` | The six level maps (text grids) and `validate()`, which checks every level can be finished. |
+| `src/levels.py` | The six level maps (text grids) and `validate()`, which checks every level can be finished and explains any problem it finds. |
+| `tests/test_levels.py` | Tests for the map checker: broken maps it must catch. |
 | `src/assets*.py` | All the art (hand-written SVG) and sound (synthesized WAV), one file per round of features. Nothing is downloaded from the internet. |
 | `tests/harness.js` | Runs the `.sb3` in a headless Scratch VM, presses keys, and checks variables. |
 | `tests/plans/*.json` | Test scripts: which keys to press for how many frames, and what should be true afterwards. |

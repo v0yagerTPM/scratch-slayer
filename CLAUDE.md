@@ -27,6 +27,7 @@ npm test -- full-game                           # one plan
 node tests/harness.js dist/scratch-slayer.sb3 tests/plans/sprint.json tests/out/sprint
 node tests/render.js tests/out/sprint <snap names...>   # snapshots -> PNG (needs sharp)
 python3 src/levels.py                           # validate all maps
+python3 tests/test_levels.py                    # map checker tests (npm test runs them too)
 ```
 
 ## Architecture
@@ -42,8 +43,9 @@ python3 src/levels.py                           # validate all maps
   raycaster, input, options menu, level loader), Monster, Pickup, Barrel, Projectile, Weapon,
   Crosshair, HUD, Arms Panel, Boss Bar, Message, Screens, Digits, the title/card/death/victory
   sprites, Options Panel, Options Widgets, Music. Ends with sanity checks (unique names, etc.).
-- `levels.py`: maps are lists of strings. Levels 1-3 are hand-drawn plus `_edit()` patches;
-  levels 4-6 are drawn with the `Grid` helper. `validate()` checks reachability, keys, and that
+- `levels.py`: maps are lists of strings, addressed as `map_rows[row][column]`. Levels 1-3 are typed
+  out in full (with a column ruler); levels 4-6 are drawn with the `Grid` helper. `validate()` raises
+  `LevelError` with a message naming the level and square. It checks reachability, keys, and that
   a skull door (`Z`) really gates the exit behind the boss.
 - `assets.py` … `assets7.py`: SVG strings and synthesized WAVs, one file per feature round.
   Later files reuse earlier ones. No external images or sounds (keeps it copyright-safe).
