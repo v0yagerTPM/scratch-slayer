@@ -7,6 +7,13 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const build = spawnSync(process.execPath, [path.join(__dirname, 'build.js')], {stdio: 'inherit'});
 if (build.status !== 0) process.exit(build.status || 1);
+// The map checker's own tests (Python). Tries "python3", then "python" (Windows), like build.js.
+for (const python of ['python3', 'python']) {
+    const checker = spawnSync(python, [path.join(__dirname, 'test_levels.py')], {stdio: 'inherit'});
+    if (checker.error) continue;
+    if (checker.status !== 0) process.exit(checker.status || 1);
+    break;
+}
 const filter = process.argv[2] || '';
 const plans = fs.readdirSync(path.join(__dirname, 'plans')).filter(f => f.endsWith('.json') && f.includes(filter));
 let failed = 0;
