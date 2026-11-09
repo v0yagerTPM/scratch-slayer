@@ -107,11 +107,14 @@ def load_map(level_number):
 
 
 # =================================================================================================
-# THE LEVEL LIST: each level's map plus a few settings. The build reads this (game/stage.py).
+# THE LEVEL LIST: everything about each level, in one record per level. The build reads this:
+# game/stage.py turns the settings into Scratch lists, and pictures/level_cards.py draws the cards.
 # =================================================================================================
 # For each level:
-#   name         used in this file's messages (the level cards' names are drawn in pictures/level_cards.py)
+#   name         the level's name. The level card shows it in capitals.
 #   rows         the map, read from its file (becomes the Scratch list "level N map")
+#   episode      1 or 2. Each episode has its own music. Finishing the last level of episode 1
+#                shows "EPISODE 1 COMPLETE" instead of "LEVEL COMPLETE".
 #   angle        the direction the player faces at the start, in degrees:
 #                0 = right (along the row), 90 = down, 180 = left, 270 = up (toward row 0)
 #                -> the Scratch list "level start angles"
@@ -121,8 +124,28 @@ def load_map(level_number):
 #                -> "level ceiling hues" / "level ceiling saturations" / "level floor ..."
 #   secret_look  which wall digit the secret walls (S) look like on this level, so they blend in
 #                -> "level secret wall looks"
-# Other per-level settings (how far rays travel, darkness, par times...) are tables in
-# game/config.py, and the level cards are in pictures/level_cards.py.
+#   max_ray_steps    how many squares a ray may travel before giving up. Big maps need a limit
+#                    so the game stays fast; walls that far away are black anyway.
+#                    -> "level max ray steps"
+#   light_falloff    how quickly walls fade to black with distance (bigger = darker level)
+#                    -> "level light falloffs"
+#   sprite_darkness  how much monsters and items darken with distance (0 = not at all)
+#                    -> "level sprite darkness"
+#   best_weapon      starting at this level from the options menu's level select gives you
+#                    weapons 1 to this one, with some ammo -> "level select best weapon"
+#   par_seconds      the par time on the tally screen: about 3 times as long as simply walking
+#                    the shortest route to the exit (keys and boss included), which leaves time
+#                    for fighting, rounded to the nearest 15 seconds -> "level par times"
+#   card         the level intro card: tint (background glow color), goal, enemy (the big
+#                word), lines (two lines about the enemy), boss (a warning line, or None)
+#   card_monster the monster type (1-7, see "monster names") that walks onto the card
+#                -> "level intro monster"
+#   card_boss    a boss type shown in the card's background, or 0 for none -> "level intro boss"
+#
+# ADDING A LEVEL here (in the Python source): save its map as src/maps/level 7 map.txt, add a
+# record at the end of this list, and run npm test. The build makes everything else from these
+# records: the Scratch lists, the level loader's blocks, the level card and its heading.
+# (To add a level inside Scratch instead, see "HOW TO ADD A 7TH LEVEL" in the Stage guide.)
 #
 # Above each level: a plan of its map, so you can find your way around the text file.
 # Positions are (column, row), counting from 0 like the rest of this file.
@@ -135,7 +158,12 @@ LEVELS = [
     #   row 12      a wall with one door (column 15)
     #   rows 13-18  the bottom room. The exit X is in the LEFT wall (0, 16). Bottom right: a
     #               secret wall S (15, 18) hides a closet with shells (A) and health (H).
-    dict(name="The Outpost", rows=load_map(1), angle=0, ceil=(0, 10), floor=(7, 45), secret_look="2"),
+    dict(name="The Outpost", rows=load_map(1), episode=1,
+         angle=0, ceil=(0, 10), floor=(7, 45), secret_look="2",
+         max_ray_steps=64, light_falloff=4.5, sprite_darkness=0, best_weapon=2, par_seconds=60,
+         card=dict(tint="#5a2a10", goal="Find the exit switch", enemy="IMP",
+                   lines=["Fast and vicious up close.", "Keep your distance and blast it."], boss=None),
+         card_monster=1, card_boss=0),
 
     # LEVEL 2: THE PROCESSING PLANT (24 x 24). Monsters: spitters. One key: red.
     #   rows 1-7    north rooms, split by a wall of 7s at column 15. The RED door R (15, 4) leads
@@ -147,7 +175,12 @@ LEVELS = [
     #   row 17      a wall with one door (column 16)
     #   rows 18-22  the bottom: the player starts in the west room (P at 2, 20)
     #   Route: bottom -> middle -> red key -> north -> red door -> exit.
-    dict(name="The Processing Plant", rows=load_map(2), angle=0, ceil=(50, 30), floor=(35, 30), secret_look="7"),
+    dict(name="The Processing Plant", rows=load_map(2), episode=1,
+         angle=0, ceil=(50, 30), floor=(35, 30), secret_look="7",
+         max_ray_steps=64, light_falloff=4.5, sprite_darkness=0, best_weapon=3, par_seconds=90,
+         card=dict(tint="#1f5a14", goal="Find the red key, then the exit", enemy="SPITTER",
+                   lines=["Spits acid from far away. Strafe", "with A and D to dodge it."], boss=None),
+         card_monster=2, card_boss=0),
 
     # LEVEL 3: THE FORTRESS (28 x 28). Monsters: golems, and the WARDEN (boss). Keys: red, blue.
     #   rows 1-11   three wings side by side, split by walls at columns 9 and 18:
@@ -159,7 +192,13 @@ LEVELS = [
     #   rows 22-26  the side rooms; the player starts in the middle one (P at 13, 25)
     #   The exit X (27, 3) is in a closet sealed by a SKULL DOOR Z (25, 3): only the warden's
     #   skull key opens it. A secret wall S (15, 1) in the keep hides shells and health.
-    dict(name="The Fortress", rows=load_map(3), angle=270, ceil=(95, 45), floor=(2, 40), secret_look="9"),
+    dict(name="The Fortress", rows=load_map(3), episode=1,
+         angle=270, ceil=(95, 45), floor=(2, 40), secret_look="9",
+         max_ray_steps=64, light_falloff=4.5, sprite_darkness=0, best_weapon=4, par_seconds=135,
+         card=dict(tint="#5a0f2a", goal="Two keys, then slay the Warden", enemy="GOLEM",
+                   lines=["Slow, tough, and hits like a truck.", "Lure it next to a barrel."],
+                   boss="BOSS: THE WARDEN carries the SKULL KEY to the exit"),
+         card_monster=3, card_boss=4),
 
     # LEVEL 4: THE FOUNDRY (36 x 36). Chargers, plus imps, spitters and golems. One key: red.
     #   rows 1-7    three north rooms (walls at columns 11 and 24); the red key K (2, 2) and the
@@ -171,7 +210,12 @@ LEVELS = [
     #   row 27      a wall with two doors
     #   rows 28-34  the loading bay, where the player starts (P at 18, 33)
     #   The exit X (30, 0) is in the top wall of the north-east room, behind the red door.
-    dict(name="The Foundry", rows=load_map(4), angle=270, ceil=(5, 40), floor=(8, 35), secret_look="4"),
+    dict(name="The Foundry", rows=load_map(4), episode=2,
+         angle=270, ceil=(5, 40), floor=(8, 35), secret_look="4",
+         max_ray_steps=34, light_falloff=4.5, sprite_darkness=2, best_weapon=4, par_seconds=165,
+         card=dict(tint="#6a2a08", goal="Find the red key, then the exit", enemy="CHARGER",
+                   lines=["Lowers its head, then charges.", "Sidestep it and it slams into a wall."], boss=None),
+         card_monster=5, card_boss=0),
 
     # LEVEL 5: THE SUNKEN VAULTS (38 x 38). Wraiths, plus the others. Keys: red, blue. Dark!
     #   Solid rock (7) with caves dug out of it, joined by tunnels one square wide. Cave corners
@@ -181,7 +225,12 @@ LEVELS = [
     #   key J (25, 3); the BLUE door (28, 14) blocks the tunnel from the middle vault to the east
     #   cave, which has the exit X (36, 5) in its east wall.
     #   A secret wall S (32, 23) above the south-east cave hides a health pack.
-    dict(name="The Sunken Vaults", rows=load_map(5), angle=270, ceil=(55, 20), floor=(50, 25), secret_look="7"),
+    dict(name="The Sunken Vaults", rows=load_map(5), episode=2,
+         angle=270, ceil=(55, 20), floor=(50, 25), secret_look="7",
+         max_ray_steps=26, light_falloff=6.5, sprite_darkness=5, best_weapon=5, par_seconds=180,
+         card=dict(tint="#0f3a4a", goal="Two keys, deep in the dark", enemy="WRAITH",
+                   lines=["Almost invisible from far away,", "and it blinks sideways. Stay sharp."], boss=None),
+         card_monster=6, card_boss=0),
 
     # LEVEL 6: THE CORE (40 x 40). Everything, and the COLOSSUS (boss). Keys: red, blue.
     #   A ring corridor 4 squares wide runs all the way round the outside. Inside it: two north
@@ -191,7 +240,13 @@ LEVELS = [
     #   the south wing into the arena -> beat the colossus T (20, 18) for the skull key ->
     #   SKULL door Z (20, 12) in the arena's north wall -> the exit X (20, 10).
     #   A secret wall S (5, 31) off the ring hides a health pack.
-    dict(name="The Core", rows=load_map(6), angle=270, ceil=(98, 60), floor=(0, 50), secret_look="9"),
+    dict(name="The Core", rows=load_map(6), episode=2,
+         angle=270, ceil=(98, 60), floor=(0, 50), secret_look="9",
+         max_ray_steps=36, light_falloff=4.2, sprite_darkness=2, best_weapon=5, par_seconds=240,
+         card=dict(tint="#4a0a3a", goal="Destroy the Colossus, take its key", enemy="THE COLOSSUS",
+                   lines=["Huge, armored, and it gets angrier.", "At half health it calls for help."],
+                   boss="FINAL BOSS: the exit is sealed until it falls"),
+         card_monster=7, card_boss=0),
 ]
 
 

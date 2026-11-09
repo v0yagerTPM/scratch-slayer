@@ -49,6 +49,9 @@ export and import lists. To bring a student's map into the project:
 3. Run `npm test`. The build checks the map; if something is wrong (a missing exit, a key
    behind its own door...) it says what and where. Then open the new `dist/scratch-slayer.sb3`.
 
+To add a whole new level, save its map as `src/maps/level 7 map.txt` and add one record for it to
+`LEVELS` in `src/levels.py` (its colors, par time, level card and so on); the build does the rest.
+
 To go the other way, right-click the list in Scratch, choose **import** and pick a file from
 `src/maps/`. Edit maps in a plain text editor with a monospace font. Don't add notes to the
 files: Scratch would import every line, notes included, as a row of the map.

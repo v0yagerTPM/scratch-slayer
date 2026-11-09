@@ -53,7 +53,7 @@ npm run compare                                 # is the built project identical
   `.sb3`. The import order is the creation order, so it decides block IDs and layering: put a new
   module where it belongs in the game, and expect `npm run compare` to report a change if you move one.
 - `game/`: the game, one module per part. `config.py` has the tables (`MONSTER_TYPES`, `WEAPON_TYPES`,
-  `WALLS`, `AMMO`, `DIFFICULTIES`, per-level lists incl. `LEVEL_PAR_SECONDS`), broadcast and state
+  `WALLS`, `AMMO`, `DIFFICULTIES`; per-level settings live in `levels.py`), broadcast and state
   names, and shared helpers (`V`, `hurt_player`, `add_sound`, `map_letter_at`); every module does
   `from sb3extra import *` and `from game.config import *`, and imports anything else explicitly from
   the module that defines it. `stage.py` (project, Stage variables and lists), `guide.py` (the
@@ -68,7 +68,11 @@ npm run compare                                 # is the built project identical
   Scratch's list export/import (right-click the list "level N map"), so a student's exported map can
   be dropped in as-is. Never add comments or a ruler to these files: Scratch would import them as rows.
 - `levels.py`: `load_map()` reads the files into lists of strings (`map_rows[row][column]`), and
-  `LEVELS` adds each level's settings and a written plan of its layout. `validate()` raises
+  `LEVELS` has **one record per level with everything about it**: map, episode, start angle, colors,
+  secret look, draw distance, darkness, level-select weapon, par time, card text and card monsters,
+  plus a written plan of the map. `stage.py` turns the records into Scratch lists and
+  `pictures/level_cards.py` draws the cards from them. Adding a level in Python = one map file + one
+  record (tested by building a 7-level copy and playing level 7). `validate()` raises
   `LevelError` with a message naming the level and square. It checks reachability, keys, and that
   a skull door (`Z`) really gates the exit behind the boss.
 - `pictures/`: every costume and backdrop as hand-written SVG, **by subject**: `drawing` (svg(),
