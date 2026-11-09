@@ -1,14 +1,14 @@
 """The options menu's logic: reading the keys and mouse, changing settings."""
 from sb3extra import *
 from game.config import *
-import assets6
+import pictures.options_menu
 from game.engine.sprite import engine
 
-ROW_Y, ROW_STEP = assets6.OPTION_ROW_Y, assets6.OPTION_ROW_STEP
+ROW_Y, ROW_STEP = pictures.options_menu.OPTION_ROW_Y, pictures.options_menu.OPTION_ROW_STEP
 OPTION_ROW_COUNT = len(ROW_Y)   # 7. The last two rows (difficulty, start level) are title-screen only.
-TRACK_LEFT, TRACK_RIGHT = assets6.TRACK_LEFT, assets6.TRACK_RIGHT
-DIFFICULTY_MIDDLE_X = sum(assets6.DIFFICULTY_ARROWS_X) / 2
-LEVEL_MIDDLE_X = sum(assets6.LEVEL_ARROWS_X) / 2
+TRACK_LEFT, TRACK_RIGHT = pictures.options_menu.TRACK_LEFT, pictures.options_menu.TRACK_RIGHT
+DIFFICULTY_MIDDLE_X = sum(pictures.options_menu.DIFFICULTY_ARROWS_X) / 2
+LEVEL_MIDDLE_X = sum(pictures.options_menu.LEVEL_ARROWS_X) / 2
 def clamp(var, low, high):
     return [if_(lt(V(var), low), setv(var, low)), if_(gt(V(var), high), setv(var, high))]
 

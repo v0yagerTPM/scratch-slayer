@@ -1,19 +1,19 @@
 """The Projectile sprite: acid, fireballs, plasma and rockets."""
 from sb3extra import *
 from game.config import *
-import assets, assets3, assets6
+import pictures.world, sounds.world
 from game.screen_placement import offset_from_player, place_on_screen
 from game.stage import project
 
 projectile = Target(project, "Projectile", layer=2, visible=False)
-projectile.costume("shot acid", assets3.ACID_SHOT, 13, 13)
-projectile.costume("shot fire", assets3.FIRE_SHOT, 15, 15)
-projectile.costume("shot plasma", assets6.PLASMA_SHOT, 15, 15)
-projectile.costume("shot rocket", assets6.ROCKET_SHOT, 13, 13)
-for frame_number, art in enumerate(assets3.EXPLOSIONS, start=1):
+projectile.costume("shot acid", pictures.world.ACID_SHOT, 13, 13)
+projectile.costume("shot fire", pictures.world.FIRE_SHOT, 15, 15)
+projectile.costume("shot plasma", pictures.world.PLASMA_SHOT, 15, 15)
+projectile.costume("shot rocket", pictures.world.ROCKET_SHOT, 13, 13)
+for frame_number, art in enumerate(pictures.world.EXPLOSIONS, start=1):
     projectile.costume(f"explosion {frame_number}", art, 45, 78)
-add_sound(projectile, "player hurt", assets.player_hurt)
-add_sound(projectile, "explosion", assets3.explosion)
+add_sound(projectile, "player hurt", sounds.world.player_hurt)
+add_sound(projectile, "explosion", sounds.world.explosion)
 for name in ["is clone", "queue position", "shot x", "shot y", "shot speed x", "shot speed y", "shot damage",
              "shot look", "shot owner", "frames left", "offset x from player", "offset y from player", "distance to player",
              "sideways in view", "depth in view", "screen x", "screen column index",

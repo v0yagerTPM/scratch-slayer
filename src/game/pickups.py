@@ -1,18 +1,18 @@
 """The Pickup sprite: health, ammo, weapons and keys."""
 from sb3extra import *
 from game.config import *
-import assets2, assets6
+import pictures.pickups, sounds.world
 from game.screen_placement import offset_from_player, place_on_screen
 from game.stage import project
 
 pickup = Target(project, "Pickup", layer=2, visible=False)
-for costume_name, art in (("item 1", assets2.MEDKIT), ("item 2", assets2.SHELLS), ("item 3", assets2.RED_KEY),
-                ("item 4", assets2.BLUE_KEY), ("item 6", assets6.BULLETS), ("item 7", assets6.ROCKETS)):
+for costume_name, art in (("item 1", pictures.pickups.MEDKIT), ("item 2", pictures.pickups.SHELLS), ("item 3", pictures.pickups.RED_KEY),
+                ("item 4", pictures.pickups.BLUE_KEY), ("item 6", pictures.pickups.BULLETS), ("item 7", pictures.pickups.ROCKETS)):
     pickup.costume(costume_name, art, 20, 40)
-pickup.costume("item 5", assets6.SKULL_KEY, 20, 44)
-for costume_name, art in (("item 8", assets6.SHOTGUN_PICKUP), ("item 9", assets6.CHAINGUN_PICKUP), ("item 10", assets6.LAUNCHER_PICKUP)):
+pickup.costume("item 5", pictures.pickups.SKULL_KEY, 20, 44)
+for costume_name, art in (("item 8", pictures.pickups.SHOTGUN_PICKUP), ("item 9", pictures.pickups.CHAINGUN_PICKUP), ("item 10", pictures.pickups.LAUNCHER_PICKUP)):
     pickup.costume(costume_name, art, 32, 34)
-for sound_name, make_sound in (("item", assets2.item), ("key", assets2.key), ("weapon", assets6.weapon_pickup)):
+for sound_name, make_sound in (("item", sounds.world.item), ("key", sounds.world.key), ("weapon", sounds.world.weapon_pickup)):
     add_sound(pickup, sound_name, make_sound)
 for name in ["item id", "is clone", "item x", "item y", "item type", "is taken", "was picked up", "has dropped",
              "offset x from player", "offset y from player", "distance to player", "sideways in view",

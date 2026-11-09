@@ -1,7 +1,7 @@
 """The animated title screen."""
 from sb3extra import *
 from game.config import *
-import assets, assets4, assets5
+import pictures.title_screen, sounds.monsters, sounds.music, sounds.screens
 from game.monster import MONSTER_ART
 from game.stage import project, stage
 
@@ -19,8 +19,8 @@ stage.script(recv(SHOW_TITLE), backdrop("title sky"), cleareffects(), setv("ligh
                      "'title sky' backdrop. It switches back to black for the game.", canvas_x=1300)
 
 title_logo = Target(project, "Title Logo", layer=12, visible=False)
-title_logo.costume("logo", assets4.LOGO, 220, 67)
-add_sound(title_logo, "thud", assets4.thud)
+title_logo.costume("logo", pictures.title_screen.LOGO, 220, 67)
+add_sound(title_logo, "thud", sounds.screens.thud)
 for name in ["fall speed", "bounces", "logo time", "shake timer"]:
     title_logo.var(name)
 title_logo.script(flag(), hide())
@@ -53,7 +53,7 @@ title_monster = Target(project, "Title Monster", layer=10, visible=False)
 for monster_name, art in MONSTER_ART.items():
     for pose, svg_art in zip(("walk 1", "walk 2", "attack", "dead"), art):
         title_monster.costume(f"{monster_name} {pose}", svg_art, 40, 120)
-add_sound(title_monster, "pain", assets.monster_pain)
+add_sound(title_monster, "pain", sounds.monsters.monster_pain)
 title_monster.lst("lineup types", [3, 6, 4, 5, 1])
 title_monster.lst("lineup x", [-175, -92, 0, 92, 178])
 title_monster.lst("lineup y", [-98, -106, -80, -102, -90])
@@ -104,7 +104,7 @@ title_monster.script(as_clone(), setv("is clone", 1),
           delete_clone())
 
 title_embers = Target(project, "Title Embers", layer=11, visible=False)
-title_embers.costume("ember", assets4.EMBER, 7, 7)
+title_embers.costume("ember", pictures.title_screen.EMBER, 7, 7)
 for name in ["is clone", "rise speed", "drift phase"]:
     title_embers.var(name)
 ember_time = or_(on_title, eq(V("card is up"), 1))
@@ -124,11 +124,11 @@ title_embers.script(as_clone(), setv("is clone", 1),
           comment="EMBER: float up at my own speed, wobble with sin(), fade out.")
 
 prompt_text = Target(project, "Prompt Text", layer=13, visible=False)
-prompt_text.costume("press space", assets4.PRESS_SPACE, 150, 20)
-prompt_text.costume("press space retry", assets5.PROMPT_RETRY, 135, 15)
-prompt_text.costume("green flag again", assets5.PROMPT_AGAIN, 213, 15)
-add_sound(prompt_text, "victory theme", assets5.victory_theme)
-add_sound(prompt_text, "title theme", assets4.title_riff)
+prompt_text.costume("press space", pictures.title_screen.PRESS_SPACE, 150, 20)
+prompt_text.costume("press space retry", pictures.title_screen.PROMPT_RETRY, 135, 15)
+prompt_text.costume("green flag again", pictures.title_screen.PROMPT_AGAIN, 213, 15)
+add_sound(prompt_text, "victory theme", sounds.music.victory_theme)
+add_sound(prompt_text, "title theme", sounds.music.title_riff)
 prompt_text.var("pulse time")
 prompt_text.script(flag(), hide())
 prompt_text.script(recv(SHOW_TITLE), costume("press space"), gotoxy(0, -110), setv("pulse time", 0), seteffect("GHOST", 100), show(), wait(1.4),

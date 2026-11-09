@@ -2,20 +2,20 @@
 messages, the results screen and the HUD digits."""
 from sb3extra import *
 from game.config import *
-import assets, assets2, assets6, assets7
+import pictures.hud, pictures.tally_screen, pictures.weapons, sounds.weapons
 from game.stage import HUD_SLOTS, project
 
 playing = eq(V("screen showing"), NONE)
 
 weapon = Target(project, "Weapon", layer=3, x=0, y=-190, size=105, visible=False)
-WEAPON_COSTUMES = {"shotgun": (assets.GUN_IDLE, assets.GUN_FIRE), **assets6.WEAPON_ART}
-for weapon_name in assets6.WEAPON_NAMES:
+WEAPON_COSTUMES = {"shotgun": (pictures.weapons.GUN_IDLE, pictures.weapons.GUN_FIRE), **pictures.weapons.WEAPON_ART}
+for weapon_name in pictures.hud.WEAPON_NAMES:
     ready, firing = WEAPON_COSTUMES[weapon_name]
     weapon.costume(f"{weapon_name} ready", ready, 80, 190)
     weapon.costume(f"{weapon_name} firing", firing, 80, 190)
-    weapon.costume(f"{weapon_name} firing 2", assets6.CHAINGUN_FIRE_2 if weapon_name == "chaingun" else firing, 80, 190)
-for sound_name, make_sound in (("shotgun", assets.shotgun), ("fist", assets2.punch), ("pistol", assets6.pistol),
-               ("chaingun", assets6.chaingun), ("rocket launcher", assets6.rocket_launch)):
+    weapon.costume(f"{weapon_name} firing 2", pictures.weapons.CHAINGUN_FIRE_2 if weapon_name == "chaingun" else firing, 80, 190)
+for sound_name, make_sound in (("shotgun", sounds.weapons.shotgun), ("fist", sounds.weapons.punch), ("pistol", sounds.weapons.pistol),
+               ("chaingun", sounds.weapons.chaingun), ("rocket launcher", sounds.weapons.rocket_launch)):
     add_sound(weapon, sound_name, make_sound)
 for name in ["weapon name", "firing pose timer", "flash number", "jab amount"]:
     weapon.var(name)
@@ -48,13 +48,13 @@ weapon.script(recv(PUNCH), play("fist"), setv("firing pose timer", 5),
           comment="PUNCH: the fist jabs forward for 5 frames.")
 
 crosshair = Target(project, "Crosshair", layer=4, visible=False)
-crosshair.costume("crosshair", assets.CROSSHAIR, 10, 10)
+crosshair.costume("crosshair", pictures.weapons.CROSSHAIR, 10, 10)
 crosshair.script(flag(), gotoxy(0, 0), hide())
 crosshair.script(recv(DRAW_HUD), ifelse(playing, [show(), front()], [hide()]),
          comment="Always in the exact middle: the column the shot checks.")
 
 hud = Target(project, "HUD", layer=5, visible=False)
-for keys_held, art in enumerate(assets6.HUDS):   # keys held = red + 2 x blue + 4 x skull
+for keys_held, art in enumerate(pictures.hud.HUDS):   # keys held = red + 2 x blue + 4 x skull
     hud.costume(f"keys {keys_held}", art, 240, 180)
 hud.script(flag(), gotoxy(0, 0), hide())
 hud.script(recv(DRAW_HUD), ifelse(playing,
@@ -67,7 +67,7 @@ hud.script(recv(DRAW_HUD), ifelse(playing,
                   "The Digits sprite draws the numbers.")
 
 arms_panel = Target(project, "Arms Panel", layer=5, visible=False)
-for (owned_code, weapon_slot), art in assets6.ARMS.items():
+for (owned_code, weapon_slot), art in pictures.hud.ARMS.items():
     arms_panel.costume(f"arms {owned_code} {weapon_slot}", art, 240, 180)
 arms_panel.script(flag(), gotoxy(0, 0), hide())
 arms_panel.script(recv(DRAW_HUD), ifelse(playing,
@@ -81,7 +81,7 @@ arms_panel.script(recv(DRAW_HUD), ifelse(playing,
                   "trick as the HUD's keys); <holding> = the weapon in your hands.")
 
 boss_bar = Target(project, "Boss Bar", layer=5, visible=False)
-for boss_name, art in assets6.BOSS_BARS.items():
+for boss_name, art in pictures.hud.BOSS_BARS.items():
     boss_bar.costume(f"boss bar {boss_name}", art, 240, 180)
 boss_bar.script(flag(), gotoxy(0, 0), hide())
 boss_bar.script(recv(DRAW_HUD), ifelse(and_(playing, and_(eq(V("boss is awake"), 1), gt(V("boss health"), 0))),
@@ -90,7 +90,7 @@ boss_bar.script(recv(DRAW_HUD), ifelse(and_(playing, and_(eq(V("boss is awake"),
                   "drawn with the pen at the end of 'draw 3D view'.")
 
 message = Target(project, "Message", layer=6, visible=False)
-for name, art in assets2.MESSAGES.items():
+for name, art in pictures.hud.MESSAGES.items():
     message.costume(f"message {name}", art, 240, 180)
 message.script(flag(), gotoxy(0, 0), hide())
 message.script(recv(DRAW_HUD), ifelse(and_(playing, gt(V("message timer"), 0)),
@@ -102,7 +102,7 @@ message.script(recv(DRAW_HUD), ifelse(and_(playing, gt(V("message timer"), 0)),
                  "'message timer' (how many frames it stays up).")
 
 screens = Target(project, "Screens", layer=7, visible=True)
-for costume_name, art in assets7.TALLY_SCREENS.items():
+for costume_name, art in pictures.tally_screen.TALLY_SCREENS.items():
     screens.costume(costume_name, art, 240, 180)
 screens.var("screen costume name"); screens.var("under par ending")
 screens.script(flag(), gotoxy(0, 0), hide())
@@ -121,7 +121,7 @@ screens.script(recv(DRAW_HUD),
                  "(The death and victory screens have their own animated sprites.)")
 
 digits = Target(project, "Digits", layer=8, visible=False)
-for digit_character, art in assets2.DIGITS.items():
+for digit_character, art in pictures.hud.DIGITS.items():
     digits.costume(f"digit {digit_character}", art, 21, 14)
 for name in ["is clone", "number slot", "digit place", "number text"]:
     digits.var(name)

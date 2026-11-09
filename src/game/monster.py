@@ -1,27 +1,27 @@
 """The Monster sprite: one clone per monster, with its AI, attacks and special moves."""
 from sb3extra import *
 from game.config import *
-import assets, assets3, assets4, assets6
+import pictures.monsters, sounds.monsters, sounds.screens, sounds.world
 from game.engine.raycaster import SQUARE
 from game.screen_placement import explosion_scan, offset_from_player, place_on_screen
 from game.stage import project
 
 monster = Target(project, "Monster", layer=2, visible=False)
 MONSTER_ART = {
-    "imp": (assets.IMP_WALK1, assets.IMP_WALK2, assets.IMP_ATTACK, assets.IMP_DEAD),
-    "spitter": (assets3.SPITTER_WALK1, assets3.SPITTER_WALK2, assets3.SPITTER_ATTACK, assets3.SPITTER_DEAD),
-    "golem": (assets3.GOLEM_WALK1, assets3.GOLEM_WALK2, assets3.GOLEM_ATTACK, assets3.GOLEM_DEAD),
-    "warden": (assets3.WARDEN_WALK1, assets3.WARDEN_WALK2, assets3.WARDEN_ATTACK, assets3.WARDEN_DEAD),
-    "charger": (assets6.CHARGER_WALK1, assets6.CHARGER_WALK2, assets6.CHARGER_ATTACK, assets6.CHARGER_DEAD),
-    "wraith": (assets6.WRAITH_WALK1, assets6.WRAITH_WALK2, assets6.WRAITH_ATTACK, assets6.WRAITH_DEAD),
-    "colossus": (assets6.COLOSSUS_WALK1, assets6.COLOSSUS_WALK2, assets6.COLOSSUS_ATTACK, assets6.COLOSSUS_DEAD),
+    "imp": (pictures.monsters.IMP_WALK1, pictures.monsters.IMP_WALK2, pictures.monsters.IMP_ATTACK, pictures.monsters.IMP_DEAD),
+    "spitter": (pictures.monsters.SPITTER_WALK1, pictures.monsters.SPITTER_WALK2, pictures.monsters.SPITTER_ATTACK, pictures.monsters.SPITTER_DEAD),
+    "golem": (pictures.monsters.GOLEM_WALK1, pictures.monsters.GOLEM_WALK2, pictures.monsters.GOLEM_ATTACK, pictures.monsters.GOLEM_DEAD),
+    "warden": (pictures.monsters.WARDEN_WALK1, pictures.monsters.WARDEN_WALK2, pictures.monsters.WARDEN_ATTACK, pictures.monsters.WARDEN_DEAD),
+    "charger": (pictures.monsters.CHARGER_WALK1, pictures.monsters.CHARGER_WALK2, pictures.monsters.CHARGER_ATTACK, pictures.monsters.CHARGER_DEAD),
+    "wraith": (pictures.monsters.WRAITH_WALK1, pictures.monsters.WRAITH_WALK2, pictures.monsters.WRAITH_ATTACK, pictures.monsters.WRAITH_DEAD),
+    "colossus": (pictures.monsters.COLOSSUS_WALK1, pictures.monsters.COLOSSUS_WALK2, pictures.monsters.COLOSSUS_ATTACK, pictures.monsters.COLOSSUS_DEAD),
 }
 for monster_name, art in MONSTER_ART.items():
     for pose, svg_art in zip(("walk 1", "walk 2", "attack", "dead"), art):
         monster.costume(f"{monster_name} {pose}", svg_art, 40, 120)
-for sound_name, make_sound in (("pain", assets.monster_pain), ("death", assets.monster_death), ("player hurt", assets.player_hurt),
-               ("spit", assets3.spit), ("fireball", assets3.fireball), ("slam", assets4.thud),
-               ("blink", assets6.wraith_blink)):
+for sound_name, make_sound in (("pain", sounds.monsters.monster_pain), ("death", sounds.monsters.monster_death), ("player hurt", sounds.world.player_hurt),
+               ("spit", sounds.monsters.spit), ("fireball", sounds.monsters.fireball), ("slam", sounds.screens.thud),
+               ("blink", sounds.monsters.wraith_blink)):
     add_sound(monster, sound_name, make_sound)
 for name in ["monster id", "is clone", "monster type", "monster name", "monster x", "monster y", "is alive",
              "monster health", "full health", "attack cooldown", "volley cooldown", "pain flash timer", "attack pose timer",

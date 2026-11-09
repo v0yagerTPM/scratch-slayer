@@ -1,12 +1,12 @@
 """The in-game music."""
 from sb3extra import *
 from game.config import *
-import assets, assets6
+import pictures.world, sounds.music
 from game.stage import project
 
 music = Target(project, "Music", layer=1, visible=False)
-music.costume("speaker", assets.TINY, 1, 1)
-for sound_name, make_sound in (("episode 1 theme", assets6.episode_1_theme), ("episode 2 theme", assets6.episode_2_theme)):
+music.costume("speaker", pictures.world.TINY, 1, 1)
+for sound_name, make_sound in (("episode 1 theme", sounds.music.episode_1_theme), ("episode 2 theme", sounds.music.episode_2_theme)):
     add_sound(music, sound_name, make_sound)
 music.var("episode number")
 music.script(flag(), hide())

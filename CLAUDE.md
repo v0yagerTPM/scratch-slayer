@@ -63,7 +63,7 @@ npm run compare                                 # is the built project identical
   bar, messages, results screen, digits), `title_screen`, `level_cards`, `death_screen`,
   `victory_screen`, `options_screen` (Options Panel and Widgets) and `music`. Each sprite's Python
   handle is its name in snake_case (`engine`, `options_widgets`); give a sprite a sound with
-  `add_sound(sprite, name, assets_function)`.
+  `add_sound(sprite, name, sounds_function)`.
 - `maps/level N map.txt`: the six maps, one row per line, nothing else. Same format and file name as
   Scratch's list export/import (right-click the list "level N map"), so a student's exported map can
   be dropped in as-is. Never add comments or a ruler to these files: Scratch would import them as rows.
@@ -71,8 +71,17 @@ npm run compare                                 # is the built project identical
   `LEVELS` adds each level's settings and a written plan of its layout. `validate()` raises
   `LevelError` with a message naming the level and square. It checks reachability, keys, and that
   a skull door (`Z`) really gates the exit behind the boss.
-- `assets.py` … `assets7.py`: SVG strings and synthesized WAVs, one file per feature round.
-  Later files reuse earlier ones. No external images or sounds (keeps it copyright-safe).
+- `pictures/`: every costume and backdrop as hand-written SVG, **by subject**: `drawing` (svg(),
+  `text_label`, `full_screen`, gradients), `lettering` (the block-letter font `LETTERS` and digit
+  glyphs; `block_text(..., font=)` takes a variant, e.g. `OPTIONS_LETTERS`), `monsters`, `weapons`,
+  `pickups`, `world` (barrels, explosions, projectiles), `hud` (panels, arms, boss bars, `MESSAGES`,
+  digits), `title_screen`, `level_cards` (`CARDS`), `death_screen` (`KILLERS`), `victory_screen`,
+  `options_menu`, `tally_screen`.
+- `sounds/`: every sound as synthesized WAV: `synth` (`RATE`, `make_wav`, `smooth_samples`,
+  `note_frequency`), `weapons`, `monsters`, `world`, `screens`, `music`. Put new art or sound in the
+  file for its subject, defined once (never patch another file's data after the fact). No external
+  images or sounds (keeps it copyright-safe). Game code refers to them by full name, e.g.
+  `pictures.monsters.IMP_WALK1`, `sounds.weapons.pistol`.
 
 ## Game loop (Engine main script)
 

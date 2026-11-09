@@ -1,7 +1,7 @@
 """Settings tables (monsters, weapons, walls, ammo, difficulty, per-level numbers), the names
 of broadcasts and game states, and a few block helpers every part of the game uses."""
 from sb3extra import *
-import assets
+import sounds.synth
 from levels import LEVELS, validate
 
 RAY_COUNT, STRIPE_WIDTH = 80, 6      # 80 rays, each drawn as a 6-px-wide vertical stripe
@@ -96,9 +96,9 @@ def hurt_player(amount):
     return chg("health", mul(-1, round_(mul(amount, div(item(V("difficulty"), "difficulty damage to you"), 100)))))
 
 def add_sound(sprite, sound_name, make_sound):
-    """Make a sound with one of the assets functions and give it to a sprite."""
+    """Make a sound with one of the functions in sounds/ and give it to a sprite."""
     wav_data, sample_count = make_sound()
-    sprite.sound(sound_name, wav_data, assets.RATE, sample_count)
+    sprite.sound(sound_name, wav_data, sounds.synth.RATE, sample_count)
 
 def map_letter_at(column, row):
     """letter (column + 1) of item (row + 1) of current map — columns and rows count from 0."""

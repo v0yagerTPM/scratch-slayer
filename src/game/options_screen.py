@@ -1,13 +1,13 @@
 """The options menu's sprites: the panel and its knobs, switches and words."""
 from sb3extra import *
 from game.config import *
-import assets6, assets7
+import pictures.options_menu
 from game.stage import project
 
 options_up = eq(V("options open"), 1)
 options_panel = Target(project, "Options Panel", layer=23, visible=False)
-options_panel.costume("options title", assets6.OPTIONS_TITLE, 240, 180)
-options_panel.costume("options paused", assets6.OPTIONS_PAUSED, 240, 180)
+options_panel.costume("options title", pictures.options_menu.OPTIONS_TITLE, 240, 180)
+options_panel.costume("options paused", pictures.options_menu.OPTIONS_PAUSED, 240, 180)
 options_panel.script(flag(), gotoxy(0, 0), hide())
 options_panel.script(recv(DRAW_OPTIONS_PANEL),
           ifelse(options_up,
@@ -17,15 +17,15 @@ options_panel.script(recv(DRAW_OPTIONS_PANEL),
           comment="OPTIONS PANEL: the box, the labels and the slider tracks. From the\n"
                   "game it says PAUSED and the level select is switched off.")
 
-ROW_Y = assets6.OPTION_ROW_Y
-TRACK_LEFT, TRACK_RIGHT = assets6.TRACK_LEFT, assets6.TRACK_RIGHT
+ROW_Y = pictures.options_menu.OPTION_ROW_Y
+TRACK_LEFT, TRACK_RIGHT = pictures.options_menu.TRACK_LEFT, pictures.options_menu.TRACK_RIGHT
 options_widgets = Target(project, "Options Widgets", layer=24, visible=False)
-options_widgets.costume("row highlight", assets6.ROW_HIGHLIGHT, 190, 13)
-options_widgets.costume("knob", assets6.KNOB, 10, 10)
-options_widgets.costume("switch on", assets6.TOGGLE_ON, 28, 11)
-options_widgets.costume("switch off", assets6.TOGGLE_OFF, 28, 11)
-for difficulty_name in assets7.DIFFICULTY_COLORS:
-    options_widgets.costume(f"difficulty {difficulty_name}", assets7.difficulty_word(difficulty_name), 50, 11)
+options_widgets.costume("row highlight", pictures.options_menu.ROW_HIGHLIGHT, 190, 13)
+options_widgets.costume("knob", pictures.options_menu.KNOB, 10, 10)
+options_widgets.costume("switch on", pictures.options_menu.TOGGLE_ON, 28, 11)
+options_widgets.costume("switch off", pictures.options_menu.TOGGLE_OFF, 28, 11)
+for difficulty_name in pictures.options_menu.DIFFICULTY_COLORS:
+    options_widgets.costume(f"difficulty {difficulty_name}", pictures.options_menu.difficulty_word(difficulty_name), 50, 11)
 for name in ["is clone", "widget role"]:
     options_widgets.var(name)
 options_widgets.script(flag(), hide(), setv("is clone", 0), setv("widget role", 0), repeat(7, chg("widget role", 1), clone()),
@@ -44,7 +44,7 @@ def switch_at(setting, stage_y):
 
 options_widgets.script(recv(DRAW_OPTIONS_HIGHLIGHT), if_(eq(V("widget role"), 1),
     ifelse(options_up,
-           [costume("row highlight"), gotoxy(0, sub(ROW_Y[0], mul(sub(V("options row"), 1), assets6.OPTION_ROW_STEP))),
+           [costume("row highlight"), gotoxy(0, sub(ROW_Y[0], mul(sub(V("options row"), 1), pictures.options_menu.OPTION_ROW_STEP))),
             show(), front()],
            [hide()])),
     comment="DRAW OPTIONS HIGHLIGHT: the see-through box on the chosen row.\n"
@@ -66,7 +66,7 @@ options_widgets.script(recv(DRAW_OPTIONS_WIDGETS), if_(and_(eq(V("is clone"), 1)
                 note("The difficulty word: costume 'difficulty easy', 'difficulty normal'\n"
                      "or 'difficulty hard', picked by name from the 'difficulty names' list.",
                      costume("difficulty normal", join("difficulty ", item(V("difficulty"), "difficulty names")))),
-                gotoxy(sum(assets6.DIFFICULTY_ARROWS_X) / 2, ROW_Y[5]),
+                gotoxy(sum(pictures.options_menu.DIFFICULTY_ARROWS_X) / 2, ROW_Y[5]),
                 note("Paused during a game, difficulty can't change, so the word is faded.",
                      ifelse(eq(V("options from game"), 1), [seteffect("GHOST", 50)], [seteffect("GHOST", 0)]))),
             show(), front()],

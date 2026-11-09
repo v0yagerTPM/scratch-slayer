@@ -110,7 +110,7 @@ def load_map(level_number):
 # THE LEVEL LIST: each level's map plus a few settings. The build reads this (game/stage.py).
 # =================================================================================================
 # For each level:
-#   name         used in this file's messages (the level cards' names are drawn in assets6.py)
+#   name         used in this file's messages (the level cards' names are drawn in pictures/level_cards.py)
 #   rows         the map, read from its file (becomes the Scratch list "level N map")
 #   angle        the direction the player faces at the start, in degrees:
 #                0 = right (along the row), 90 = down, 180 = left, 270 = up (toward row 0)
@@ -122,7 +122,7 @@ def load_map(level_number):
 #   secret_look  which wall digit the secret walls (S) look like on this level, so they blend in
 #                -> "level secret wall looks"
 # Other per-level settings (how far rays travel, darkness, par times...) are tables in
-# game/config.py, and the level cards are in assets6.py.
+# game/config.py, and the level cards are in pictures/level_cards.py.
 #
 # Above each level: a plan of its map, so you can find your way around the text file.
 # Positions are (column, row), counting from 0 like the rest of this file.
