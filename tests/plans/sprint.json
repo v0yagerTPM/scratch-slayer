@@ -1,0 +1,109 @@
+[
+ {
+  "frames": 30
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 25
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 70
+ },
+ {
+  "frames": 1,
+  "log": "start"
+ },
+ {
+  "frames": 10,
+  "keys": [
+   "s"
+  ],
+  "log": "walk back 10"
+ },
+ {
+  "frames": 10,
+  "keys": [
+   "w"
+  ],
+  "log": "walk fwd 10"
+ },
+ {
+  "frames": 10,
+  "keys": [
+   "w",
+   "q"
+  ],
+  "log": "sprint fwd 10",
+  "snap": "sprint_green",
+  "expect": {
+   "speed boost": 1.75
+  }
+ },
+ {
+  "frames": 50,
+  "keys": [
+   "d",
+   "q"
+  ],
+  "log": "sprint strafe 50",
+  "snap": "sprint_yellow"
+ },
+ {
+  "frames": 30,
+  "keys": [
+   "a",
+   "q"
+  ],
+  "log": "sprint until dry",
+  "snap": "sprint_exhausted",
+  "expect": {
+   "is exhausted": 1
+  }
+ },
+ {
+  "frames": 20,
+  "keys": [
+   "w",
+   "q"
+  ],
+  "log": "try sprint while exhausted",
+  "expect": {
+   "speed boost": 1
+  }
+ },
+ {
+  "frames": 60,
+  "log": "rest 60"
+ },
+ {
+  "frames": 30,
+  "log": "rest 90 total"
+ },
+ {
+  "frames": 5,
+  "keys": [
+   "w",
+   "q"
+  ],
+  "log": "sprint again"
+ },
+ {
+  "frames": 200,
+  "log": "full rest",
+  "expect": {
+   "stamina": 100,
+   "is exhausted": 0
+  }
+ }
+]

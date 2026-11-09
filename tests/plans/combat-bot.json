@@ -1,0 +1,268 @@
+[
+ {
+  "frames": 30,
+  "set": {
+   "highest level reached": 6,
+   "start level choice": 4
+  }
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 140
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 17.5,
+   "py": 25.5,
+   "ang": 270
+  }
+ },
+ {
+  "frames": 80,
+  "auto": true,
+  "set": {
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 1,
+  "log": "L4 bot 0"
+ },
+ {
+  "frames": 80,
+  "auto": true,
+  "set": {
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 1,
+  "log": "L4 bot 1"
+ },
+ {
+  "frames": 80,
+  "auto": true,
+  "set": {
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 1,
+  "log": "L4 bot 2"
+ },
+ {
+  "frames": 80,
+  "auto": true,
+  "set": {
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 1,
+  "log": "L4 bot 3"
+ },
+ {
+  "frames": 80,
+  "auto": true,
+  "set": {
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 1,
+  "log": "L4 bot 4"
+ },
+ {
+  "frames": 80,
+  "auto": true,
+  "set": {
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 1,
+  "log": "L4 bot 5"
+ },
+ {
+  "frames": 80,
+  "auto": true,
+  "set": {
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 1,
+  "log": "L4 bot 6"
+ },
+ {
+  "frames": 80,
+  "auto": true,
+  "set": {
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 1,
+  "log": "L4 bot 7",
+  "expect": {
+   "level kills": {
+    "gt": 0
+   }
+  }
+ },
+ {
+  "frames": 1,
+  "set": {
+   "state": "exit reached"
+  }
+ },
+ {
+  "frames": 50
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 25
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 140
+ },
+ {
+  "frames": 1,
+  "setList": {
+   "weapons owned": [
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "ammo counts": [
+    200,
+    50,
+    50
+   ]
+  },
+  "set": {
+   "current weapon": 5
+  }
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 20.5,
+   "py": 24.5,
+   "ang": 270
+  }
+ },
+ {
+  "frames": 80,
+  "auto": true,
+  "set": {
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 1,
+  "log": "L5 bot 0"
+ },
+ {
+  "frames": 80,
+  "auto": true,
+  "set": {
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 1,
+  "log": "L5 bot 1"
+ },
+ {
+  "frames": 80,
+  "auto": true,
+  "set": {
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 1,
+  "log": "L5 bot 2"
+ },
+ {
+  "frames": 80,
+  "auto": true,
+  "set": {
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 1,
+  "log": "L5 bot 3"
+ },
+ {
+  "frames": 80,
+  "auto": true,
+  "set": {
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 1,
+  "log": "L5 bot 4"
+ },
+ {
+  "frames": 80,
+  "auto": true,
+  "set": {
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 1,
+  "log": "L5 bot 5"
+ },
+ {
+  "frames": 80,
+  "auto": true,
+  "set": {
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 1,
+  "log": "L5 bot 6"
+ },
+ {
+  "frames": 80,
+  "auto": true,
+  "set": {
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 1,
+  "log": "L5 bot 7",
+  "expect": {
+   "current level": 5,
+   "level kills": {
+    "gt": 0
+   }
+  }
+ }
+]

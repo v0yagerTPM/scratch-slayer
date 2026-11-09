@@ -1,0 +1,279 @@
+[
+ {
+  "frames": 30,
+  "set": {
+   "highest level reached": 6,
+   "start level choice": 1,
+   "field of view": 66,
+   "turn speed": 4,
+   "mouse steering": 0,
+   "music is on": 1
+  }
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "o"
+  ]
+ },
+ {
+  "frames": 4
+ },
+ {
+  "frames": 1,
+  "mouse": {
+   "x": 120,
+   "y": 80,
+   "down": true
+  }
+ },
+ {
+  "frames": 3,
+  "log": "mouse drag turn speed to max",
+  "expect": {
+   "turn speed": 10
+  }
+ },
+ {
+  "frames": 1,
+  "mouse": {
+   "x": 0,
+   "y": 80,
+   "down": true
+  }
+ },
+ {
+  "frames": 3,
+  "log": "mouse drag turn speed to min",
+  "expect": {
+   "turn speed": 1
+  }
+ },
+ {
+  "frames": 1,
+  "mouse": {
+   "x": 0,
+   "y": 0,
+   "down": false
+  }
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 1,
+  "mouse": {
+   "x": 40,
+   "y": 50,
+   "down": true
+  }
+ },
+ {
+  "frames": 3,
+  "log": "click steering on",
+  "expect": {
+   "mouse steering": 1
+  }
+ },
+ {
+  "frames": 1,
+  "mouse": {
+   "x": 40,
+   "y": 50,
+   "down": false
+  }
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 1,
+  "mouse": {
+   "x": 80,
+   "y": -70,
+   "down": true
+  }
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 1,
+  "mouse": {
+   "x": 80,
+   "y": -70,
+   "down": false
+  }
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 1,
+  "mouse": {
+   "x": 80,
+   "y": -70,
+   "down": true
+  }
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 1,
+  "mouse": {
+   "x": 80,
+   "y": -70,
+   "down": false
+  }
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 1,
+  "mouse": {
+   "x": 80,
+   "y": -70,
+   "down": true
+  }
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 1,
+  "mouse": {
+   "x": 0,
+   "y": 0,
+   "down": false
+  }
+ },
+ {
+  "frames": 2,
+  "log": "level choice 4?",
+  "snap": "options_mouse",
+  "expect": {
+   "start level choice": 4
+  }
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "o"
+  ]
+ },
+ {
+  "frames": 4
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 25
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 70
+ },
+ {
+  "frames": 1,
+  "log": "level select start",
+  "snap": "l4_select",
+  "expect": {
+   "current level": 4,
+   "list:weapons owned": [
+    1,
+    1,
+    1,
+    1,
+    0
+   ],
+   "list:ammo counts": [
+    120,
+    24,
+    0
+   ]
+  }
+ },
+ {
+  "frames": 1,
+  "mouse": {
+   "x": 200,
+   "y": 0,
+   "down": false
+  }
+ },
+ {
+  "frames": 10,
+  "log": "mouse steering turning (angle should change)",
+  "expect": {
+   "player angle": {
+    "gt": 280
+   }
+  }
+ },
+ {
+  "frames": 1,
+  "mouse": {
+   "x": 0,
+   "y": 0,
+   "down": true
+  }
+ },
+ {
+  "frames": 3,
+  "log": "mouse click fires (rockets -1?)",
+  "expect": {
+   "list:ammo counts": [
+    119,
+    24,
+    0
+   ]
+  }
+ },
+ {
+  "frames": 1,
+  "mouse": {
+   "x": 0,
+   "y": 0,
+   "down": false
+  },
+  "set": {
+   "HEALTH": 0
+  }
+ },
+ {
+  "frames": 30,
+  "log": "died",
+  "expect": {
+   "game state": "dead"
+  }
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 80,
+  "log": "retried (ammo restored?)",
+  "expect": {
+   "game state": "playing",
+   "list:ammo counts": [
+    120,
+    24,
+    0
+   ]
+  }
+ }
+]

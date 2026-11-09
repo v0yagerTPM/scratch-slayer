@@ -1,0 +1,16 @@
+{
+  "name": "scratch-slayer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A Doom-style raycasting shooter for Scratch 3, generated from Python source.",
+  "scripts": {
+    "build": "node tests/build.js",
+    "test": "node tests/run_tests.js",
+    "render": "node tests/render.js"
+  },
+  "dependencies": {
+    "scratch-storage": "^6.2.1",
+    "scratch-vm": "^5.0.300",
+    "sharp": "^0.35.5"
+  }
+}

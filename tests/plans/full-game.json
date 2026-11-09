@@ -1,0 +1,884 @@
+[
+ {
+  "frames": 40,
+  "snap": "title"
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "o"
+  ]
+ },
+ {
+  "frames": 4,
+  "log": "options open (title)",
+  "expect": {
+   "screen showing": "options"
+  }
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "down arrow"
+  ]
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "down arrow"
+  ]
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "down arrow"
+  ]
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 26,
+  "keys": [
+   "right arrow"
+  ]
+ },
+ {
+  "frames": 3,
+  "snap": "options_title",
+  "log": "fov raised",
+  "expect": {
+   "field of view": 76
+  }
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "up arrow"
+  ]
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "up arrow"
+  ]
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "up arrow"
+  ]
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "left arrow"
+  ]
+ },
+ {
+  "frames": 3,
+  "log": "turn speed lowered",
+  "expect": {
+   "turn speed": 3
+  }
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "o"
+  ]
+ },
+ {
+  "frames": 4,
+  "log": "options closed",
+  "expect": {
+   "screen showing": "title"
+  }
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 25
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 70
+ },
+ {
+  "frames": 1,
+  "log": "L1 playing",
+  "snap": "l1_pistol"
+ },
+ {
+  "frames": 20,
+  "keys": [
+   "space"
+  ],
+  "log": "pistol fired",
+  "expect": {
+   "list:ammo counts": [
+    48,
+    0,
+    0
+   ]
+  }
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 2.5,
+   "py": 3.3,
+   "ang": 90
+  }
+ },
+ {
+  "frames": 16,
+  "keys": [
+   "up arrow"
+  ],
+  "log": "shotgun picked",
+  "expect": {
+   "current weapon": 3,
+   "list:weapons owned": [
+    1,
+    1,
+    1,
+    0,
+    0
+   ]
+  }
+ },
+ {
+  "frames": 12
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 2,
+  "snap": "l1_shotgun_fire"
+ },
+ {
+  "frames": 30,
+  "log": "shotgun fired",
+  "expect": {
+   "list:ammo counts": [
+    48,
+    7,
+    0
+   ]
+  }
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "1"
+  ]
+ },
+ {
+  "frames": 12,
+  "snap": "l1_fist",
+  "log": "fist",
+  "expect": {
+   "current weapon": 1
+  }
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "5"
+  ]
+ },
+ {
+  "frames": 3,
+  "log": "5 not owned",
+  "expect": {
+   "current weapon": 1
+  }
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "2"
+  ]
+ },
+ {
+  "frames": 12,
+  "log": "pistol again",
+  "expect": {
+   "current weapon": 2
+  }
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "p"
+  ]
+ },
+ {
+  "frames": 4,
+  "snap": "options_paused",
+  "log": "paused",
+  "expect": {
+   "screen showing": "options"
+  }
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "p"
+  ]
+ },
+ {
+  "frames": 4,
+  "log": "unpaused",
+  "expect": {
+   "screen showing": "none"
+  }
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "n"
+  ]
+ },
+ {
+  "frames": 2,
+  "log": "music toggled",
+  "expect": {
+   "music is on": 0
+  }
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "n"
+  ]
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 1.5,
+   "py": 16.5,
+   "ang": 180
+  }
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "e"
+  ]
+ },
+ {
+  "frames": 50
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 25
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 70
+ },
+ {
+  "frames": 1,
+  "log": "L2 playing",
+  "expect": {
+   "current level": 2
+  }
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 12.5,
+   "py": 9.6,
+   "ang": 90
+  }
+ },
+ {
+  "frames": 8,
+  "keys": [
+   "up arrow"
+  ],
+  "log": "chaingun?",
+  "expect": {
+   "current weapon": 4
+  }
+ },
+ {
+  "frames": 10
+ },
+ {
+  "frames": 30,
+  "keys": [
+   "space"
+  ],
+  "log": "chaingun fired"
+ },
+ {
+  "frames": 1,
+  "set": {
+   "state": "exit reached"
+  }
+ },
+ {
+  "frames": 50
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 25
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 70
+ },
+ {
+  "frames": 1,
+  "log": "L3 playing",
+  "expect": {
+   "current level": 3
+  }
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 24.5,
+   "py": 3.5,
+   "ang": 0,
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "e"
+  ]
+ },
+ {
+  "frames": 3,
+  "row": 3,
+  "log": "skull door locked",
+  "snap": "skull_door",
+  "expect": {
+   "message name": "need skull key",
+   "has skull key": 0
+  }
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 22.5,
+   "py": 9.5,
+   "ang": 0,
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 3
+ },
+ {
+  "frames": 1,
+  "hit": {
+   "type": 4,
+   "damage": 40
+  }
+ },
+ {
+  "frames": 3,
+  "log": "warden dead",
+  "expect": {
+   "boss is dead": 1
+  }
+ },
+ {
+  "frames": 3,
+  "snap": "skull_key_dropped"
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 25.5,
+   "py": 10.5,
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 6,
+  "log": "skull key taken",
+  "expect": {
+   "has skull key": 1
+  }
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 24.5,
+   "py": 3.5,
+   "ang": 0
+  }
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "e"
+  ]
+ },
+ {
+  "frames": 3,
+  "row": 3,
+  "log": "skull door open"
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 26.5,
+   "py": 3.5,
+   "ang": 0
+  }
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "e"
+  ]
+ },
+ {
+  "frames": 45
+ },
+ {
+  "frames": 1,
+  "snap": "episode_complete"
+ },
+ {
+  "frames": 4,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 25
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 70
+ },
+ {
+  "frames": 1,
+  "log": "L4 playing",
+  "snap": "l4_start",
+  "expect": {
+   "current level": 4
+  }
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 17.5,
+   "py": 3.6,
+   "ang": 270,
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 14,
+  "keys": [
+   "up arrow"
+  ],
+  "log": "launcher?",
+  "expect": {
+   "current weapon": 5
+  }
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "5"
+  ]
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 17.5,
+   "py": 7.0,
+   "ang": 270
+  }
+ },
+ {
+  "frames": 12
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 6,
+  "snap": "rocket_flying"
+ },
+ {
+  "frames": 6,
+  "snap": "rocket_boom",
+  "log": "rocket far",
+  "expect": {
+   "health": 100
+  }
+ },
+ {
+  "frames": 20
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 17.5,
+   "py": 1.8,
+   "ang": 270,
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 32
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 8,
+  "log": "rocket point blank (should hurt)",
+  "expect": {
+   "health": {
+    "lt": 100
+   }
+  }
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 13.5,
+   "py": 21.5,
+   "ang": 270,
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 10,
+  "dumpMonsters": 5,
+  "log": "near charger"
+ },
+ {
+  "frames": 14,
+  "dumpMonsters": 5,
+  "log": "charger winding",
+  "snap": "charger_windup"
+ },
+ {
+  "frames": 20,
+  "dumpMonsters": 5,
+  "log": "charger charged"
+ },
+ {
+  "frames": 1,
+  "set": {
+   "state": "exit reached",
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 50
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 25
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 70
+ },
+ {
+  "frames": 1,
+  "log": "L5 playing",
+  "expect": {
+   "current level": 5
+  }
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 4.5,
+   "py": 21.5,
+   "ang": 270,
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 15,
+  "dumpMonsters": 6,
+  "snap": "wraith",
+  "log": "wraiths"
+ },
+ {
+  "frames": 90,
+  "dumpMonsters": 6,
+  "log": "wraiths later"
+ },
+ {
+  "frames": 1,
+  "set": {
+   "state": "exit reached",
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 50
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 25
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 70
+ },
+ {
+  "frames": 1,
+  "log": "L6 playing",
+  "expect": {
+   "current level": 6
+  }
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 20.5,
+   "py": 25.5,
+   "ang": 270,
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 30,
+  "snap": "colossus",
+  "log": "colossus seen"
+ },
+ {
+  "frames": 1,
+  "hit": {
+   "type": 7,
+   "damage": 31
+  }
+ },
+ {
+  "frames": 4,
+  "log": "colossus enraged",
+  "expect": {
+   "level monster count": 23,
+   "message name": "boss enraged colossus"
+  }
+ },
+ {
+  "frames": 20,
+  "dumpMonsters": 5,
+  "log": "summoned chargers",
+  "snap": "colossus_rage"
+ },
+ {
+  "frames": 1,
+  "set": {
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 1,
+  "hit": {
+   "type": 7,
+   "damage": 40
+  }
+ },
+ {
+  "frames": 4,
+  "log": "colossus dead",
+  "expect": {
+   "boss is dead": 1
+  }
+ },
+ {
+  "frames": 1,
+  "setMonsterType": {
+   "type": 5,
+   "vars": {
+    "is alive": 0
+   }
+  }
+ },
+ {
+  "frames": 1,
+  "set": {
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 4
+ },
+ {
+  "frames": 1,
+  "toBossKey": true,
+  "set": {
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 4,
+  "log": "key?",
+  "expect": {
+   "has skull key": 1
+  }
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 20.5,
+   "py": 13.5,
+   "ang": 270,
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "e"
+  ]
+ },
+ {
+  "frames": 3,
+  "row": 12,
+  "log": "core skull door"
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 20.5,
+   "py": 11.5,
+   "ang": 270,
+   "HEALTH": 100
+  }
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "e"
+  ]
+ },
+ {
+  "frames": 50
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 120,
+  "log": "win",
+  "snap": "victory",
+  "expect": {
+   "screen showing": "you win"
+  }
+ }
+]

@@ -1,0 +1,101 @@
+[
+ {
+  "frames": 30
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 25
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 70
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 10.5,
+   "py": 4.5,
+   "ang": 0,
+   "HEALTH": 4
+  }
+ },
+ {
+  "frames": 90,
+  "log": "after imp",
+  "expect": {
+   "game state": "dead",
+   "killer name": "imp"
+  }
+ },
+ {
+  "frames": 5,
+  "snap": "x_d05"
+ },
+ {
+  "frames": 20,
+  "snap": "x_d25"
+ },
+ {
+  "frames": 40,
+  "snap": "x_d65",
+  "log": "death screen"
+ },
+ {
+  "frames": 20
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 70
+ },
+ {
+  "frames": 1,
+  "log": "retried",
+  "expect": {
+   "game state": "playing",
+   "health": 100
+  }
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 12.5,
+   "py": 9.6,
+   "ang": 270,
+   "HEALTH": 5
+  }
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 30,
+  "log": "after barrel"
+ },
+ {
+  "frames": 50,
+  "snap": "x_barrel",
+  "log": "barrel death",
+  "expect": {
+   "game state": "dead",
+   "killer name": "barrel"
+  }
+ }
+]
