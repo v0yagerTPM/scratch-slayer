@@ -14,7 +14,7 @@ the blocks must stay readable.
 - **Comment generously.** Use `note("text", block)` to attach a comment to a block and
   `comment="..."` on `script(...)` for a script header. Write for a 12-year-old: what it does
   and why. Doom/Wolfenstein history is welcome where it explains a technique.
-- **Keep the Stage guide comments current.** `GUIDE` in `build.py` (map letters, monster and
+- **Keep the Stage guide comments current.** `GUIDE` in `game/guide.py` (map letters, monster and
   weapon tables, options, how to add a level) is what students read first. Update it with
   every feature.
 - After every change: `npm test` (it builds first). For a map change also run `python3 src/levels.py`.
@@ -48,13 +48,22 @@ npm run compare                                 # is the built project identical
   comments. Layout of blocks on the canvas is estimated automatically. The file header explains
   how nested Python calls become project.json blocks.
 - `sb3extra.py`: extra helpers (mouse_x/y/down, tan_, set_volume, play_named, etc.).
-- `build.py`: top-level config tables (`MONSTER_TYPES`, `WEAPON_TYPES`, `WALLS`, `AMMO`, `DIFFICULTIES`,
-  per-level lists incl. `LEVEL_PAR_SECONDS`), stage variables and lists, then each sprite: Engine (main loop,
-  raycaster, input, options menu, level loader), Monster, Pickup, Barrel, Projectile, Weapon,
-  Crosshair, HUD, Arms Panel, Boss Bar, Message, Screens, Digits, the title/card/death/victory
-  sprites, Options Panel, Options Widgets, Music. Each sprite's Python handle is its name in
-  snake_case (`engine`, `options_widgets`); give a sprite a sound with `add_sound(sprite, name,
-  assets_function)`. Ends with sanity checks (unique names, etc.).
+- `build.py`: the entry point. It imports the `game/` modules **in order** (importing one adds its
+  sprite and scripts to the project), runs the sanity checks (unique names, etc.) and saves the
+  `.sb3`. The import order is the creation order, so it decides block IDs and layering: put a new
+  module where it belongs in the game, and expect `npm run compare` to report a change if you move one.
+- `game/`: the game, one module per part. `config.py` has the tables (`MONSTER_TYPES`, `WEAPON_TYPES`,
+  `WALLS`, `AMMO`, `DIFFICULTIES`, per-level lists incl. `LEVEL_PAR_SECONDS`), broadcast and state
+  names, and shared helpers (`V`, `hurt_player`, `add_sound`, `map_letter_at`); every module does
+  `from sb3extra import *` and `from game.config import *`, and imports anything else explicitly from
+  the module that defines it. `stage.py` (project, Stage variables and lists), `guide.py` (the
+  Stage guide), `engine/` (`sprite`, `main_loop`, `weapons`, `options_input`, `level_loader`,
+  `movement`, `raycaster`), `screen_placement.py` (helpers for things in the 3D world), then
+  `monster`, `pickups`, `barrels`, `projectiles`, `hud` (weapon, crosshair, HUD, arms panel, boss
+  bar, messages, results screen, digits), `title_screen`, `level_cards`, `death_screen`,
+  `victory_screen`, `options_screen` (Options Panel and Widgets) and `music`. Each sprite's Python
+  handle is its name in snake_case (`engine`, `options_widgets`); give a sprite a sound with
+  `add_sound(sprite, name, assets_function)`.
 - `maps/level N map.txt`: the six maps, one row per line, nothing else. Same format and file name as
   Scratch's list export/import (right-click the list "level N map"), so a student's exported map can
   be dropped in as-is. Never add comments or a ruler to these files: Scratch would import them as rows.
@@ -76,7 +85,7 @@ tally screen. 'level time' adds the timer difference each frame; closing the opt
 
 **Difficulty** (stage var `difficulty`, lists `difficulty ...`) scales monster health when a clone
 starts (`full health`) and every hit on the player: always damage the player with `hurt_player()`
-in `build.py`, never `chg("health", ...)` directly.
+in `game/config.py`, never `chg("health", ...)` directly.
 
 ## Scratch quirks learned the hard way
 

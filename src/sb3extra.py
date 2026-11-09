@@ -1,5 +1,5 @@
 """More block helpers, on top of sb3lib: text length, clones, list monitors, sounds, backdrops,
-layers, motion, the mouse and tan. build.py imports everything from here (and sb3lib with it)."""
+layers, motion, the mouse and tan. every part of the game (src/game/) imports everything from here (and sb3lib with it)."""
 from sb3lib import *
 from sb3lib import Block
 

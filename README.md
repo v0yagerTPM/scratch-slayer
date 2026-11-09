@@ -57,7 +57,8 @@ files: Scratch would import every line, notes included, as a row of the map.
 
 | Path | What it is |
 |---|---|
-| `src/build.py` | The whole game: every sprite, script, variable and comment. Run it to build. |
+| `src/build.py` | Puts the game together from `src/game/` and saves the `.sb3`. Run it to build. |
+| `src/game/` | The game, one file per part: `config.py` (settings tables), `stage.py`, `guide.py` (the Stage guide), `engine/` (game loop, weapons, options, level loading, movement, raycaster), `monster.py`, `pickups.py`, `hud.py`, the title, card, death and victory screens, the options menu and music. |
 | `src/sb3lib.py` | A small compiler: Python functions that become Scratch blocks, written out as `project.json` inside the `.sb3`. |
 | `src/sb3extra.py` | More block helpers (mouse, sound, list and pen blocks). |
 | `src/maps/` | The six level maps as text files (`level 1 map.txt` ...), one row per line. Same format as Scratch's list export. |
