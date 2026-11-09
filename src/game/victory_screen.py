@@ -1,7 +1,7 @@
 """The animated victory screen and fireworks."""
 from sb3extra import *
 from game.config import *
-import assets4, assets5, assets6
+import pictures.victory_screen, sounds.screens
 from game.monster import MONSTER_ART
 from game.death_screen import on_win
 from game.stage import project, stage
@@ -10,8 +10,8 @@ stage.script(recv(SHOW_WIN), backdrop("victory sky"), cleareffects(),
              comment="VICTORY BACKDROP: dawn over the fortress.", canvas_x=1300)
 
 victory_logo = Target(project, "Victory Logo", layer=22, visible=False)
-victory_logo.costume("victory", assets6.VICTORY_LOGO, *assets5.VICTORY_CENTER)
-add_sound(victory_logo, "thud", assets4.thud)
+victory_logo.costume("victory", pictures.victory_screen.VICTORY_LOGO, *pictures.victory_screen.VICTORY_CENTER)
+add_sound(victory_logo, "thud", sounds.screens.thud)
 for name in ["fall speed", "bounces", "logo time"]:
     victory_logo.var(name)
 victory_logo.script(flag(), hide())
@@ -51,7 +51,7 @@ victory_monsters.script(as_clone(), setv("is clone", 1),
           repeat(12, change_effect("GHOST", -8.4)), wait_until(not_(on_win)), delete_clone())
 
 victory_stats = Target(project, "Victory Stats", layer=20, visible=False)
-victory_stats.costume("stats panel", assets5.STATS_PANEL, 150, 38)
+victory_stats.costume("stats panel", pictures.victory_screen.STATS_PANEL, 150, 38)
 victory_stats.script(flag(), hide())
 victory_stats.script(recv(SHOW_WIN), gotoxy(0, -95), seteffect("GHOST", 100), show(), go_back(), wait(1),
           repeat(10, change_effect("GHOST", -10)), wait_until(not_(on_win)), hide(),
@@ -59,11 +59,11 @@ victory_stats.script(recv(SHOW_WIN), gotoxy(0, -95), seteffect("GHOST", 100), sh
                   "'go to back' keeps it behind the digits and fireworks.")
 
 fireworks = Target(project, "Fireworks", layer=19, visible=False)
-fireworks.costume("rocket", assets5.ROCKET, 4, 9)
-for name, art in assets5.SPARKS.items():
+fireworks.costume("rocket", pictures.victory_screen.ROCKET, 4, 9)
+for name, art in pictures.victory_screen.SPARKS.items():
     fireworks.costume(f"spark {name}", art, 6, 6)
-add_sound(fireworks, "pop", assets5.firework_pop)
-fireworks.lst("spark colors", list(assets5.SPARKS))
+add_sound(fireworks, "pop", sounds.screens.firework_pop)
+fireworks.lst("spark colors", list(pictures.victory_screen.SPARKS))
 for name in ["is clone", "role", "speed x", "speed y", "frames left", "spark color", "spark number"]:
     fireworks.var(name)
 fireworks.script(flag(), hide(), setv("is clone", 0))

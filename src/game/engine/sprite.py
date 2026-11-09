@@ -1,15 +1,15 @@
 """The Engine sprite: its sounds and its own ('for this sprite only') variables."""
 from sb3extra import *
 from game.config import *
-import assets, assets2, assets3, assets4, assets5, assets6, assets7
+import pictures.world, sounds.screens, sounds.world
 from game.stage import project
 
 engine = Target(project, "Engine", layer=1, visible=False)
-engine.costume("dot", assets.TINY, 1, 1)
-for sound_name, make_sound in (("door", assets2.door), ("switch", assets2.switch), ("locked", assets2.locked),
-               ("secret", assets3.secret), ("melt", assets4.melt), ("out of breath", assets5.out_of_breath),
-               ("menu click", assets6.menu_click), ("tally tick", assets7.tally_tick),
-               ("tally done", assets7.tally_done)):
+engine.costume("dot", pictures.world.TINY, 1, 1)
+for sound_name, make_sound in (("door", sounds.world.door), ("switch", sounds.world.switch), ("locked", sounds.world.locked),
+               ("secret", sounds.world.secret), ("melt", sounds.screens.melt), ("out of breath", sounds.world.out_of_breath),
+               ("menu click", sounds.screens.menu_click), ("tally tick", sounds.screens.tally_tick),
+               ("tally done", sounds.screens.tally_done)):
     add_sound(engine, sound_name, make_sound)
 ENGINE_VARS = [
     # raycaster

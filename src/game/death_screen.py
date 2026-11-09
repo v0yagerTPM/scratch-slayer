@@ -1,7 +1,7 @@
 """The animated death screen."""
 from sb3extra import *
 from game.config import *
-import assets, assets3, assets4, assets5, assets6
+import pictures.death_screen, pictures.world, sounds.monsters, sounds.music, sounds.screens
 from game.monster import MONSTER_ART
 from game.stage import project
 from game.title_screen import prompt_text
@@ -21,7 +21,7 @@ prompt_text.script(recv(SHOW_WIN), set_volume(mul(V("music is on"), 100)), until
           comment="VICTORY MUSIC: an original loop that plays until the green flag.")
 
 death_overlay = Target(project, "Death Overlay", layer=17, visible=False)
-death_overlay.costume("blood red", assets5.DEATH_OVERLAY, 240, 180)
+death_overlay.costume("blood red", pictures.death_screen.DEATH_OVERLAY, 240, 180)
 death_overlay.script(flag(), hide())
 death_overlay.script(recv(SHOW_DEATH), gotoxy(0, 0), seteffect("GHOST", 100), show(), front(),
           note("The frozen game fades to blood red (ghost 100 -> 10).",
@@ -30,7 +30,7 @@ death_overlay.script(recv(SHOW_DEATH), gotoxy(0, 0), seteffect("GHOST", 100), sh
           comment="DEATH OVERLAY: a red vignette over the last frame of the game.")
 
 blood_drips = Target(project, "Blood Drips", layer=18, visible=False)
-blood_drips.costume("drop", assets5.BLOOD_DROP, 5, 10)
+blood_drips.costume("drop", pictures.death_screen.BLOOD_DROP, 5, 10)
 for name in ["is clone", "fall speed"]:
     blood_drips.var(name)
 blood_drips.script(flag(), hide(), setv("is clone", 0))
@@ -49,9 +49,9 @@ death_killer = Target(project, "Death Killer", layer=19, visible=False)
 for monster_name, art in MONSTER_ART.items():
     for pose, svg_art in zip(("walk 1", "walk 2", "attack", "dead"), art):
         death_killer.costume(f"{monster_name} {pose}", svg_art, 40, 120)
-for frame_number, art in enumerate(assets3.EXPLOSIONS, start=1):
+for frame_number, art in enumerate(pictures.world.EXPLOSIONS, start=1):
     death_killer.costume(f"explosion {frame_number}", art, 45, 78)
-add_sound(death_killer, "pain", assets.monster_pain)
+add_sound(death_killer, "pain", sounds.monsters.monster_pain)
 for name in ["anim time", "pose timer", "base y"]:
     death_killer.var(name)
 death_killer.script(flag(), hide())
@@ -79,8 +79,8 @@ death_killer.script(recv(SHOW_DEATH),
           comment="DEATH KILLER: whatever killed you ('killer name') gloats.")
 
 death_heading = Target(project, "Death Heading", layer=20, visible=False)
-death_heading.costume("you died", assets5.YOU_DIED, *assets5.YOU_DIED_CENTER)
-for sound_name, make_sound in (("thud", assets4.thud), ("death sting", assets5.death_sting)):
+death_heading.costume("you died", pictures.death_screen.YOU_DIED, *pictures.death_screen.YOU_DIED_CENTER)
+for sound_name, make_sound in (("thud", sounds.screens.thud), ("death sting", sounds.music.death_sting)):
     add_sound(death_heading, sound_name, make_sound)
 death_heading.var("throb time")
 death_heading.script(flag(), hide())
@@ -96,8 +96,8 @@ death_heading.script(recv(SHOW_DEATH), setsize(260), seteffect("GHOST", 100), go
           comment="YOU DIED heading.")
 
 death_message = Target(project, "Death Message", layer=21, visible=False)
-death_message.costume("killed by monster", assets5.KILLED_BY["monster"], 220, 25)
-for name, art in {**assets5.KILLED_BY, **assets6.KILLED_BY}.items():
+death_message.costume("killed by monster", pictures.death_screen.KILLED_BY["monster"], 220, 25)
+for name, art in pictures.death_screen.KILLED_BY.items():
     if name != "monster":
         death_message.costume(f"killed by {name}", art, 220, 25)
 death_message.script(flag(), hide())

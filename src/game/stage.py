@@ -2,14 +2,14 @@
 the level maps as lists, the HUD number slots, and the list boxes shown on the stage."""
 from sb3extra import *
 from game.config import *
-import assets, assets5, assets6, assets7
+import pictures.options_menu, pictures.tally_screen, pictures.title_screen, pictures.victory_screen, pictures.world
 from levels import LEVELS
 
 project = Project()
 stage = Target(project, "Stage", is_stage=True)
-stage.costume("black", assets.BACKDROP, 240, 180)
-stage.costume("title sky", assets6.TITLE_SKY, 240, 180)
-stage.costume("victory sky", assets5.VICTORY_SKY, 240, 180)
+stage.costume("black", pictures.world.BACKDROP, 240, 180)
+stage.costume("title sky", pictures.title_screen.TITLE_SKY, 240, 180)
+stage.costume("victory sky", pictures.victory_screen.VICTORY_SKY, 240, 180)
 
 STAGE_VARS = ["player x", "player y", "player angle", "look direction x", "look direction y",
               "camera plane x", "camera plane y", "projection factor", "hurt flash timer",
@@ -94,9 +94,9 @@ problems_id = stage.lst("map problems")
 # 10 total kills (win screen), 11-12 secrets found / in the whole game (win screen),
 # 13-16 the options menu: turn speed, mouse sensitivity, field of view, start level
 HUD_SLOTS = 16
-OPTION_ROW_Y = assets6.OPTION_ROW_Y
-TALLY_Y = [assets7.tally_digit_y(row) for row in range(1, 6)]
-PERCENT_X, MINUTES_X = assets7.PERCENT_X, assets7.MINUTES_X
+OPTION_ROW_Y = pictures.options_menu.OPTION_ROW_Y
+TALLY_Y = [pictures.tally_screen.tally_digit_y(row) for row in range(1, 6)]
+PERCENT_X, MINUTES_X = pictures.tally_screen.PERCENT_X, pictures.tally_screen.MINUTES_X
 stage.lst("HUD number values", [0] * HUD_SLOTS)
 stage.lst("HUD number x", [-150, 222, PERCENT_X, PERCENT_X, PERCENT_X, MINUTES_X, PERCENT_X, MINUTES_X, PERCENT_X,
                            120, 50, 120, 176, 176, 176, 57])

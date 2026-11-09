@@ -64,7 +64,8 @@ files: Scratch would import every line, notes included, as a row of the map.
 | `src/maps/` | The six level maps as text files (`level 1 map.txt` ...), one row per line. Same format as Scratch's list export. |
 | `src/levels.py` | Loads the maps, adds each level's settings, and `validate()`, which checks every level can be finished and explains any problem it finds. |
 | `tests/test_levels.py` | Tests for the map checker: broken maps it must catch. |
-| `src/assets*.py` | All the art (hand-written SVG) and sound (synthesized WAV), one file per round of features. Nothing is downloaded from the internet. |
+| `src/pictures/` | Every costume and backdrop, hand-written as SVG, one file per subject (monsters, weapons, HUD, screens...). |
+| `src/sounds/` | Every sound effect and piece of music, made from math (synthesized WAV), one file per subject. Nothing is downloaded from the internet. |
 | `tests/harness.js` | Runs the `.sb3` in a headless Scratch VM, presses keys, and checks variables. |
 | `tests/plans/*.json` | Test scripts: which keys to press for how many frames, and what should be true afterwards. |
 | `tests/render.js` | Turns test snapshots into PNG screenshots. |

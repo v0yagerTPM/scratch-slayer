@@ -1,15 +1,15 @@
 """The Barrel sprite: barrels that explode when shot."""
 from sb3extra import *
 from game.config import *
-import assets3
+import pictures.world, sounds.world
 from game.screen_placement import explosion_scan, offset_from_player, place_on_screen
 from game.stage import project
 
 barrel = Target(project, "Barrel", layer=2, visible=False)
-barrel.costume("barrel", assets3.BARREL, 20, 52)
-for frame_number, art in enumerate(assets3.EXPLOSIONS, start=1):
+barrel.costume("barrel", pictures.world.BARREL, 20, 52)
+for frame_number, art in enumerate(pictures.world.EXPLOSIONS, start=1):
     barrel.costume(f"explosion {frame_number}", art, 45, 78)
-add_sound(barrel, "explosion", assets3.explosion)
+add_sound(barrel, "explosion", sounds.world.explosion)
 for name in ["barrel id", "is clone", "barrel x", "barrel y", "barrel state", "fuse timer", "blast frame",
              "blast damage", "explosion number", "distance to blast", "offset x from player", "offset y from player",
              "distance to player", "sideways in view", "depth in view", "screen x", "screen column index"]:

@@ -1,15 +1,15 @@
 """The level intro cards."""
 from sb3extra import *
 from game.config import *
-import assets, assets4, assets6
+import pictures.lettering, pictures.level_cards, sounds.monsters, sounds.screens
 from game.monster import MONSTER_ART
 from game.stage import project
 
 card_up = eq(V("card is up"), 1)
 
 card_background = Target(project, "Card Background", layer=14, visible=False)
-card_background.costume("card next level", assets4.CARD_NEXT, 240, 180)
-for level_number, art in enumerate(assets6.CARD_ART, start=1):
+card_background.costume("card next level", pictures.level_cards.CARD_NEXT, 240, 180)
+for level_number, art in enumerate(pictures.level_cards.CARD_ART, start=1):
     card_background.costume(f"card {level_number}", art, 240, 180)
 card_background.script(flag(), hide())
 card_background.script(recv(SHOW_CARD),
@@ -23,10 +23,10 @@ card_background.script(recv(SHOW_CARD),
           comment="LEVEL CARD background: name, goal and the new enemy's description.")
 
 card_heading = Target(project, "Card Heading", layer=15, visible=False)
-card_heading.costume("heading next level", assets4.HEADING_NEXT, assets4.text_width("NEXT LEVEL", 8) // 2 + 6, 35)
-for level_number, art in enumerate(assets6.HEADINGS, start=1):
-    card_heading.costume(f"heading {level_number}", art, assets4.text_width(f"LEVEL {level_number}", 8) // 2 + 6, 35)
-add_sound(card_heading, "thud", assets4.thud)
+card_heading.costume("heading next level", pictures.level_cards.HEADING_NEXT, pictures.lettering.text_width("NEXT LEVEL", 8) // 2 + 6, 35)
+for level_number, art in enumerate(pictures.level_cards.HEADINGS, start=1):
+    card_heading.costume(f"heading {level_number}", art, pictures.lettering.text_width(f"LEVEL {level_number}", 8) // 2 + 6, 35)
+add_sound(card_heading, "thud", sounds.screens.thud)
 card_heading.script(flag(), hide())
 card_heading.script(recv(SHOW_CARD),
           costume("heading next level"), costume("heading next level", join("heading ", V("current level"))),
@@ -41,7 +41,7 @@ card_monster = Target(project, "Card Monster", layer=16, visible=False)
 for monster_name, art in MONSTER_ART.items():
     for pose, svg_art in zip(("walk 1", "walk 2", "attack", "dead"), art):
         card_monster.costume(f"{monster_name} {pose}", svg_art, 40, 120)
-add_sound(card_monster, "pain", assets.monster_pain)
+add_sound(card_monster, "pain", sounds.monsters.monster_pain)
 for name in ["is clone", "card role", "monster type", "monster name", "base y", "anim time", "pose timer",
              "has arrived"]:
     card_monster.var(name)
