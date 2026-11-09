@@ -1,0 +1,448 @@
+[
+ {
+  "frames": 40,
+  "log": "defaults",
+  "expect": {
+   "difficulty": 2,
+   "list:difficulty names": [
+    "easy",
+    "normal",
+    "hard"
+   ],
+   "list:level par times": [
+    60,
+    90,
+    135,
+    165,
+    180,
+    240
+   ]
+  }
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "o"
+  ]
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "down arrow"
+  ]
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "down arrow"
+  ]
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "down arrow"
+  ]
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "down arrow"
+  ]
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "down arrow"
+  ]
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 1,
+  "log": "difficulty row picked",
+  "expect": {
+   "options row": 6
+  }
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "left arrow"
+  ]
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 1,
+  "log": "easy",
+  "expect": {
+   "difficulty": 1
+  }
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "left arrow"
+  ]
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 1,
+  "log": "can't go below easy",
+  "snap": "options_easy",
+  "expect": {
+   "difficulty": 1
+  }
+ },
+ {
+  "frames": 1,
+  "mouse": {
+   "x": 80,
+   "y": -47,
+   "down": true
+  }
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 1,
+  "mouse": {
+   "x": 80,
+   "y": -47,
+   "down": false
+  }
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 1,
+  "log": "mouse harder",
+  "expect": {
+   "difficulty": 2,
+   "options row": 6
+  }
+ },
+ {
+  "frames": 1,
+  "mouse": {
+   "x": 20,
+   "y": -47,
+   "down": true
+  }
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 1,
+  "mouse": {
+   "x": 20,
+   "y": -47,
+   "down": false
+  }
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 1,
+  "log": "mouse easier",
+  "expect": {
+   "difficulty": 1
+  }
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "o"
+  ]
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 25
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 70
+ },
+ {
+  "frames": 1,
+  "log": "L1 on easy",
+  "expect": {
+   "game state": "playing",
+   "difficulty": 1
+  },
+  "expectMonsters": {
+   "type": 1,
+   "monster health": 2,
+   "full health": 2
+  }
+ },
+ {
+  "frames": 2,
+  "set": {
+   "HEALTH": 100
+  },
+  "setMonsterType": {
+   "type": 1,
+   "vars": {
+    "monster x": 2.3,
+    "monster y": 2.5,
+    "attack cooldown": 0,
+    "is chasing": 1
+   }
+  },
+  "log": "easy claws",
+  "expect": {
+   "health": {
+    "gt": 45,
+    "lt": 74
+   }
+  }
+ },
+ {
+  "frames": 2,
+  "set": {
+   "HEALTH": 100,
+   "difficulty": 3
+  },
+  "setMonsterType": {
+   "type": 1,
+   "vars": {
+    "monster x": 2.3,
+    "monster y": 2.5,
+    "attack cooldown": 0,
+    "is chasing": 1
+   }
+  },
+  "log": "hard claws",
+  "expect": {
+   "health": {
+    "lt": 20
+   }
+  }
+ },
+ {
+  "frames": 30,
+  "set": {
+   "HEALTH": 0
+  },
+  "log": "died on hard",
+  "expect": {
+   "game state": "dead"
+  }
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 80,
+  "log": "retry on hard: imps have 125% health (3 -> 4)",
+  "expect": {
+   "game state": "playing"
+  },
+  "expectMonsters": {
+   "type": 1,
+   "monster health": 4,
+   "full health": 4
+  }
+ },
+ {
+  "frames": 1,
+  "set": {
+   "level time": 0
+  }
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "p"
+  ]
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 60,
+  "log": "paused",
+  "expect": {
+   "screen showing": "options"
+  }
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "p"
+  ]
+ },
+ {
+  "frames": 2
+ },
+ {
+  "frames": 4,
+  "log": "pause not counted",
+  "expect": {
+   "screen showing": "none",
+   "level time": {
+    "lt": 1
+   }
+  }
+ },
+ {
+  "frames": 1,
+  "hit": {
+   "type": 1,
+   "damage": 10
+  }
+ },
+ {
+  "frames": 3,
+  "log": "one kill",
+  "expect": {
+   "level kills": 1
+  }
+ },
+ {
+  "frames": 1,
+  "set": {
+   "level time": 125.2,
+   "state": "exit reached"
+  }
+ },
+ {
+  "frames": 70,
+  "log": "tally over par",
+  "snap": "tally_over_par",
+  "expect": {
+   "screen showing": "level complete",
+   "kills percent": 11,
+   "kills percent shown": 11,
+   "items percent shown": 0,
+   "secrets percent shown": 0,
+   "level seconds": 125,
+   "time minutes shown": 2,
+   "time seconds shown": "05",
+   "par minutes shown": 1,
+   "par seconds shown": "00",
+   "par was beaten": 0
+  }
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 25
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 70
+ },
+ {
+  "frames": 1,
+  "log": "L2",
+  "expect": {
+   "current level": 2,
+   "game state": "playing"
+  }
+ },
+ {
+  "frames": 1,
+  "set": {
+   "state": "exit reached",
+   "level secret count": 0
+  }
+ },
+ {
+  "frames": 12,
+  "log": "counting",
+  "expect": {
+   "screen showing": "level complete",
+   "par was beaten": 0
+  }
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 4,
+  "log": "skipped to the end",
+  "snap": "tally_under_par",
+  "expect": {
+   "screen showing": "level complete",
+   "secrets percent shown": 100,
+   "par was beaten": 1,
+   "par minutes shown": 1,
+   "par seconds shown": 30,
+   "time minutes shown": 0
+  }
+ },
+ {
+  "frames": 10,
+  "log": "still waiting for SPACE",
+  "expect": {
+   "screen showing": "level complete"
+  }
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "space"
+  ]
+ },
+ {
+  "frames": 10,
+  "log": "next level card",
+  "expect": {
+   "screen showing": "intro",
+   "current level": 3
+  }
+ }
+]

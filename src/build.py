@@ -4,7 +4,7 @@ Every Scratch variable, list, broadcast and custom block uses a descriptive name
 section of every script carries a comment that explains it.
 """
 from sb3extra import *
-import assets, assets2, assets3, assets4, assets5, assets6
+import assets, assets2, assets3, assets4, assets5, assets6, assets7
 from levels import LEVELS, validate
 
 RAY_COUNT, STRIPE_WIDTH = 80, 6      # 80 rays, each drawn as a 6-px-wide vertical stripe
@@ -56,6 +56,21 @@ LEVEL_MAX_RAY_STEPS = [64, 64, 64, 34, 26, 36]
 LEVEL_LIGHT_FALLOFF = [4.5, 4.5, 4.5, 4.5, 6.5, 4.2]
 LEVEL_SPRITE_DARKNESS = [0, 0, 0, 2, 5, 2]
 LEVEL_SELECT_BEST_WEAPON = [2, 3, 4, 4, 5, 5]   # starting at level N from the options menu gives weapons 1..this
+# PAR TIME: seconds a good player needs for each level, shown on the tally screen. Each one is about
+# 3 times as long as simply walking the shortest route to the exit (keys and boss included), which
+# leaves time for fighting, rounded to the nearest 15 seconds.
+LEVEL_PAR_SECONDS = [60, 90, 135, 165, 180, 240]
+
+# DIFFICULTY: one row per setting. Both numbers are percentages of the normal amount.
+#   damage to you    how much each hit on the player hurts (50 = half as much)
+#   monster health   how many hit points every monster starts with (rounded to a whole number)
+DIFFICULTY_COLUMNS = ["names", "damage to you", "monster health"]
+DIFFICULTIES = [
+    ["easy",   50,  75],
+    ["normal", 100, 100],
+    ["hard",   150, 125],
+]
+NORMAL_DIFFICULTY = 2
 
 for lv in LEVELS:
     validate(lv)
@@ -67,6 +82,7 @@ CLEAR, SPAWN, UPDATE, DRAW_HUD, DRAW_NUMBERS, FIRE, PUNCH = (
     "draw HUD numbers", "fire weapon", "punch")
 SUMMON, START_MUSIC, APPLY_MUSIC = "summon monsters", "start music", "apply music setting"
 DRAW_OPTIONS_PANEL, DRAW_OPTIONS_WIDGETS = "draw options panel", "draw options widgets"
+DRAW_OPTIONS_HIGHLIGHT = "draw options highlight"
 OPTIONS = "options"   # 'screen showing' while the options menu is open
 # screens + game states
 NONE, TITLE, DIED, COMPLETE, WIN = "none", "title", "died", "level complete", "you win"
@@ -76,6 +92,11 @@ SHOW_TITLE, SHOW_CARD = "show title", "show level card"
 SHOW_DEATH, SHOW_WIN = "show death screen", "show victory screen"
 
 def V(name): return Var(name)
+
+def hurt_player(amount):
+    """change health by -(amount x the difficulty's 'damage to you' percent / 100), rounded.
+    EVERY hit on the player goes through this, so the difficulty setting works everywhere."""
+    return chg("health", mul(-1, round_(mul(amount, div(item(V("difficulty"), "difficulty damage to you"), 100)))))
 
 def map_letter_at(column, row):
     """letter (column + 1) of item (row + 1) of current map — columns and rows count from 0."""
@@ -113,7 +134,13 @@ stage.var("speed boost", 1); stage.var("stamina rest timer", 0)
 # OPTIONS: these are NOT reset by the green flag, so your settings stick while the project is open.
 stage.var("turn speed", 4); stage.var("mouse steering", 0); stage.var("mouse sensitivity", 5)
 stage.var("field of view", 66); stage.var("music is on", 1); stage.var("start level choice", 1)
-stage.var("highest level reached", 1)
+stage.var("highest level reached", 1); stage.var("difficulty", NORMAL_DIFFICULTY)
+# LEVEL TALLY: worked out when you finish a level. The "... shown" numbers count up on screen.
+stage.var("level time", 0); stage.var("par was beaten", 0)
+for name in ["kills percent", "items percent", "secrets percent", "level seconds", "par seconds",
+             "kills percent shown", "items percent shown", "secrets percent shown",
+             "time minutes shown", "time seconds shown", "par minutes shown", "par seconds shown"]:
+    stage.var(name, 0)
 stage.var("game state", TITLE); stage.var("screen showing", TITLE); stage.var("message name", "")
 
 LEVEL_LISTS = [f"level {i + 1} map" for i in range(len(LEVELS))]
@@ -129,6 +156,7 @@ stage.lst("level max ray steps", LEVEL_MAX_RAY_STEPS)
 stage.lst("level light falloffs", LEVEL_LIGHT_FALLOFF)
 stage.lst("level sprite darkness", LEVEL_SPRITE_DARKNESS)
 stage.lst("level select best weapon", LEVEL_SELECT_BEST_WEAPON)
+stage.lst("level par times", LEVEL_PAR_SECONDS)
 stage.lst("level intro monster", [1, 2, 3, 5, 6, 7])   # monster type shown walking onto each level's card
 stage.lst("level intro boss", [0, 0, 4, 0, 0, 0])      # a boss shown in the background of the card (0 = none)
 stage.lst("melt offsets", [0] * 24)
@@ -136,6 +164,8 @@ for column_number, column in enumerate(MONSTER_COLUMNS):
     stage.lst(f"monster {column}", [row[column_number] for row in MONSTER_TYPES])
 for column_number, column in enumerate(WEAPON_COLUMNS):
     stage.lst(f"weapon {column}", [row[column_number] for row in WEAPON_TYPES])
+for column_number, column in enumerate(DIFFICULTY_COLUMNS):
+    stage.lst(f"difficulty {column}", [row[column_number] for row in DIFFICULTIES])
 stage.lst("weapons owned", [1, 1, 0, 0, 0])          # 1 = you have it. Item N = weapon slot N.
 stage.lst("ammo names", [a[0] for a in AMMO])
 stage.lst("ammo counts", [a[1] for a in AMMO])
@@ -155,16 +185,22 @@ for name in ["monster start x", "monster start y", "monster start type", "item s
              "squares to clear x", "squares to clear y"]:
     stage.lst(name)
 problems_id = stage.lst("map problems")
-# HUD number slots: 1 health, 2 ammo for the weapon in your hands, 3-6 level-complete stats,
-# 7 total kills (win screen), 8-9 secrets, 10-11 secrets found / in the whole game (win screen),
-# 12-15 the options menu: turn speed, mouse sensitivity, field of view, start level
-HUD_SLOTS = 15
+# HUD number slots: 1 health, 2 ammo for the weapon in your hands,
+# 3-9 the level tally: 3 kills %, 4 items %, 5 secrets %, 6-7 your time (minutes, seconds),
+#     8-9 par time (minutes, seconds),
+# 10 total kills (win screen), 11-12 secrets found / in the whole game (win screen),
+# 13-16 the options menu: turn speed, mouse sensitivity, field of view, start level
+HUD_SLOTS = 16
+OPTION_ROW_Y = assets6.OPTION_ROW_Y
+TALLY_Y = [assets7.tally_digit_y(row) for row in range(1, 6)]
+PERCENT_X, MINUTES_X = assets7.PERCENT_X, assets7.MINUTES_X
 stage.lst("HUD number values", [0] * HUD_SLOTS)
-stage.lst("HUD number x", [-150, 222, 20, 130, 20, 130, 120, 20, 130, 50, 120, 176, 176, 176, 57])
-stage.lst("HUD number y", [-158, -158, 30, 30, -15, -15, -78, -60, -60, -112, -112, 80, 20, -10, -70])
-stage.lst("HUD number size", [100] * 11 + [70] * 4)
-stage.lst("HUD number screen", [NONE, NONE, COMPLETE, COMPLETE, COMPLETE, COMPLETE, WIN, COMPLETE, COMPLETE, WIN, WIN,
-                                OPTIONS, OPTIONS, OPTIONS, OPTIONS])
+stage.lst("HUD number x", [-150, 222, PERCENT_X, PERCENT_X, PERCENT_X, MINUTES_X, PERCENT_X, MINUTES_X, PERCENT_X,
+                           120, 50, 120, 176, 176, 176, 57])
+stage.lst("HUD number y", [-158, -158, TALLY_Y[0], TALLY_Y[1], TALLY_Y[2], TALLY_Y[3], TALLY_Y[3], TALLY_Y[4], TALLY_Y[4],
+                           -78, -112, -112, OPTION_ROW_Y[0], OPTION_ROW_Y[2], OPTION_ROW_Y[3], OPTION_ROW_Y[6]])
+stage.lst("HUD number size", [100] * 12 + [70] * 4)
+stage.lst("HUD number screen", [NONE, NONE] + [COMPLETE] * 7 + [WIN, WIN, WIN, OPTIONS, OPTIONS, OPTIONS, OPTIONS])
 
 def list_monitor(name, x, y, w, h):
     lid = P.stage_lists[name][0]
@@ -375,8 +411,8 @@ sprite a "killed by <name>" costume with a tip for your monster.)""",
    "level floor hues", "level floor saturations", "level secret wall looks",
    "level intro monster" (monster type 1 to 7 shown on the level card),
    "level intro boss" (a boss type, or 0 for none), "level max ray steps",
-   "level light falloffs", "level sprite darkness" and
-   "level select best weapon".
+   "level light falloffs", "level sprite darkness",
+   "level select best weapon" and "level par times" (seconds).
    The game counts the items in "level start angles" to know how many
    levels there are, so it plays your new level after level 6 by itself.
 3. In the Engine sprite, find "define load level". It has THREE blocks
@@ -467,13 +503,58 @@ mouse sensitivity   how fast mouse steering turns you
 field of view       60 to 100 degrees. The camera plane's length is
                     tan(field of view / 2). Wolfenstein 3D used about 66.
 music is on         1 = music plays (N also switches it)
+difficulty          1 easy, 2 normal, 3 hard (see DIFFICULTY below)
 start level choice  level select (only levels you have reached:
                     "highest level reached")
 
+Difficulty and start level can only be changed on the title screen,
+not while a game is paused, so you can't switch to easy mid-fight!
 These are NOT reset by the green flag, so settings stick while the
 project is open. The menu is drawn by the Options Panel and Options
 Widgets sprites; the Engine's 'handle options input' block reads the
 keys and the mouse.""",
+
+"""DIFFICULTY  (easy, normal, hard)
+
+The "difficulty ..." lists line up item by item, like the monster lists:
+item 1 easy, 2 normal, 3 hard. Item 'difficulty' of each list is the
+one in use. Both numbers are PERCENTAGES of the normal amount.
+
+difficulty names           the word shown in the options menu
+difficulty damage to you   every hit on you is multiplied by this / 100.
+                           Easy = 50, so a 12-damage claw only does 6.
+difficulty monster health  every monster starts with this percent of
+                           its "monster health", rounded. Hard = 125,
+                           so an imp (3) needs 4 pistol shots.
+
+Where it happens: search for "difficulty" in the Monster sprite (when
+a clone starts) and in every block that does 'change health by'
+(Monster, Barrel and Projectile sprites).
+
+Doom (1993) had five skill levels. Its easiest one also halved the
+damage you take, just like our easy setting.""",
+
+"""THE LEVEL TALLY  (the screen after each level)
+
+When you flip the exit switch, the Engine's 'work out level stats'
+block works out:
+  kills percent   = level kills / level monster count x 100
+  items percent   = level items collected / level item count x 100
+  secrets percent = level secrets found / level secret count x 100
+(A level with nothing to find counts as 100 percent.)
+  level seconds   = how long you played the level. 'level time'
+                    goes up by the time each frame took, using
+                    Scratch's timer. The pause menu doesn't count.
+  par seconds     = item 'current level' of "level par times"
+
+Then 'count up level stats' counts the numbers up from 0 for one second
+with a ticking sound,
+like the intermission screen in Doom. SPACE skips the counting.
+Beat the par time and an UNDER PAR! badge appears.
+
+TIME is shown as minutes:seconds. 125 seconds = 2:05, because
+125 / 60 = 2 (rounded down) and 125 mod 60 = 5. The 'mod' block gives
+the remainder after dividing.""",
 ]
 gy = 0
 for text in GUIDE:
@@ -488,7 +569,8 @@ E = Target(P, "Engine", layer=1, visible=False)
 E.costume("dot", assets.TINY, 1, 1)
 for nm, fn in (("door", assets2.door), ("switch", assets2.switch), ("locked", assets2.locked),
                ("secret", assets3.secret), ("melt", assets4.melt), ("out of breath", assets5.out_of_breath),
-               ("menu click", assets6.menu_click)):
+               ("menu click", assets6.menu_click), ("tally tick", assets7.tally_tick),
+               ("tally done", assets7.tally_done)):
     d, n = fn(); E.sound(nm, d, assets.RATE, n)
 ENGINE_VARS = [
     # raycaster
@@ -513,7 +595,9 @@ ENGINE_VARS = [
     "weapon ammo slot", "weapon to try", "N key was held",
     # options menu
     "screen before options", "up key was held", "down key was held",
-    "change direction", "change repeat timer", "mouse row", "mouse was down", "slider fraction", "last options row"]
+    "change direction", "change repeat timer", "mouse row", "mouse was down", "slider fraction", "last options row",
+    # level clock + tally
+    "time at last frame", "tally progress", "time shown in seconds", "difficulty when loaded"]
 for name in ENGINE_VARS:
     E.var(name)
 
@@ -526,6 +610,11 @@ facing_a_door = or_(or_(or_(eq(V("facing letter"), "D"), eq(V("facing letter"), 
                         or_(eq(V("facing letter"), "B"), eq(V("facing letter"), "X"))),
                     eq(V("facing letter"), "Z"))  # S stays secret: no hint
 frame = [
+    note("LEVEL CLOCK: add the time since the last frame to 'level time' (in\n"
+         "seconds). Using Scratch's timer, not counting frames, keeps the clock\n"
+         "right even when a big level makes the game slower than 30 frames a second.",
+         chg("level time", sub(timer(), V("time at last frame")))),
+    setv("time at last frame", timer()),
     note("EXPLOSIONS + BARREL WRECKAGE from last frame (see the custom block).",
          call("share explosions and clear wreckage")),
     note("SHOT RESULT: if you fired last frame, the monsters worked out which\n"
@@ -658,7 +747,11 @@ E.script(
     note("LEVEL SELECT: if the options menu picked a later level, start there\n"
          "with the weapons and ammo a player would have found by then.",
          if_(gt(V("start level choice"), 1),
-             setv("current level", V("start level choice")), call("give level select weapons"),
+             setv("current level", V("start level choice")), call("give level select weapons"))),
+    note("Load the level again if you picked a later level, or changed the\n"
+         "DIFFICULTY after level 1 was loaded behind the title screen (its\n"
+         "monsters need the new health).",
+         if_(or_(gt(V("start level choice"), 1), not_(eq(V("difficulty"), V("difficulty when loaded")))),
              call("start level", warp=False))),
     note("LEVEL LOOP: each pass of 'forever' plays one level (or one retry).",
          forever(
@@ -668,6 +761,8 @@ E.script(
              note("Start playing (and start the music). 'highest level reached' unlocks\n"
                   "levels in the options menu's level select.",
                   setv("game state", PLAYING)), setv("screen showing", NONE), bcast(START_MUSIC),
+             note("Start the level clock from 0 (a retry after dying starts it again too).",
+                  setv("level time", 0)), setv("time at last frame", timer()),
              if_(gt(V("current level"), V("highest level reached")), setv("highest level reached", V("current level"))),
              note("PLAY: repeat one frame at a time until you reach the exit or die.\n"
                   "Everything that happens in a frame is inside this loop.",
@@ -676,7 +771,7 @@ E.script(
                   "Died -> show 'YOU DIED', take back this level's kills, refill health,\n"
                   f"give back the ammo you started the level with (at least {START_BULLETS}\n"
                   "bullets), and reload the SAME level.\n"
-                  "Exit -> show the stats, go to the next level. After the last level\n"
+                  "Exit -> count up the stats (the tally), go to the next level. After the last level\n"
                   "(the number of items in 'level start angles') show the win screen.",
                   ifelse(eq(V("game state"), DEAD),
                          [setv("screen showing", DIED), call("draw still frame", warp=False),
@@ -689,7 +784,11 @@ E.script(
                           chg("total kills", mul(-1, V("level kills"))), setv("health", 100),
                           call("restore ammo at level start"),
                           setv("show intro", 0), call("start level", warp=False)],
-                         [setv("screen showing", COMPLETE), call("draw still frame", warp=False), *wait_for_space(),
+                         [note("THE TALLY: work out the level's stats, show the screen, count\n"
+                               "them up, then wait for SPACE.",
+                               call("work out level stats")),
+                          setv("screen showing", COMPLETE), call("draw still frame", warp=False),
+                          call("count up level stats", warp=False), *wait_for_space(skip_pause=True),
                           chg("total secrets found", V("level secrets found")),
                           chg("total secret count", V("level secret count")),
                           chg("current level", 1),
@@ -793,7 +892,8 @@ E.script(Def("draw melt curtain"),
          comment="DRAW MELT CURTAIN: one frame of the melt. Sets 'melt done' to 1\nwhen every column has slid off the bottom.")
 
 E.script(Def("start level", warp=False),
-         bcastw(CLEAR), call("load level"), bcastw(SPAWN), call("update camera"),
+         bcastw(CLEAR), call("load level"), setv("difficulty when loaded", V("difficulty")), bcastw(SPAWN),
+         call("update camera"),
          comment="START LEVEL: delete the old monster and item clones, read the\n"
                  "map with 'load level', make new clones, then aim the camera.")
 
@@ -804,9 +904,10 @@ E.script(Def("draw still frame", warp=False),
                  "(title, died, level complete, win). 'broadcast and wait' is fine\n"
                  "here because nothing is moving.")
 
-HUD_SOURCES = ["health", "ammo shown", "level kills", "level monster count", "level items collected",
-               "level item count", "total kills", "level secrets found", "level secret count",
-               "total secrets found", "total secret count", "turn speed", "mouse sensitivity", "field of view"]
+HUD_SOURCES = ["health", "ammo shown", "kills percent shown", "items percent shown", "secrets percent shown",
+               "time minutes shown", "time seconds shown", "par minutes shown", "par seconds shown",
+               "total kills", "total secrets found", "total secret count",
+               "turn speed", "mouse sensitivity", "field of view"]
 E.script(Def("copy numbers to HUD"),
          note("AMMO SHOWN = the ammo for the weapon in your hands. Fists use none, so\n"
               "it's empty text and the Digits sprite shows nothing.",
@@ -814,13 +915,65 @@ E.script(Def("copy numbers to HUD"),
          ifelse(eq(V("weapon ammo slot"), 0), [setv("ammo shown", "")],
                 [setv("ammo shown", item(V("weapon ammo slot"), "ammo counts"))]),
          *[replace("HUD number values", i + 1, V(v)) for i, v in enumerate(HUD_SOURCES)],
-         note("Slot 15 (start level) only shows in the title screen's options menu.",
-              ifelse(eq(V("options from game"), 1), [replace("HUD number values", 15, "")],
-                     [replace("HUD number values", 15, V("start level choice"))])),
-         comment="COPY NUMBERS TO HUD: the Digits sprite draws whatever is in\n'HUD number values'. Slot 1 health, 2 ammo, "
-                 "3 level kills,\n4 monsters in level, 5 items collected, 6 items in level,\n7 total kills, "
-                 "8 secrets found, 9 secrets in level, 10-11 secrets in the whole game,\n"
-                 "12-15 the options menu.")
+         note("Slot 16 (start level) only shows in the title screen's options menu.",
+              ifelse(eq(V("options from game"), 1), [replace("HUD number values", 16, "")],
+                     [replace("HUD number values", 16, V("start level choice"))])),
+         comment="COPY NUMBERS TO HUD: the Digits sprite draws whatever is in\n'HUD number values'. Slot 1 health, 2 ammo,\n"
+                 "3-9 the level tally (kills %, items %, secrets %, time, par time),\n"
+                 "10 total kills, 11-12 secrets in the whole game, 13-16 the options menu.")
+
+def percent_of(found, total, result):
+    """result = found / total x 100, rounded. Nothing to find counts as 100 percent."""
+    return ifelse(eq(V(total), 0), [setv(result, 100)], [setv(result, round_(mul(div(V(found), V(total)), 100)))])
+
+def two_digits(var):
+    """Seconds always show two digits on a clock: 5 becomes "05"."""
+    return if_(lt(V(var), 10), setv(var, join("0", V(var))))
+
+E.script(Def("work out level stats"),
+    note("FINAL NUMBERS. Percentages are rounded to whole numbers.",
+         percent_of("level kills", "level monster count", "kills percent")),
+    percent_of("level items collected", "level item count", "items percent"),
+    percent_of("level secrets found", "level secret count", "secrets percent"),
+    setv("level seconds", round_(V("level time"))),
+    setv("par seconds", item(V("current level"), "level par times")),
+    note("PAR TIME is shown straight away. A clock shows minutes:seconds:\n"
+         "minutes = seconds / 60 rounded DOWN, and the seconds left over are\n"
+         "seconds MOD 60 (the remainder). 135 seconds = 2:15.",
+         setv("par minutes shown", floor_(div(V("par seconds"), 60)))),
+    setv("par seconds shown", mod(V("par seconds"), 60)), two_digits("par seconds shown"),
+    note("The counted numbers start at 0, and the badge stays hidden until\n"
+         "the counting is done.",
+         setv("kills percent shown", 0)), setv("items percent shown", 0), setv("secrets percent shown", 0),
+    setv("time minutes shown", 0), setv("time seconds shown", "00"), setv("par was beaten", 0),
+    comment="WORK OUT LEVEL STATS: runs once when you reach the exit, before\nthe tally screen appears.")
+
+E.script(Def("count up level stats", warp=False),
+    setv("tally progress", 0),
+    note("COUNT UP: one pass per frame. 'tally progress' goes from 0 to 1 in\n"
+         "30 frames (1 second), and every number shows that fraction of its\n"
+         "final value. Doom's intermission screen counted up the same way.\n"
+         "SPACE jumps straight to the end.",
+         until(gt(V("tally progress"), 0.999),
+               chg("tally progress", div(1, 30)),
+               if_(key("space"), setv("tally progress", 1)),
+               if_(gt(V("tally progress"), 1), setv("tally progress", 1)),
+               setv("kills percent shown", round_(mul(V("kills percent"), V("tally progress")))),
+               setv("items percent shown", round_(mul(V("items percent"), V("tally progress")))),
+               setv("secrets percent shown", round_(mul(V("secrets percent"), V("tally progress")))),
+               setv("time shown in seconds", round_(mul(V("level seconds"), V("tally progress")))),
+               setv("time minutes shown", floor_(div(V("time shown in seconds"), 60))),
+               setv("time seconds shown", mod(V("time shown in seconds"), 60)), two_digits("time seconds shown"),
+               note("Tick every third frame while counting.",
+                    if_(eq(mod(round_(mul(V("tally progress"), 30)), 3), 0), play("tally tick"))),
+               call("copy numbers to HUD"), bcast(DRAW_NUMBERS))),
+    note("DONE: a thump, and the UNDER PAR! badge if you were at least as fast\n"
+         "as the par time. The Screens sprite picks its costume from 'par was beaten'.",
+         play("tally done")),
+    if_(not_(gt(V("level seconds"), V("par seconds"))), setv("par was beaten", 1)),
+    bcastw(DRAW_HUD), bcastw(DRAW_NUMBERS),
+    comment="COUNT UP LEVEL STATS: the tally screen after each level.\n"
+            "Kills, items and secrets as percentages, your time and the par time.")
 
 
 # ------------------------------------------- weapons -------------------------------------------
@@ -901,8 +1054,11 @@ E.script(Def("switch music"),
     comment="SWITCH MUSIC: N key. The Music and Prompt Text sprites listen for\n'apply music setting' and set their volume.")
 
 # ------------------------------------------- options menu -------------------------------------------
-ROW_Y = assets6.OPTION_ROW_Y
+ROW_Y, ROW_STEP = assets6.OPTION_ROW_Y, assets6.OPTION_ROW_STEP
+OPTION_ROW_COUNT = len(ROW_Y)   # 7. The last two rows (difficulty, start level) are title-screen only.
 TRACK_LEFT, TRACK_RIGHT = assets6.TRACK_LEFT, assets6.TRACK_RIGHT
+DIFFICULTY_MIDDLE_X = sum(assets6.DIFFICULTY_ARROWS_X) / 2
+LEVEL_MIDDLE_X = sum(assets6.LEVEL_ARROWS_X) / 2
 def clamp(var, low, high):
     return [if_(lt(V(var), low), setv(var, low)), if_(gt(V(var), high), setv(var, high))]
 
@@ -916,16 +1072,21 @@ E.script(Def("options menu", warp=False),
     wait_until(not_(or_(key("o"), key("p")))),
     note("ONE MENU FRAME per pass: read the keys and mouse, then redraw.\n"
          "Plain broadcasts run in the order they're sent: panel, then the\n"
-         "sliders and switches on top, then the numbers on top of those.",
+         "highlight on the chosen row, then the sliders and switches on top,\n"
+         "then the numbers on top of those.",
          until(eq(V("options open"), 0),
                call("handle options input"), call("copy numbers to HUD"),
-               bcast(DRAW_OPTIONS_PANEL), bcast(DRAW_OPTIONS_WIDGETS), bcast(DRAW_NUMBERS))),
+               bcast(DRAW_OPTIONS_PANEL), bcast(DRAW_OPTIONS_HIGHLIGHT), bcast(DRAW_OPTIONS_WIDGETS),
+               bcast(DRAW_NUMBERS))),
     note("CLOSE: wait for the key to be let go (so the game doesn't pause again\n"
          "straight away), put the old screen back and hide the menu.",
          wait_until(not_(or_(key("o"), key("p"))))),
     setv("screen showing", V("screen before options")), play("menu click"),
-    bcast(DRAW_OPTIONS_PANEL), bcast(DRAW_OPTIONS_WIDGETS), bcast(DRAW_NUMBERS),
+    bcast(DRAW_OPTIONS_PANEL), bcast(DRAW_OPTIONS_HIGHLIGHT), bcast(DRAW_OPTIONS_WIDGETS), bcast(DRAW_NUMBERS),
     call("update camera"),
+    note("Restart the level clock's frame timing, so time spent paused\n"
+         "doesn't count toward your level time.",
+         setv("time at last frame", timer())),
     comment="OPTIONS MENU: O on the title screen, P during the game.\n"
             "Runs one menu frame per screen refresh until you close it.")
 
@@ -934,7 +1095,7 @@ E.script(Def("handle options input"),
          if_(or_(key("o"), key("p")), setv("options open", 0))),
     setv("last options row", V("options row")),
     note("UP / DOWN (or W / S) pick a row, once per key press. From the game\n"
-         "the last row (start level) can't be picked.",
+         "the last two rows (difficulty, start level) can't be picked.",
          ifelse(or_(key("up arrow"), key("w")),
                 [if_(eq(V("up key was held"), 0), chg("options row", -1)), setv("up key was held", 1)],
                 [setv("up key was held", 0)])),
@@ -942,7 +1103,8 @@ E.script(Def("handle options input"),
            [if_(eq(V("down key was held"), 0), chg("options row", 1)), setv("down key was held", 1)],
            [setv("down key was held", 0)]),
     if_(lt(V("options row"), 1), setv("options row", 1)),
-    if_(gt(V("options row"), sub(6, V("options from game"))), setv("options row", sub(6, V("options from game")))),
+    if_(gt(V("options row"), sub(OPTION_ROW_COUNT, mul(2, V("options from game")))),
+        setv("options row", sub(OPTION_ROW_COUNT, mul(2, V("options from game"))))),
     note("LEFT / RIGHT (or A / D) change the value. Holding the key repeats the\n"
          "change every 5 frames, like a keyboard does.",
          setv("change direction", 0)),
@@ -953,21 +1115,25 @@ E.script(Def("handle options input"),
                    [setv("change repeat timer", 5)])]),
     if_(not_(eq(V("change direction"), 0)),
         note("Row 1 turn speed, 2 mouse steering (on/off), 3 mouse sensitivity,\n"
-             "4 field of view (2 degrees a step), 5 music (on/off), 6 start level.",
+             "4 field of view (2 degrees a step), 5 music (on/off), 6 difficulty,\n"
+             "7 start level.",
              if_(eq(V("options row"), 1), chg("turn speed", V("change direction")))),
         if_(eq(V("options row"), 2), setv("mouse steering", sub(1, V("mouse steering")))),
         if_(eq(V("options row"), 3), chg("mouse sensitivity", V("change direction"))),
         if_(eq(V("options row"), 4), chg("field of view", mul(2, V("change direction")))),
         if_(eq(V("options row"), 5), setv("music is on", sub(1, V("music is on"))), bcast(APPLY_MUSIC)),
-        if_(eq(V("options row"), 6), chg("start level choice", V("change direction"))),
+        if_(eq(V("options row"), 6), chg("difficulty", V("change direction"))),
+        if_(eq(V("options row"), 7), chg("start level choice", V("change direction"))),
         play("menu click")),
     note("MOUSE: hold the button down on a row to pick it. On a slider, the\n"
          "knob jumps to the mouse (so you can drag it). A click on a switch\n"
-         "flips it; on the level row, left half = down, right half = up.",
+         "flips it; on the difficulty and level rows, left half = down,\n"
+         f"right half = up. Rows are {ROW_STEP} pixels apart.",
          ifelse(mouse_down(),
-                [setv("mouse row", add(round_(div(sub(ROW_Y[0], mouse_y()), 30)), 1)),
-                 if_(and_(and_(gt(V("mouse row"), 0), lt(V("mouse row"), sub(7, V("options from game")))),
-                          lt(abs_(sub(mouse_y(), sub(ROW_Y[0], mul(sub(V("mouse row"), 1), 30)))), 13)),
+                [setv("mouse row", add(round_(div(sub(ROW_Y[0], mouse_y()), ROW_STEP)), 1)),
+                 if_(and_(and_(gt(V("mouse row"), 0),
+                               lt(V("mouse row"), sub(OPTION_ROW_COUNT + 1, mul(2, V("options from game"))))),
+                          lt(abs_(sub(mouse_y(), sub(ROW_Y[0], mul(sub(V("mouse row"), 1), ROW_STEP)))), 13)),
                      setv("options row", V("mouse row")),
                      setv("slider fraction", div(sub(mouse_x(), TRACK_LEFT), TRACK_RIGHT - TRACK_LEFT)),
                      if_(lt(V("slider fraction"), 0), setv("slider fraction", 0)),
@@ -980,13 +1146,18 @@ E.script(Def("handle options input"),
                          if_(eq(V("mouse row"), 2), setv("mouse steering", sub(1, V("mouse steering")))),
                          if_(eq(V("mouse row"), 5), setv("music is on", sub(1, V("music is on"))), bcast(APPLY_MUSIC)),
                          if_(eq(V("mouse row"), 6),
-                             ifelse(lt(mouse_x(), 50), [chg("start level choice", -1)], [chg("start level choice", 1)])),
+                             ifelse(lt(mouse_x(), DIFFICULTY_MIDDLE_X), [chg("difficulty", -1)], [chg("difficulty", 1)])),
+                         if_(eq(V("mouse row"), 7),
+                             ifelse(lt(mouse_x(), LEVEL_MIDDLE_X), [chg("start level choice", -1)],
+                                    [chg("start level choice", 1)])),
                          play("menu click"))),
                  setv("mouse was down", 1)],
                 [setv("mouse was down", 0)])),
     note("Keep every setting inside its range.",
          *clamp("turn speed", 1, 10)[:1]), *clamp("turn speed", 1, 10)[1:],
     *clamp("mouse sensitivity", 1, 10), *clamp("field of view", MIN_FOV, MAX_FOV),
+    if_(lt(V("difficulty"), 1), setv("difficulty", 1)),
+    if_(gt(V("difficulty"), length("difficulty names")), setv("difficulty", length("difficulty names"))),
     if_(lt(V("start level choice"), 1), setv("start level choice", 1)),
     if_(gt(V("start level choice"), V("highest level reached")), setv("start level choice", V("highest level reached"))),
     if_(not_(eq(V("options row"), V("last options row"))), play("menu click")),
@@ -1493,7 +1664,7 @@ for nm, fn in (("pain", assets.monster_pain), ("death", assets.monster_death), (
                ("blink", assets6.wraith_blink)):
     data, n = fn(); M.sound(nm, data, assets.RATE, n)
 for name in ["monster id", "is clone", "monster type", "monster name", "monster x", "monster y", "is alive",
-             "monster health", "attack cooldown", "volley cooldown", "pain flash timer", "attack pose timer",
+             "monster health", "full health", "attack cooldown", "volley cooldown", "pain flash timer", "attack pose timer",
              "is chasing", "moved this frame", "damage taken", "explosion number", "distance to blast",
              "offset x from player", "offset y from player", "distance to player", "next monster x",
              "next monster y", "sight is clear", "sight x", "sight y", "aim x", "aim y", "volley shot number",
@@ -1550,7 +1721,13 @@ M.script(as_clone(), setv("is clone", 1),
               setv("monster x", add(item(V("monster id"), "monster start x"), 0.5))),
          setv("monster y", add(item(V("monster id"), "monster start y"), 0.5)),
          setv("monster type", item(V("monster id"), "monster start type")),
-         setv("monster name", stat("names")), setv("monster health", stat("health")),
+         setv("monster name", stat("names")),
+         note("DIFFICULTY: start with the difficulty's percent of my type's health\n"
+              "(easy 75, normal 100, hard 125), rounded. An imp has 3 normally:\n"
+              "2 on easy, 4 on hard.",
+              setv("full health", round_(mul(stat("health"),
+                                             div(item(V("difficulty"), "difficulty monster health"), 100))))),
+         setv("monster health", V("full health")),
          setv("is alive", 1), setv("attack cooldown", 0), setv("volley cooldown", 30), setv("pain flash timer", 0),
          setv("attack pose timer", 0), setv("is chasing", 0),
          setv("speed multiplier", 1), setv("charge state", 0), setv("charge cooldown", 30), setv("blink timer", 60),
@@ -1637,7 +1814,7 @@ M.script(Def("charge at the player"),
                     setv("offset x from player", sub(V("monster x"), V("player x"))),
                     *offset_from_player("monster x", "monster y")[1:],
                     if_(and_(eq(V("charge state"), 2), lt(V("distance to player"), 1)),
-                        chg("health", mul(-1, rnd(div(stat("claw damage"), 2), stat("claw damage")))),
+                        hurt_player(rnd(div(stat("claw damage"), 2), stat("claw damage"))),
                         setv("killer type", V("monster type")), setv("hurt flash timer", 6),
                         play("player hurt"), setv("charge state", 0), setv("charge cooldown", 60),
                         setv("attack pose timer", 10)),
@@ -1717,13 +1894,13 @@ M.script(recv(UPDATE), if_(eq(V("is clone"), 1),
              note("SPECIAL MOVES for wraiths (blink) and the colossus (rage).",
                   if_(eq(stat("special move"), "blink"), call("blink sideways"))),
              if_(and_(eq(stat("special move"), "rage"),
-                      and_(eq(V("has called for help"), 0), lt(V("monster health"), div(stat("health"), 2)))),
+                      and_(eq(V("has called for help"), 0), lt(V("monster health"), div(V("full health"), 2)))),
                  call("call for help")),
              note("CLAW: when you're within 1.2 squares, hit you once a second\n"
                   "(30 frames) for half to all of my 'claw damage'.",
                   if_(gt(V("attack cooldown"), 0), chg("attack cooldown", -1))),
              if_(and_(and_(lt(V("distance to player"), 1.2), lt(V("attack cooldown"), 1)), eq(V("charge state"), 0)),
-                 chg("health", mul(-1, rnd(div(stat("claw damage"), 2), stat("claw damage")))),
+                 hurt_player(rnd(div(stat("claw damage"), 2), stat("claw damage"))),
                  setv("killer type", V("monster type")),
                  setv("hurt flash timer", 5), setv("attack cooldown", 30), setv("attack pose timer", 12),
                  play("player hurt")),
@@ -1761,7 +1938,7 @@ M.script(recv(UPDATE), if_(eq(V("is clone"), 1),
              note("BOSS: share my health and name with the boss health bar, and\n"
                   "announce myself the first time I wake up.",
                   if_(eq(stat("is boss"), 1),
-                      setv("boss health", V("monster health")), setv("boss max health", stat("health")),
+                      setv("boss health", V("monster health")), setv("boss max health", V("full health")),
                       setv("boss name", V("monster name")),
                       if_(and_(eq(V("is chasing"), 1), eq(V("boss is awake"), 0)),
                           setv("boss is awake", 1), setv("message name", join("boss awake ", V("monster name"))),
@@ -1926,7 +2103,7 @@ BR.script(recv(UPDATE), if_(and_(eq(V("is clone"), 1), lt(V("barrel state"), 3))
                  *offset_from_player("barrel x", "barrel y"),
                  if_(lt(V("distance to player"), 2.6),
                      setv("blast damage", round_(mul(40, sub(1, div(V("distance to player"), 2.6))))),
-                     chg("health", mul(-1, V("blast damage"))), setv("hurt flash timer", 6),
+                     hurt_player(V("blast damage")), setv("hurt flash timer", 6),
                      setv("killer type", 0)),
                  play("explosion"), setv("barrel state", 2), setv("blast frame", 0)))),
     note("EXPLODING: show the 3 explosion costumes, 4 frames each, then vanish.",
@@ -2012,7 +2189,7 @@ PR.script(Def("explode rocket"),
     *offset_from_player("shot x", "shot y"),
     if_(lt(V("distance to player"), 2.6),
         setv("blast damage", round_(mul(35, sub(1, div(V("distance to player"), 2.6))))),
-        chg("health", mul(-1, V("blast damage"))), setv("hurt flash timer", 6), setv("killer type", -1)),
+        hurt_player(V("blast damage")), setv("hurt flash timer", 6), setv("killer type", -1)),
     play("explosion"), setv("is exploding", 1), setv("blast frame", 0), setv("draw height", -180),
     costume("explosion 1"),
     comment="EXPLODE ROCKET: turn this rocket into an explosion.")
@@ -2043,7 +2220,7 @@ PR.script(recv(UPDATE), ifelse(eq(V("is clone"), 0),
                               setv("offset x from player", sub(V("shot x"), V("player x")))),
                          *offset_from_player("shot x", "shot y")[1:],
                          if_(lt(V("distance to player"), 0.45),
-                             chg("health", mul(-1, V("shot damage"))), setv("hurt flash timer", 5),
+                             hurt_player(V("shot damage")), setv("hurt flash timer", 5),
                              setv("killer type", V("shot owner")), play("player hurt"), delete_clone())])]),
          *offset_from_player("shot x", "shot y"),
          *place_on_screen([], "shot", height=V("draw height")))]),
@@ -2160,14 +2337,23 @@ T.script(recv(DRAW_HUD), ifelse(and_(playing, gt(V("message timer"), 0)),
                  "'message timer' (how many frames it stays up).")
 
 S = Target(P, "Screens", layer=7, visible=True)
-S.costume("screen level complete", assets3.COMPLETE, 240, 180)
-S.costume("screen episode complete", assets6.EPISODE_COMPLETE, 240, 180)
+for costume_name, art in assets7.TALLY_SCREENS.items():
+    S.costume(costume_name, art, 240, 180)
+S.var("screen costume name"); S.var("under par ending")
 S.script(flag(), gotoxy(0, 0), hide())
 S.script(recv(DRAW_HUD),
          ifelse(eq(V("screen showing"), COMPLETE),
-                [ifelse(eq(V("current level"), 3), [costume("screen episode complete")], [costume("screen level complete")]),
+                [note("Level 3 ends episode 1, so it gets its own heading. Then add\n"
+                      "' under par' to the costume name if you beat the par time.",
+                      ifelse(eq(V("current level"), 3), [setv("screen costume name", "screen episode complete")],
+                             [setv("screen costume name", "screen level complete")])),
+                 ifelse(eq(V("par was beaten"), 1), [setv("under par ending", " under par")],
+                        [setv("under par ending", "")]),
+                 costume("screen level complete", join(V("screen costume name"), V("under par ending"))),
                  show(), front()], [hide()]),
-         comment="LEVEL COMPLETE page (the death and victory screens have their own\nanimated sprites).")
+         comment="LEVEL COMPLETE page: the tally. The labels, % signs and clock\n"
+                 "colons are in the costume; the Digits sprite draws the numbers.\n"
+                 "(The death and victory screens have their own animated sprites.)")
 
 Dg = Target(P, "Digits", layer=8, visible=False)
 for c, art in assets2.DIGITS.items():
@@ -2640,12 +2826,15 @@ OW.costume("row highlight", assets6.ROW_HIGHLIGHT, 190, 13)
 OW.costume("knob", assets6.KNOB, 10, 10)
 OW.costume("switch on", assets6.TOGGLE_ON, 28, 11)
 OW.costume("switch off", assets6.TOGGLE_OFF, 28, 11)
+for difficulty_name in assets7.DIFFICULTY_COLORS:
+    OW.costume(f"difficulty {difficulty_name}", assets7.difficulty_word(difficulty_name), 50, 11)
 for name in ["is clone", "widget role"]:
     OW.var(name)
-OW.script(flag(), hide(), setv("is clone", 0), setv("widget role", 0), repeat(6, chg("widget role", 1), clone()),
-          comment="Six clones, one per 'widget role':\n"
+OW.script(flag(), hide(), setv("is clone", 0), setv("widget role", 0), repeat(7, chg("widget role", 1), clone()),
+          comment="Seven clones, one per 'widget role':\n"
                   "1 the highlight on the chosen row, 2 turn speed knob,\n"
-                  "3 mouse steering switch, 4 sensitivity knob, 5 field of view knob,\n6 music switch.")
+                  "3 mouse steering switch, 4 sensitivity knob, 5 field of view knob,\n6 music switch, "
+                  "7 the difficulty word.")
 OW.script(as_clone(), setv("is clone", 1))
 
 def knob_at(setting, low, high, y):
@@ -2655,15 +2844,33 @@ def knob_at(setting, low, high, y):
 def switch_at(setting, y):
     return [ifelse(eq(V(setting), 1), [costume("switch on")], [costume("switch off")]), gotoxy(40, y)]
 
-OW.script(recv(DRAW_OPTIONS_WIDGETS), if_(eq(V("is clone"), 1),
+OW.script(recv(DRAW_OPTIONS_HIGHLIGHT), if_(eq(V("widget role"), 1),
     ifelse(options_up,
-           [if_(eq(V("widget role"), 1), costume("row highlight"),
-                gotoxy(0, sub(ROW_Y[0], mul(sub(V("options row"), 1), 30)))),
-            if_(eq(V("widget role"), 2), *knob_at("turn speed", 1, 10, ROW_Y[0])),
+           [costume("row highlight"), gotoxy(0, sub(ROW_Y[0], mul(sub(V("options row"), 1), assets6.OPTION_ROW_STEP))),
+            show(), front()],
+           [hide()])),
+    comment="DRAW OPTIONS HIGHLIGHT: the see-through box on the chosen row.\n"
+            "It has its own broadcast, sent BEFORE 'draw options widgets', so it\n"
+            "always goes to the front first and the knobs, switches and words end\n"
+            "up on top of it. Why not in the widgets script? Scratch runs a sprite's\n"
+            "clones in their layer order, so clones that all 'go to front' swap\n"
+            "places every frame, and the box would cover the words every other\n"
+            "frame (a flicker).")
+
+OW.script(recv(DRAW_OPTIONS_WIDGETS), if_(and_(eq(V("is clone"), 1), gt(V("widget role"), 1)),
+    ifelse(options_up,
+           [if_(eq(V("widget role"), 2), *knob_at("turn speed", 1, 10, ROW_Y[0])),
             if_(eq(V("widget role"), 3), *switch_at("mouse steering", ROW_Y[1])),
             if_(eq(V("widget role"), 4), *knob_at("mouse sensitivity", 1, 10, ROW_Y[2])),
             if_(eq(V("widget role"), 5), *knob_at("field of view", MIN_FOV, MAX_FOV, ROW_Y[3])),
             if_(eq(V("widget role"), 6), *switch_at("music is on", ROW_Y[4])),
+            if_(eq(V("widget role"), 7),
+                note("The difficulty word: costume 'difficulty easy', 'difficulty normal'\n"
+                     "or 'difficulty hard', picked by name from the 'difficulty names' list.",
+                     costume("difficulty normal", join("difficulty ", item(V("difficulty"), "difficulty names")))),
+                gotoxy(sum(assets6.DIFFICULTY_ARROWS_X) / 2, ROW_Y[5]),
+                note("Paused during a game, difficulty can't change, so the word is faded.",
+                     ifelse(eq(V("options from game"), 1), [seteffect("GHOST", 50)], [seteffect("GHOST", 0)]))),
             show(), front()],
            [hide()])),
     comment="DRAW OPTIONS WIDGETS: each clone shows its own setting.")
