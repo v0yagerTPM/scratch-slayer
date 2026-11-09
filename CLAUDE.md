@@ -17,6 +17,10 @@ the blocks must stay readable.
   weapon tables, options, how to add a level) is what students read first. Update it with
   every feature.
 - After every change: `npm test` (it builds first). For a map change also run `python3 src/levels.py`.
+- **Always ship a fresh `.sb3`.** After every significant code update, rebuild
+  `dist/scratch-slayer.sb3` (`npm test` or `npm run build` does it) and commit it in the same commit
+  as the change, so the downloadable game on GitHub always matches the source. Don't restore the
+  old `.sb3` even when only its zip timestamps changed.
 
 ## Commands
 
@@ -43,8 +47,11 @@ python3 tests/test_levels.py                    # map checker tests (npm test ru
   raycaster, input, options menu, level loader), Monster, Pickup, Barrel, Projectile, Weapon,
   Crosshair, HUD, Arms Panel, Boss Bar, Message, Screens, Digits, the title/card/death/victory
   sprites, Options Panel, Options Widgets, Music. Ends with sanity checks (unique names, etc.).
-- `levels.py`: maps are lists of strings, addressed as `map_rows[row][column]`. Levels 1-3 are typed
-  out in full (with a column ruler); levels 4-6 are drawn with the `Grid` helper. `validate()` raises
+- `maps/level N map.txt`: the six maps, one row per line, nothing else. Same format and file name as
+  Scratch's list export/import (right-click the list "level N map"), so a student's exported map can
+  be dropped in as-is. Never add comments or a ruler to these files: Scratch would import them as rows.
+- `levels.py`: `load_map()` reads the files into lists of strings (`map_rows[row][column]`), and
+  `LEVELS` adds each level's settings and a written plan of its layout. `validate()` raises
   `LevelError` with a message naming the level and square. It checks reachability, keys, and that
   a skull door (`Z`) really gates the exit behind the boss.
 - `assets.py` … `assets7.py`: SVG strings and synthesized WAVs, one file per feature round.
@@ -85,7 +92,7 @@ in `build.py`, never `chg("health", ...)` directly.
   every frame.** If one must stay under its siblings (the options row highlight), give it its
   own broadcast sent earlier: threads of an earlier plain broadcast always run first.
 
-## Map letters (see `levels.py` docstring and the Stage guide)
+## Map letters (see `levels.py` docstring and the Stage guide; the maps are in `src/maps/`)
 
 Walls `1-9`; doors `D`, red `R`, blue `B`, skull `Z`; exit switch `X`; secret wall `S`.
 Things: `P` player, monsters `M` imp, `V` spitter, `G` golem, `W` warden (boss), `C` charger,
