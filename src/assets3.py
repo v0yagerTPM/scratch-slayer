@@ -1,4 +1,4 @@
-"""Art + sound for round 3: spitter, golem, warden boss, barrels, explosions, projectiles, boss bar, sounds."""
+"""Art + sound for round 3: spitter, golem, warden boss, barrels, explosions, projectiles, sounds."""
 import math, random
 from assets import svg, _wav, _lowpass, RATE
 import assets2
@@ -10,9 +10,9 @@ SOUT = 'stroke="#1d3d10" stroke-width="1.5"'
 
 def _spitter_legs(phase):
     out = ""
-    for i, x in enumerate((16, 30, 50, 64)):
-        lift = 5 if (i + phase) % 2 == 0 else 0
-        out += f'<path d="M{x - 4} 100 L{x - 6} {118 - lift} L{x + 6} {118 - lift} L{x + 4} 100 Z" fill="{SLIME_DARK}" {SOUT}/>'
+    for leg_number, leg_x in enumerate((16, 30, 50, 64)):
+        lift = 5 if (leg_number + phase) % 2 == 0 else 0
+        out += f'<path d="M{leg_x - 4} 100 L{leg_x - 6} {118 - lift} L{leg_x + 6} {118 - lift} L{leg_x + 4} 100 Z" fill="{SLIME_DARK}" {SOUT}/>'
     return out
 
 def _spitter(phase=0, mouth="closed"):
@@ -22,17 +22,17 @@ def _spitter(phase=0, mouth="closed"):
             + f'<ellipse cx="40" cy="88" rx="32" ry="20" fill="{SLIME}" {SOUT}/>'
               f'<circle cx="22" cy="84" r="3.5" fill="{SLIME_DARK}"/><circle cx="58" cy="94" r="3" fill="{SLIME_DARK}"/>'
               f'<circle cx="62" cy="80" r="2.5" fill="{SLIME_DARK}"/>')
-    eyes = "".join(f'<circle cx="{x}" cy="{y}" r="5" fill="#ffe14d" stroke="#1d3d10" stroke-width="1"/>'
-                   f'<circle cx="{x}" cy="{y}" r="2" fill="#000"/>' for x, y in ((29, 74), (40, 70), (51, 74)))
+    eyes = "".join(f'<circle cx="{eye_x}" cy="{eye_y}" r="5" fill="#ffe14d" stroke="#1d3d10" stroke-width="1"/>'
+                   f'<circle cx="{eye_x}" cy="{eye_y}" r="2" fill="#000"/>' for eye_x, eye_y in ((29, 74), (40, 70), (51, 74)))
     if mouth == "open":
-        m = ('<ellipse cx="40" cy="92" rx="15" ry="11" fill="#1a0d05"/>'
+        mouth = ('<ellipse cx="40" cy="92" rx="15" ry="11" fill="#1a0d05"/>'
              '<path d="M27 86 L30 91 L33 86 L36 91 L40 86 L44 91 L47 86 L50 91 L53 86" fill="none" stroke="#fff" stroke-width="2"/>'
              '<circle cx="40" cy="94" r="7" fill="#b6ff3a" stroke="#4c8f12" stroke-width="1.5"/>'
              '<circle cx="38" cy="92" r="2" fill="#f2ffd0"/>')
     else:
-        m = ('<path d="M28 92 Q40 100 52 92 Q40 96 28 92 Z" fill="#1a0d05" stroke="#1d3d10"/>'
+        mouth = ('<path d="M28 92 Q40 100 52 92 Q40 96 28 92 Z" fill="#1a0d05" stroke="#1d3d10"/>'
              '<path d="M44 96 Q45 102 43 106" stroke="#b6ff3a" stroke-width="2" fill="none"/>')
-    return svg(80, 120, body + eyes + m)
+    return svg(80, 120, body + eyes + mouth)
 
 SPITTER_WALK1, SPITTER_WALK2, SPITTER_ATTACK = _spitter(0), _spitter(1), _spitter(0, "open")
 SPITTER_DEAD = svg(80, 120,
@@ -48,11 +48,11 @@ STONE, STONE_DARK, GLOW = "#6f6878", "#4a4452", "#ff8a1f"
 GOUT = 'stroke="#25212b" stroke-width="1.5"'
 
 def _golem_legs(phase):
-    ly, ry = (108, 116) if phase == 0 else (116, 108)
-    return (f'<path d="M24 86 L20 {ly} L36 {ly} L38 86 Z" fill="{STONE_DARK}" {GOUT}/>'
-            f'<path d="M56 86 L60 {ry} L44 {ry} L42 86 Z" fill="{STONE_DARK}" {GOUT}/>'
-            f'<rect x="16" y="{ly}" width="24" height="7" rx="2" fill="#2f2a36"/>'
-            f'<rect x="40" y="{ry}" width="24" height="7" rx="2" fill="#2f2a36"/>')
+    left_foot_y, right_foot_y = (108, 116) if phase == 0 else (116, 108)
+    return (f'<path d="M24 86 L20 {left_foot_y} L36 {left_foot_y} L38 86 Z" fill="{STONE_DARK}" {GOUT}/>'
+            f'<path d="M56 86 L60 {right_foot_y} L44 {right_foot_y} L42 86 Z" fill="{STONE_DARK}" {GOUT}/>'
+            f'<rect x="16" y="{left_foot_y}" width="24" height="7" rx="2" fill="#2f2a36"/>'
+            f'<rect x="40" y="{right_foot_y}" width="24" height="7" rx="2" fill="#2f2a36"/>')
 
 def _golem_body():
     return (f'<path d="M16 42 L64 42 L58 90 L22 90 Z" fill="{STONE}" {GOUT}/>'
@@ -77,8 +77,8 @@ GOLEM_WALK1 = svg(80, 120, _golem_legs(0) + _golem_body() + _golem_arms_down(2))
 GOLEM_WALK2 = svg(80, 120, _golem_legs(1) + _golem_body() + _golem_arms_down(-2))
 GOLEM_ATTACK = svg(80, 120, _golem_legs(0) + _golem_arms_up() + _golem_body())
 GOLEM_DEAD = svg(80, 120,
-    ''.join(f'<path d="M{x} 120 L{x + 4} {y} L{x + w - 3} {y - 2} L{x + w} 120 Z" fill="{c}" {GOUT}/>'
-            for x, y, w, c in ((6, 104, 22, STONE_DARK), (24, 98, 26, STONE), (46, 104, 24, STONE_DARK), (16, 108, 16, STONE)))
+    ''.join(f'<path d="M{rubble_x} 120 L{rubble_x + 4} {rubble_top} L{rubble_x + rubble_width - 3} {rubble_top - 2} L{rubble_x + rubble_width} 120 Z" fill="{rubble_color}" {GOUT}/>'
+            for rubble_x, rubble_top, rubble_width, rubble_color in ((6, 104, 22, STONE_DARK), (24, 98, 26, STONE), (46, 104, 24, STONE_DARK), (16, 108, 16, STONE)))
     + f'<path d="M30 108 L36 114 M50 110 L46 116" stroke="{GLOW}" stroke-width="2" opacity="0.6"/>')
 
 # =============================== WARDEN (boss) ===============================
@@ -87,10 +87,10 @@ ARMOR, ARMOR_DARK, GOLD, CAPE = "#7a1527", "#4a0b17", "#d8a83c", "#3b0610"
 WOUT = 'stroke="#1a0308" stroke-width="1.5"'
 
 def _warden_legs(phase):
-    ly, ry = (110, 117) if phase == 0 else (117, 110)
-    return (f'<path d="M28 82 L26 {ly} L37 {ly} L38 82 Z" fill="{ARMOR_DARK}" {WOUT}/>'
-            f'<path d="M52 82 L54 {ry} L43 {ry} L42 82 Z" fill="{ARMOR_DARK}" {WOUT}/>'
-            f'<path d="M22 {ly} H38 V{ly + 3} H22 Z" fill="{GOLD}"/><path d="M42 {ry} H58 V{ry + 3} H42 Z" fill="{GOLD}"/>')
+    left_foot_y, right_foot_y = (110, 117) if phase == 0 else (117, 110)
+    return (f'<path d="M28 82 L26 {left_foot_y} L37 {left_foot_y} L38 82 Z" fill="{ARMOR_DARK}" {WOUT}/>'
+            f'<path d="M52 82 L54 {right_foot_y} L43 {right_foot_y} L42 82 Z" fill="{ARMOR_DARK}" {WOUT}/>'
+            f'<path d="M22 {left_foot_y} H38 V{left_foot_y + 3} H22 Z" fill="{GOLD}"/><path d="M42 {right_foot_y} H58 V{right_foot_y + 3} H42 Z" fill="{GOLD}"/>')
 
 def _warden_body():
     return (f'<path d="M20 40 L60 40 L70 104 L10 104 Z" fill="{CAPE}" opacity="0.95"/>'
@@ -137,19 +137,19 @@ BARREL = svg(40, 52,
 def _blast(r_core, r_fire, smoke, embers):
     rnd = random.Random(r_fire)
     pts = []
-    for i in range(16):
-        a = i / 16 * 2 * math.pi
-        r = r_fire * (0.75 + 0.35 * rnd.random())
-        pts.append(f"{45 + r * math.cos(a):.1f},{50 + r * math.sin(a) * 0.9:.1f}")
+    for point_number in range(16):
+        angle = point_number / 16 * 2 * math.pi
+        radius = r_fire * (0.75 + 0.35 * rnd.random())
+        pts.append(f"{45 + radius * math.cos(angle):.1f},{50 + radius * math.sin(angle) * 0.9:.1f}")
     body = ''
     if smoke:
         body += f'<circle cx="45" cy="44" r="{r_fire + 4}" fill="#3a3330" opacity="0.6"/>'
     body += f'<polygon points="{" ".join(pts)}" fill="#ff7a00" opacity="{0.55 if smoke else 0.95}"/>'
     if r_core:
         body += f'<circle cx="45" cy="50" r="{r_core + 8}" fill="#ffd23f"/><circle cx="45" cy="50" r="{r_core}" fill="#fff8d0"/>'
-    for i in range(embers):
-        a = rnd.random() * 2 * math.pi; r = r_fire * (0.6 + 0.6 * rnd.random())
-        body += f'<circle cx="{45 + r * math.cos(a):.1f}" cy="{50 + r * math.sin(a):.1f}" r="2.5" fill="#ffcf4a"/>'
+    for ember_number in range(embers):
+        angle = rnd.random() * 2 * math.pi; radius = r_fire * (0.6 + 0.6 * rnd.random())
+        body += f'<circle cx="{45 + radius * math.cos(angle):.1f}" cy="{50 + radius * math.sin(angle):.1f}" r="2.5" fill="#ffcf4a"/>'
     return svg(90, 90, body)
 
 EXPLOSIONS = [_blast(10, 22, False, 4), _blast(14, 38, False, 8), _blast(0, 36, True, 10)]
@@ -164,68 +164,49 @@ FIRE_SHOT = svg(30, 30,
     '<path d="M15 3 Q22 9 24 15 Q24 25 15 27 Q6 25 6 15 Q8 9 15 3 Z" fill="#ff5a00" stroke="#a02800" stroke-width="1.2"/>'
     '<circle cx="15" cy="16" r="6" fill="#ffd23f"/><circle cx="15" cy="17" r="3" fill="#fff8d0"/>')
 
-# =============================== BOSS BAR + RESULTS SCREEN ===============================
-BOSS_BAR = svg(480, 360,
-    '<rect x="186" y="64" width="108" height="17" rx="5" fill="#000" fill-opacity="0.55"/>'
-    + assets2._label(240, 77, "THE WARDEN", "middle", 11, "#ffd23f")
-    + '<rect x="140" y="82" width="200" height="8" rx="2" fill="none" stroke="#ffd23f" stroke-width="1.5"/>')
-
-COMPLETE = assets2._screen("LEVEL COMPLETE", "#40ff70", [("Press SPACE to continue", 300, 18, "#ffe14d")],
-    assets2._label(110, 156, "KILLS", size=18) + assets2._label(110, 201, "ITEMS", size=18)
-    + assets2._label(110, 246, "SECRETS", size=18)
-    + "".join(f'<text x="285" y="{y}" font-family="Sans Serif" font-weight="bold" font-size="30" fill="#ff4a24" '
-              f'text-anchor="middle">/</text>' for y in (160, 205, 250)), 0.88)
 
 # =============================== SOUNDS ===============================
 def spit():
-    rnd = random.Random(11); n = int(RATE * 0.3)
-    noise = _lowpass([rnd.uniform(-1, 1) for _ in range(n)], 0.25)
+    rnd = random.Random(11); sample_count = int(RATE * 0.3)
+    noise = _lowpass([rnd.uniform(-1, 1) for _ in range(sample_count)], 0.25)
     out = []
-    for i in range(n):
-        t = i / RATE
-        out.append(noise[i] * 2.2 * math.exp(-t * 14) + math.sin(2 * math.pi * (500 - 900 * t) * t) * 0.3 * math.exp(-t * 10))
+    for sample_number in range(sample_count):
+        seconds = sample_number / RATE
+        out.append(noise[sample_number] * 2.2 * math.exp(-seconds * 14) + math.sin(2 * math.pi * (500 - 900 * seconds) * seconds) * 0.3 * math.exp(-seconds * 10))
     return _wav(out)
 
 def fireball():
-    rnd = random.Random(12); n = int(RATE * 0.5)
-    noise = [rnd.uniform(-1, 1) for _ in range(n)]
-    out, y = [], 0.0
-    for i in range(n):
-        t = i / RATE
-        a = 0.05 + 0.25 * min(1, t / 0.2)
-        y += a * (noise[i] - y)
-        out.append(y * 2.5 * min(1, t * 30) * (1 - t / 0.5) + math.sin(2 * math.pi * 90 * t) * 0.3 * (1 - t / 0.5))
+    rnd = random.Random(12); sample_count = int(RATE * 0.5)
+    noise = [rnd.uniform(-1, 1) for _ in range(sample_count)]
+    out, smoothed = [], 0.0
+    for sample_number in range(sample_count):
+        seconds = sample_number / RATE
+        smoothing = 0.05 + 0.25 * min(1, seconds / 0.2)
+        smoothed += smoothing * (noise[sample_number] - smoothed)
+        out.append(smoothed * 2.5 * min(1, seconds * 30) * (1 - seconds / 0.5) + math.sin(2 * math.pi * 90 * seconds) * 0.3 * (1 - seconds / 0.5))
     return _wav(out)
 
 def explosion():
-    rnd = random.Random(13); n = int(RATE * 1.1)
-    noise = _lowpass([rnd.uniform(-1, 1) for _ in range(n)], 0.08)
+    rnd = random.Random(13); sample_count = int(RATE * 1.1)
+    noise = _lowpass([rnd.uniform(-1, 1) for _ in range(sample_count)], 0.08)
     out = []
-    for i in range(n):
-        t = i / RATE
-        s = noise[i] * 5 * math.exp(-t * 3.5) * min(1, t * 300)
-        s += math.sin(2 * math.pi * (60 - 25 * t) * t) * math.exp(-t * 4) * 0.9
-        out.append(s)
+    for sample_number in range(sample_count):
+        seconds = sample_number / RATE
+        sample = noise[sample_number] * 5 * math.exp(-seconds * 3.5) * min(1, seconds * 300)
+        sample += math.sin(2 * math.pi * (60 - 25 * seconds) * seconds) * math.exp(-seconds * 4) * 0.9
+        out.append(sample)
     return _wav(out)
 
 def secret():
-    rnd = random.Random(14); n = int(RATE * 0.9)
-    noise = _lowpass([rnd.uniform(-1, 1) for _ in range(n)], 0.03)
+    rnd = random.Random(14); sample_count = int(RATE * 0.9)
+    noise = _lowpass([rnd.uniform(-1, 1) for _ in range(sample_count)], 0.03)
     out = []
-    for i in range(n):
-        t = i / RATE
-        s = noise[i] * 4 * (1 - t / 0.9) * min(1, t * 10)
-        if t > 0.55:
-            for f in (523, 784):
-                s += math.sin(2 * math.pi * f * t) * 0.15 * math.exp(-(t - 0.55) * 6)
-        out.append(s)
+    for sample_number in range(sample_count):
+        seconds = sample_number / RATE
+        sample = noise[sample_number] * 4 * (1 - seconds / 0.9) * min(1, seconds * 10)
+        if seconds > 0.55:
+            for pitch in (523, 784):
+                sample += math.sin(2 * math.pi * pitch * seconds) * 0.15 * math.exp(-(seconds - 0.55) * 6)
+        out.append(sample)
     return _wav(out)
 
-TITLE = assets2._screen("SCRATCH SLAYER", "#e02424", [
-    ("A raycasting shooter built entirely in Scratch", 132, 14, "#bbbbbb"),
-    ("UP / DOWN  or  W / S  -  move       LEFT / RIGHT  -  turn", 166, 14, "#ffffff"),
-    ("A / D  -  strafe       SPACE  -  shoot       M  -  map", 188, 14, "#ffffff"),
-    ("E  -  open doors and flip switches", 210, 14, "#ffffff"),
-    ("Fight through 3 levels. Find the EXIT SWITCH on each one.", 240, 14, "#40ff70"),
-    ("Shoot barrels to blast monsters. Some walls hide secrets...", 262, 13, "#ffd23f"),
-    ("Press SPACE to start", 304, 20, "#ffe14d")])

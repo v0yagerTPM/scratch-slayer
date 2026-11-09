@@ -72,8 +72,8 @@ DIFFICULTIES = [
 ]
 NORMAL_DIFFICULTY = 2
 
-for lv in LEVELS:
-    validate(lv)
+for level in LEVELS:
+    validate(level)
 
 # ---------------- names used in Scratch ----------------
 # broadcasts
@@ -98,12 +98,17 @@ def hurt_player(amount):
     EVERY hit on the player goes through this, so the difficulty setting works everywhere."""
     return chg("health", mul(-1, round_(mul(amount, div(item(V("difficulty"), "difficulty damage to you"), 100)))))
 
+def add_sound(sprite, sound_name, make_sound):
+    """Make a sound with one of the assets functions and give it to a sprite."""
+    wav_data, sample_count = make_sound()
+    sprite.sound(sound_name, wav_data, assets.RATE, sample_count)
+
 def map_letter_at(column, row):
     """letter (column + 1) of item (row + 1) of current map — columns and rows count from 0."""
     return letter(add(column, 1), item(add(row, 1), "current map"))
 
-P = Project()
-stage = Target(P, "Stage", is_stage=True)
+project = Project()
+stage = Target(project, "Stage", is_stage=True)
 stage.costume("black", assets.BACKDROP, 240, 180)
 stage.costume("title sky", assets6.TITLE_SKY, 240, 180)
 stage.costume("victory sky", assets5.VICTORY_SKY, 240, 180)
@@ -143,15 +148,15 @@ for name in ["kills percent", "items percent", "secrets percent", "level seconds
     stage.var(name, 0)
 stage.var("game state", TITLE); stage.var("screen showing", TITLE); stage.var("message name", "")
 
-LEVEL_LISTS = [f"level {i + 1} map" for i in range(len(LEVELS))]
-for name, lv in zip(LEVEL_LISTS, LEVELS):
-    stage.lst(name, lv["rows"])
-stage.lst("level start angles", [lv["angle"] for lv in LEVELS])
-stage.lst("level ceiling hues", [lv["ceil"][0] for lv in LEVELS])
-stage.lst("level ceiling saturations", [lv["ceil"][1] for lv in LEVELS])
-stage.lst("level floor hues", [lv["floor"][0] for lv in LEVELS])
-stage.lst("level floor saturations", [lv["floor"][1] for lv in LEVELS])
-stage.lst("level secret wall looks", [lv["secret_look"] for lv in LEVELS])
+LEVEL_LISTS = [f"level {level_number} map" for level_number in range(1, len(LEVELS) + 1)]
+for name, level in zip(LEVEL_LISTS, LEVELS):
+    stage.lst(name, level["rows"])
+stage.lst("level start angles", [level["angle"] for level in LEVELS])
+stage.lst("level ceiling hues", [level["ceil"][0] for level in LEVELS])
+stage.lst("level ceiling saturations", [level["ceil"][1] for level in LEVELS])
+stage.lst("level floor hues", [level["floor"][0] for level in LEVELS])
+stage.lst("level floor saturations", [level["floor"][1] for level in LEVELS])
+stage.lst("level secret wall looks", [level["secret_look"] for level in LEVELS])
 stage.lst("level max ray steps", LEVEL_MAX_RAY_STEPS)
 stage.lst("level light falloffs", LEVEL_LIGHT_FALLOFF)
 stage.lst("level sprite darkness", LEVEL_SPRITE_DARKNESS)
@@ -167,15 +172,15 @@ for column_number, column in enumerate(WEAPON_COLUMNS):
 for column_number, column in enumerate(DIFFICULTY_COLUMNS):
     stage.lst(f"difficulty {column}", [row[column_number] for row in DIFFICULTIES])
 stage.lst("weapons owned", [1, 1, 0, 0, 0])          # 1 = you have it. Item N = weapon slot N.
-stage.lst("ammo names", [a[0] for a in AMMO])
-stage.lst("ammo counts", [a[1] for a in AMMO])
-stage.lst("ammo limits", [a[2] for a in AMMO])
-stage.lst("ammo at level start", [a[1] for a in AMMO])
+stage.lst("ammo names", [ammo[0] for ammo in AMMO])
+stage.lst("ammo counts", [ammo[1] for ammo in AMMO])
+stage.lst("ammo limits", [ammo[2] for ammo in AMMO])
+stage.lst("ammo at level start", [ammo[1] for ammo in AMMO])
 # Where every monster is right now (item N = monster id N). Rockets use these to find what they hit.
 stage.lst("monster x positions"); stage.lst("monster y positions"); stage.lst("monster alive flags")
-stage.lst("wall letters", [w[0] for w in WALLS]); stage.lst("wall hues", [w[1] for w in WALLS])
-stage.lst("wall saturations", [w[2] for w in WALLS]); stage.lst("wall brightnesses", [w[3] for w in WALLS])
-stage.lst("wall styles", [w[4] for w in WALLS])
+stage.lst("wall letters", [wall[0] for wall in WALLS]); stage.lst("wall hues", [wall[1] for wall in WALLS])
+stage.lst("wall saturations", [wall[2] for wall in WALLS]); stage.lst("wall brightnesses", [wall[3] for wall in WALLS])
+stage.lst("wall styles", [wall[4] for wall in WALLS])
 stage.lst("current map"); stage.lst("wall distance per column", [0] * RAY_COUNT)
 for name in ["monster start x", "monster start y", "monster start type", "item start x", "item start y",
              "item start type", "barrel start x", "barrel start y",
@@ -202,10 +207,11 @@ stage.lst("HUD number y", [-158, -158, TALLY_Y[0], TALLY_Y[1], TALLY_Y[2], TALLY
 stage.lst("HUD number size", [100] * 12 + [70] * 4)
 stage.lst("HUD number screen", [NONE, NONE] + [COMPLETE] * 7 + [WIN, WIN, WIN, OPTIONS, OPTIONS, OPTIONS, OPTIONS])
 
-def list_monitor(name, x, y, w, h):
-    lid = P.stage_lists[name][0]
-    P.monitors.append({"id": lid, "mode": "list", "opcode": "data_listcontents", "params": {"LIST": name},
-                       "spriteName": None, "value": [], "width": w, "height": h, "x": x, "y": y,
+def list_monitor(name, left, top, width, height):
+    """A list's box on the stage (hidden until the game or a student shows it)."""
+    list_id = project.stage_lists[name][0]
+    project.monitors.append({"id": list_id, "mode": "list", "opcode": "data_listcontents", "params": {"LIST": name},
+                       "spriteName": None, "value": [], "width": width, "height": height, "x": left, "y": top,
                        "visible": False})
 list_monitor("map problems", 10, 10, 460, 230)
 for name in LEVEL_LISTS:
@@ -559,22 +565,22 @@ TIME is shown as minutes:seconds. 125 seconds = 2:05, because
 125 / 60 = 2 (rounded down) and 125 mod 60 = 5. The 'mod' block gives
 the remainder after dividing.""",
 ]
-gy = 0
+guide_y = 0
 for text in GUIDE:
     guide_height = 60 + 18 * len(text.split("\n"))
-    stage.workspace_comment(text, 0, gy, width=560, height=guide_height)
-    gy += guide_height + 40
+    stage.workspace_comment(text, 0, guide_y, width=560, height=guide_height)
+    guide_y += guide_height + 40
 
 # ============================================================================================
 #                                              ENGINE
 # ============================================================================================
-E = Target(P, "Engine", layer=1, visible=False)
-E.costume("dot", assets.TINY, 1, 1)
-for nm, fn in (("door", assets2.door), ("switch", assets2.switch), ("locked", assets2.locked),
+engine = Target(project, "Engine", layer=1, visible=False)
+engine.costume("dot", assets.TINY, 1, 1)
+for sound_name, make_sound in (("door", assets2.door), ("switch", assets2.switch), ("locked", assets2.locked),
                ("secret", assets3.secret), ("melt", assets4.melt), ("out of breath", assets5.out_of_breath),
                ("menu click", assets6.menu_click), ("tally tick", assets7.tally_tick),
                ("tally done", assets7.tally_done)):
-    d, n = fn(); E.sound(nm, d, assets.RATE, n)
+    add_sound(engine, sound_name, make_sound)
 ENGINE_VARS = [
     # raycaster
     "ray column", "ray screen position", "ray direction x", "ray direction y", "ray square x", "ray square y",
@@ -602,7 +608,7 @@ ENGINE_VARS = [
     # level clock + tally
     "time at last frame", "tally progress", "time shown in seconds", "difficulty when loaded"]
 for name in ENGINE_VARS:
-    E.var(name)
+    engine.var(name)
 
 def wait_for_space(skip_pause=False):
     blocks = [wait_until(not_(key("space"))), wait_until(key("space")), wait_until(not_(key("space")))]
@@ -697,8 +703,9 @@ frame = [
          "'weapon switch timer' lowers the old gun and raises the new one;\n"
          "you can't shoot until it's back up.",
          if_(and_(key("1"), not_(eq(V("current weapon"), 1))), setv("current weapon", 1), setv("weapon switch timer", 8))),
-    *[if_(and_(key(str(n)), and_(eq(item(n, "weapons owned"), 1), not_(eq(V("current weapon"), n)))),
-          setv("current weapon", n), setv("weapon switch timer", 8)) for n in range(2, 6)],
+    *[if_(and_(key(str(weapon_number)), and_(eq(item(weapon_number, "weapons owned"), 1),
+                                              not_(eq(V("current weapon"), weapon_number)))),
+          setv("current weapon", weapon_number), setv("weapon switch timer", 8)) for weapon_number in range(2, 6)],
     note("SHOOTING (space, or click when mouse steering is on): only when the\n"
          "weapon has reloaded ('shot cooldown') and isn't being switched.\n"
          "The monsters check during their update whether they are in the crosshair.",
@@ -725,13 +732,13 @@ frame = [
     if_(lt(V("health"), 1), setv("health", 0), setv("game state", DEAD)),
 ]
 
-E.script(
+engine.script(
     flag(), hide(),
     note("NEW GAME: reset everything that carries over between levels.\n"
          "You start with your fists and the pistol (weapon slots 1 and 2).",
          setv("health", 100)), replace("weapons owned", 3, 0), replace("weapons owned", 4, 0),
     replace("weapons owned", 5, 0), setv("current weapon", 2), setv("weapon switch timer", 0),
-    *[replace("ammo counts", i + 1, a[1]) for i, a in enumerate(AMMO)], call("remember ammo at level start"),
+    *[replace("ammo counts", ammo_slot, ammo[1]) for ammo_slot, ammo in enumerate(AMMO, start=1)], call("remember ammo at level start"),
     setv("total kills", 0), setv("total secrets found", 0), setv("total secret count", 0), setv("current level", 1), setv("map is showing", 0), setv("M key was held", 0),
     setv("E key was held", 0), setv("shot cooldown", 0), setv("shot fired this frame", 0),
     setv("target hit id", 0), setv("gun bob angle", 0), setv("player is moving", 0),
@@ -809,7 +816,7 @@ E.script(
             "flip the exit switch or die -> results screen -> next level.\n"
             "The level design guide is in the Stage's code area.")
 
-E.script(Def("share explosions and clear wreckage"),
+engine.script(Def("share explosions and clear wreckage"),
     note("EXPLOSIONS: barrels that blew up last frame put their position in\n"
          "'new explosion x/y'. Copy them to 'explosion x/y' for THIS frame, so\n"
          "every monster and barrel sees the same list while it updates.",
@@ -828,7 +835,7 @@ E.script(Def("share explosions and clear wreckage"),
     clear_list("squares to clear x"), clear_list("squares to clear y"),
          comment="SHARE EXPLOSIONS AND CLEAR WRECKAGE: runs at the start of every frame.")
 
-E.script(Def("level intro", warp=False),
+engine.script(Def("level intro", warp=False),
          note("Freeze the game and hide the HUD, gun and screens.",
               setv("game state", INTRO)), setv("screen showing", INTRO),
          bcastw(DRAW_HUD), bcastw(DRAW_NUMBERS),
@@ -845,7 +852,7 @@ E.script(Def("level intro", warp=False),
               setv("card is up", 0)), call("melt in", warp=False),
          comment="LEVEL INTRO: the level card, then the screen melt.")
 
-E.script(Def("melt in", warp=False),
+engine.script(Def("melt in", warp=False),
          setv("game state", INTRO), setv("screen showing", INTRO),
          bcastw(DRAW_HUD), bcastw(DRAW_NUMBERS),
          call("start melt"), play("melt"),
@@ -854,7 +861,7 @@ E.script(Def("melt in", warp=False),
               until(eq(V("melt done"), 1), call("draw 3D view"), call("draw melt curtain"))),
          comment="MELT IN: reveal the level with a Doom-style screen melt.")
 
-E.script(Def("start melt"),
+engine.script(Def("start melt"),
          clear_list("melt offsets"),
          note("Each of the 24 columns gets a starting offset. Negative = a short\n"
               "wait before it starts moving. Each column's wait is close to its\n"
@@ -870,7 +877,7 @@ E.script(Def("start melt"),
          setv("melt done", 0),
          comment="START MELT: set up the 24 melt columns.")
 
-E.script(Def("draw melt curtain"),
+engine.script(Def("draw melt curtain"),
          setv("melt done", 1), setv("melt column", 1), pen_size(21),
          repeat(24,
                 note("Move this column down: slowly while waiting (offset below 0),\n"
@@ -894,13 +901,13 @@ E.script(Def("draw melt curtain"),
                 chg("melt column", 1)),
          comment="DRAW MELT CURTAIN: one frame of the melt. Sets 'melt done' to 1\nwhen every column has slid off the bottom.")
 
-E.script(Def("start level", warp=False),
+engine.script(Def("start level", warp=False),
          bcastw(CLEAR), call("load level"), setv("difficulty when loaded", V("difficulty")), bcastw(SPAWN),
          call("update camera"),
          comment="START LEVEL: delete the old monster and item clones, read the\n"
                  "map with 'load level', make new clones, then aim the camera.")
 
-E.script(Def("draw still frame", warp=False),
+engine.script(Def("draw still frame", warp=False),
          setv("target hit id", 0), setv("shot fired this frame", 0),
          call("draw 3D view"), bcastw(UPDATE), call("copy numbers to HUD"), bcastw(DRAW_HUD), bcastw(DRAW_NUMBERS),
          comment="DRAW STILL FRAME: draws one frame while the game is paused\n"
@@ -911,13 +918,13 @@ HUD_SOURCES = ["health", "ammo shown", "kills percent shown", "items percent sho
                "time minutes shown", "time seconds shown", "par minutes shown", "par seconds shown",
                "total kills", "total secrets found", "total secret count",
                "turn speed", "mouse sensitivity", "field of view"]
-E.script(Def("copy numbers to HUD"),
+engine.script(Def("copy numbers to HUD"),
          note("AMMO SHOWN = the ammo for the weapon in your hands. Fists use none, so\n"
               "it's empty text and the Digits sprite shows nothing.",
               setv("weapon ammo slot", item(V("current weapon"), "weapon ammo slots"))),
          ifelse(eq(V("weapon ammo slot"), 0), [setv("ammo shown", "")],
                 [setv("ammo shown", item(V("weapon ammo slot"), "ammo counts"))]),
-         *[replace("HUD number values", i + 1, V(v)) for i, v in enumerate(HUD_SOURCES)],
+         *[replace("HUD number values", slot, V(source)) for slot, source in enumerate(HUD_SOURCES, start=1)],
          note("Slot 16 (start level) only shows in the title screen's options menu.",
               ifelse(eq(V("options from game"), 1), [replace("HUD number values", 16, "")],
                      [replace("HUD number values", 16, V("start level choice"))])),
@@ -933,7 +940,7 @@ def two_digits(var):
     """Seconds always show two digits on a clock: 5 becomes "05"."""
     return if_(lt(V(var), 10), setv(var, join("0", V(var))))
 
-E.script(Def("work out level stats"),
+engine.script(Def("work out level stats"),
     note("FINAL NUMBERS. Percentages are rounded to whole numbers.",
          percent_of("level kills", "level monster count", "kills percent")),
     percent_of("level items collected", "level item count", "items percent"),
@@ -951,7 +958,7 @@ E.script(Def("work out level stats"),
     setv("time minutes shown", 0), setv("time seconds shown", "00"), setv("par was beaten", 0),
     comment="WORK OUT LEVEL STATS: runs once when you reach the exit, before\nthe tally screen appears.")
 
-E.script(Def("count up level stats", warp=False),
+engine.script(Def("count up level stats", warp=False),
     setv("tally progress", 0),
     note("COUNT UP: one pass per frame. 'tally progress' goes from 0 to 1 in\n"
          "30 frames (1 second), and every number shows that fraction of its\n"
@@ -980,7 +987,7 @@ E.script(Def("count up level stats", warp=False),
 
 
 # ------------------------------------------- weapons -------------------------------------------
-E.script(Def("fire current weapon"),
+engine.script(Def("fire current weapon"),
     note("Which ammo does this weapon use? 0 = none (fists), otherwise an item\n"
          "number in 'ammo counts' (1 bullets, 2 shells, 3 rockets).",
          setv("weapon ammo slot", item(V("current weapon"), "weapon ammo slots"))),
@@ -1013,7 +1020,7 @@ E.script(Def("fire current weapon"),
             "Every weapon works the same way; their differences are just numbers\n"
             "in the 'weapon ...' lists on the Stage (try changing them!).")
 
-E.script(Def("pick best weapon"),
+engine.script(Def("pick best weapon"),
     note("Try slot 5, then 4, 3, 2. The first one you own that has ammo wins.\n"
          "If none do, you're down to your fists (slot 1).",
          setv("current weapon", 1)), setv("weapon to try", 5),
@@ -1026,17 +1033,17 @@ E.script(Def("pick best weapon"),
     setv("weapon switch timer", 8),
     comment="PICK BEST WEAPON: like Doom, switch away from an empty gun.")
 
-E.script(Def("remember ammo at level start"),
-    *[replace("ammo at level start", i + 1, item(i + 1, "ammo counts")) for i in range(len(AMMO))],
+engine.script(Def("remember ammo at level start"),
+    *[replace("ammo at level start", ammo_slot, item(ammo_slot, "ammo counts")) for ammo_slot in range(1, len(AMMO) + 1)],
     comment="REMEMBER AMMO AT LEVEL START: so dying gives this level's ammo back.")
 
-E.script(Def("restore ammo at level start"),
-    *[replace("ammo counts", i + 1, item(i + 1, "ammo at level start")) for i in range(len(AMMO))],
+engine.script(Def("restore ammo at level start"),
+    *[replace("ammo counts", ammo_slot, item(ammo_slot, "ammo at level start")) for ammo_slot in range(1, len(AMMO) + 1)],
     if_(lt(item(1, "ammo counts"), START_BULLETS), replace("ammo counts", 1, START_BULLETS)),
     comment="RESTORE AMMO AT LEVEL START: after dying. You always get at least\n"
             f"{START_BULLETS} bullets back so the pistol works.")
 
-E.script(Def("give level select weapons"),
+engine.script(Def("give level select weapons"),
     note("Own every weapon from slot 3 up to 'level select best weapon' for\n"
          "the chosen level, with some ammo for each.",
          setv("weapon to try", 3)),
@@ -1050,7 +1057,7 @@ E.script(Def("give level select weapons"),
     call("remember ammo at level start"),
     comment="GIVE LEVEL SELECT WEAPONS: starting part-way through the game.")
 
-E.script(Def("switch music"),
+engine.script(Def("switch music"),
     setv("music is on", sub(1, V("music is on"))), bcast(APPLY_MUSIC),
     ifelse(eq(V("music is on"), 1), [setv("message name", "music on")], [setv("message name", "music off")]),
     setv("message timer", 40),
@@ -1065,7 +1072,7 @@ LEVEL_MIDDLE_X = sum(assets6.LEVEL_ARROWS_X) / 2
 def clamp(var, low, high):
     return [if_(lt(V(var), low), setv(var, low)), if_(gt(V(var), high), setv(var, high))]
 
-E.script(Def("options menu", warp=False),
+engine.script(Def("options menu", warp=False),
     note("OPEN: remember which screen was showing (the title, or the game if\n"
          "you pressed P), and wait until you let go of the key that opened it.",
          setv("screen before options", V("screen showing"))),
@@ -1093,7 +1100,7 @@ E.script(Def("options menu", warp=False),
     comment="OPTIONS MENU: O on the title screen, P during the game.\n"
             "Runs one menu frame per screen refresh until you close it.")
 
-E.script(Def("handle options input"),
+engine.script(Def("handle options input"),
     note("CLOSE with O or P.",
          if_(or_(key("o"), key("p")), setv("options open", 0))),
     setv("last options row", V("options row")),
@@ -1169,8 +1176,8 @@ E.script(Def("handle options input"),
 # ------------------------------------------- level loader -------------------------------------------
 def from_current_level_list(index, target_var):
     """if current level = 1 then set target to (item index of level 1 map) ... one 'if' per level."""
-    return [if_(eq(V("current level"), i + 1), setv(target_var, item(index, name)))
-            for i, name in enumerate(LEVEL_LISTS)]
+    return [if_(eq(V("current level"), level_number), setv(target_var, item(index, name)))
+            for level_number, name in enumerate(LEVEL_LISTS, start=1)]
 
 def thing(letter_code, *blocks):
     return if_(eq(V("map letter"), letter_code), *blocks, setv("map letter", 0))
@@ -1186,7 +1193,7 @@ row_number, letter_number = add(V("map row"), 1), add(V("map column"), 1)
 on_outside_edge = or_(or_(eq(V("map row"), 0), eq(V("map row"), sub(V("row count"), 1))),
                       or_(eq(V("map column"), 0), eq(V("map column"), sub(V("first row length"), 1))))
 
-E.script(
+engine.script(
     Def("load level"),
     note("1. CLEAR OUT the last level: empty the map and the start lists,\n"
          "and reset the per-level counters, keys and timers.",
@@ -1211,8 +1218,8 @@ E.script(
          "is one 'if' per level, in THREE places: two here (row count, first row)\n"
          f"and one inside the loop below. To add level {len(LEVELS) + 1}, duplicate all three.",
          if_(eq(V("current level"), 1), setv("row count", length(LEVEL_LISTS[0])))),
-    *[if_(eq(V("current level"), i + 1), setv("row count", length(name)))
-      for i, name in enumerate(LEVEL_LISTS) if i > 0],
+    *[if_(eq(V("current level"), level_number), setv("row count", length(name)))
+      for level_number, name in enumerate(LEVEL_LISTS, start=1) if level_number > 1],
     *from_current_level_list(1, "row text"),
     setv("first row length", strlen(V("row text"))),
     note("3. READ THE MAP ROW BY ROW. 'map row' counts from 0 (row 0 = item 1).",
@@ -1220,8 +1227,8 @@ E.script(
     repeat(V("row count"),
            note("Get this row's text from the level list.",
                 if_(eq(V("current level"), 1), setv("row text", item(add(V("map row"), 1), LEVEL_LISTS[0])))),
-           *[if_(eq(V("current level"), i + 1), setv("row text", item(add(V("map row"), 1), name)))
-             for i, name in enumerate(LEVEL_LISTS) if i > 0],
+           *[if_(eq(V("current level"), level_number), setv("row text", item(add(V("map row"), 1), name)))
+             for level_number, name in enumerate(LEVEL_LISTS, start=1) if level_number > 1],
            note("MAP CHECK: every row must be as long as the first one.",
                 if_(not_(eq(strlen(V("row text")), V("first row length"))),
                     problem("Row ", row_number, " has ", strlen(V("row text")), " letters but row 1 has ",
@@ -1252,7 +1259,7 @@ E.script(
                             thing("H", *item_start(1))),
                        thing("A", *item_start(2)),
                        thing("K", *item_start(3)), thing("J", *item_start(4)),
-                       *[thing(ch, *item_start(n)) for ch, n in (("I", 6), ("U", 7), ("N", 8), ("Q", 9), ("L", 10))],
+                       *[thing(item_letter, *item_start(item_type)) for item_letter, item_type in (("I", 6), ("U", 7), ("N", 8), ("Q", 9), ("L", 10))],
                        note("BARRELS (E) keep their letter, so they block like a wall until they\n"
                             "explode. SECRET WALLS (S) are counted for the results screen.",
                             if_(eq(V("map letter"), "E"), addto("barrel start x", V("map column")),
@@ -1302,7 +1309,7 @@ E.script(
             "is in the comments on the STAGE (click the Stage, then Code).")
 
 # --------------------------------------------- camera + movement ---------------------------------------------
-E.script(
+engine.script(
     Def("update camera"),
     note("Look direction = which way you face, as an arrow 1 square long:\n"
          "x = cos(angle), y = sin(angle).",
@@ -1321,7 +1328,7 @@ E.script(
                                               mul(V("look direction x"), V("camera plane y")))))),
     comment="UPDATE CAMERA: works out which way the camera points from\n'player angle'. Runs every frame after turning.")
 
-E.script(
+engine.script(
     Def("move player with collision"),
     note("Try the X part of the step first. 'wall buffer' looks 0.25 squares\n"
          "ahead of you so you stop BEFORE your face touches the wall.",
@@ -1338,14 +1345,14 @@ E.script(
         setv("player y", V("next player y"))),
     comment="MOVE PLAYER WITH COLLISION: moves you by 'move amount x/y'\nunless a wall is in the way.")
 
-E.script(Def("find facing square"),
+engine.script(Def("find facing square"),
          setv("facing square x", floor_(add(V("player x"), mul(V("look direction x"), 0.9)))),
          setv("facing square y", floor_(add(V("player y"), mul(V("look direction y"), 0.9)))),
          setv("facing letter", map_letter_at(V("facing square x"), V("facing square y"))),
          comment="FIND FACING SQUARE: which square is 0.9 squares in front of you,\n"
                  "and what letter is in it? Used for doors and the exit switch.")
 
-E.script(Def("change map square"),
+engine.script(Def("change map square"),
          note("Get the row, then rebuild it letter by letter.",
               setv("row text", item(add(V("square to change y"), 1), "current map"))),
          setv("new row text", ""), setv("letter position", 1),
@@ -1360,12 +1367,12 @@ E.script(Def("change map square"),
                  "in 'current map'. Scratch can't change one letter inside a piece\n"
                  "of text, so we rebuild the whole row with the new letter in it.")
 
-E.script(Def("open door"),
+engine.script(Def("open door"),
          setv("square to change x", V("facing square x")), setv("square to change y", V("facing square y")),
          setv("new letter", 0), call("change map square"), play("door"),
          comment="OPEN DOOR: replace the door in front of you with floor (0).")
 
-E.script(
+engine.script(
     Def("use door or switch"), call("find facing square"),
     note("D = ordinary door: always opens.",
          if_(eq(V("facing letter"), "D"), call("open door"))),
@@ -1559,7 +1566,7 @@ minimap = [
     pen_color("#40ff40"), pen_size(5), *dot(V("minimap player x"), V("minimap player y")),
 ]
 
-E.script(
+engine.script(
     Def("draw 3D view"),
     note("Wipe last frame's drawing.", pen_clear()),
     *ceiling, *floor_bands,
@@ -1649,7 +1656,7 @@ def explosion_scan(x_var, y_var, *for_each_close_blast):
 # ============================================================================================
 #                                              MONSTER
 # ============================================================================================
-M = Target(P, "Monster", layer=2, visible=False)
+monster = Target(project, "Monster", layer=2, visible=False)
 MONSTER_ART = {
     "imp": (assets.IMP_WALK1, assets.IMP_WALK2, assets.IMP_ATTACK, assets.IMP_DEAD),
     "spitter": (assets3.SPITTER_WALK1, assets3.SPITTER_WALK2, assets3.SPITTER_ATTACK, assets3.SPITTER_DEAD),
@@ -1661,11 +1668,11 @@ MONSTER_ART = {
 }
 for monster_name, art in MONSTER_ART.items():
     for pose, svg_art in zip(("walk 1", "walk 2", "attack", "dead"), art):
-        M.costume(f"{monster_name} {pose}", svg_art, 40, 120)
-for nm, fn in (("pain", assets.monster_pain), ("death", assets.monster_death), ("player hurt", assets.player_hurt),
+        monster.costume(f"{monster_name} {pose}", svg_art, 40, 120)
+for sound_name, make_sound in (("pain", assets.monster_pain), ("death", assets.monster_death), ("player hurt", assets.player_hurt),
                ("spit", assets3.spit), ("fireball", assets3.fireball), ("slam", assets4.thud),
                ("blink", assets6.wraith_blink)):
-    data, n = fn(); M.sound(nm, data, assets.RATE, n)
+    add_sound(monster, sound_name, make_sound)
 for name in ["monster id", "is clone", "monster type", "monster name", "monster x", "monster y", "is alive",
              "monster health", "full health", "attack cooldown", "volley cooldown", "pain flash timer", "attack pose timer",
              "is chasing", "moved this frame", "damage taken", "explosion number", "distance to blast",
@@ -1675,7 +1682,7 @@ for name in ["monster id", "is clone", "monster type", "monster name", "monster 
              # special moves
              "speed multiplier", "charge state", "charge timer", "charge cooldown", "charge direction x",
              "charge direction y", "blink timer", "blink side", "has called for help", "helper x", "helper y"]:
-    M.var(name)
+    monster.var(name)
 
 def stat(column):
     """item (monster type) of the 'monster <column>' list — this monster's number for that stat."""
@@ -1694,16 +1701,16 @@ def step_monster(direction):
             setv("monster y", V("next monster y"))),
         setv("moved this frame", 1)]
 
-M.script(flag(), hide(), setv("is clone", 0),
+monster.script(flag(), hide(), setv("is clone", 0),
          comment="The original Monster sprite never appears. It only makes clones.")
-M.script(recv(CLEAR), if_(eq(V("is clone"), 1), delete_clone()),
+monster.script(recv(CLEAR), if_(eq(V("is clone"), 1), delete_clone()),
          comment="CLEAR LEVEL: every monster clone deletes itself.")
 def add_monster_clone():
     return [chg("monster id", 1),
             addto("monster x positions", add(item(V("monster id"), "monster start x"), 0.5)),
             addto("monster y positions", add(item(V("monster id"), "monster start y"), 0.5)),
             addto("monster alive flags", 1), clone()]
-M.script(recv(SPAWN),
+monster.script(recv(SPAWN),
          if_(eq(V("is clone"), 0), setv("monster id", 0),
              clear_list("monster x positions"), clear_list("monster y positions"), clear_list("monster alive flags"),
              repeat(length("monster start x"), *add_monster_clone())),
@@ -1711,13 +1718,13 @@ M.script(recv(SPAWN),
                  "Each clone copies 'monster id' at the moment it is made, so the\n"
                  "clones are numbered 1, 2, 3 ... It also adds a line for each one to\n"
                  "'monster x/y positions' and 'monster alive flags'.")
-M.script(recv(SUMMON),
+monster.script(recv(SUMMON),
          if_(eq(V("is clone"), 0),
              repeat(sub(length("monster start x"), V("monster id")), *add_monster_clone())),
          comment="SUMMON: a boss added monsters to the end of the start lists.\n"
                  "'monster id' still holds the last id handed out, so make clones\n"
                  "for the new entries only.")
-M.script(as_clone(), setv("is clone", 1),
+monster.script(as_clone(), setv("is clone", 1),
          note("Look up my start square and my TYPE (1 imp, 2 spitter, 3 golem,\n"
               "4 warden). Everything else about me comes from the 'monster ...'\n"
               "lists, using my type as the item number.",
@@ -1740,7 +1747,7 @@ M.script(as_clone(), setv("is clone", 1),
          costume("imp walk 1", join(V("monster name"), " walk 1")), cleareffects(), hide(),
          comment="NEW CLONE: set myself up from the monster type lists.")
 
-M.script(Def("check line of sight"),
+monster.script(Def("check line of sight"),
          setv("sight is clear", 1), setv("sight x", V("monster x")), setv("sight y", V("monster y")),
          note("Walk an invisible point from me to the player in small steps.\n"
               "If any step lands in something that isn't floor, I can't see you.",
@@ -1752,7 +1759,7 @@ M.script(Def("check line of sight"),
          comment="CHECK LINE OF SIGHT: can I see the player? Ranged monsters only\n"
                  "shoot when the answer is yes, so you can hide behind walls.")
 
-M.script(Def("fire volley"),
+monster.script(Def("fire volley"),
          note("Aim = a 1-square arrow from me toward the player.",
               setv("aim x", div(mul(-1, V("offset x from player")), V("distance to player")))),
          setv("aim y", div(mul(-1, V("offset y from player")), V("distance to player"))),
@@ -1775,7 +1782,7 @@ M.script(Def("fire volley"),
                 chg("volley shot number", 1)),
          comment="FIRE VOLLEY: launch 'monster shots per volley' projectiles at you.")
 
-M.script(Def("add up explosion damage"),
+monster.script(Def("add up explosion damage"),
          *explosion_scan("monster x", "monster y",
                          if_(lt(V("distance to blast"), 2.6),
                              ifelse(lt(V("distance to blast"), 1.3), [chg("damage taken", 6)], [chg("damage taken", 3)]))),
@@ -1784,7 +1791,7 @@ M.script(Def("add up explosion damage"),
                  "A loop in a broadcast script pauses until the next frame, and the\n"
                  "next frame's broadcast would RESTART the script before it finishes.")
 
-M.script(Def("charge at the player"),
+monster.script(Def("charge at the player"),
     note("CHARGER. 'charge state': 0 = walking, 1 = winding up (head down, a\n"
          "warning!), 2 = charging in a straight line, 3 = stunned after\n"
          "slamming into a wall.",
@@ -1828,7 +1835,7 @@ M.script(Def("charge at the player"),
                         if_(lt(V("charge timer"), 1), setv("charge state", 0), setv("charge cooldown", 30)))])]),
     comment="CHARGE AT THE PLAYER: the charger's special move ('monster special\nmove' = charge).")
 
-M.script(Def("blink sideways"),
+monster.script(Def("blink sideways"),
     if_(gt(V("blink timer"), 0), chg("blink timer", -1)),
     note("Every 2-4 seconds, jump 1.6 squares to the left or right of the line\n"
          "between us. Turning an arrow 90 degrees just swaps x and y and flips\n"
@@ -1844,7 +1851,7 @@ M.script(Def("blink sideways"),
              setv("blink timer", rnd(60, 120)))),
     comment="BLINK SIDEWAYS: the wraith's special move ('monster special move' = blink).")
 
-M.script(Def("call for help"),
+monster.script(Def("call for help"),
     note("RAGE at half health (once): faster, shoots more often, and calls in\n"
          "two chargers, one on each side of me (or on my square if that side\n"
          "is a wall).",
@@ -1859,7 +1866,7 @@ M.script(Def("call for help"),
     chg("level monster count", 2), bcast(SUMMON),
     comment="CALL FOR HELP: the colossus's special move ('monster special move'\n= rage).")
 
-M.script(recv(UPDATE), if_(eq(V("is clone"), 1),
+monster.script(recv(UPDATE), if_(eq(V("is clone"), 1),
     note("DAMAGE: add up everything that hurts me this frame. A weapon hit does\n"
          "'hit damage' (rolled when you fired). An explosion does 6 up close,\n"
          "3 farther out.",
@@ -1978,30 +1985,30 @@ M.script(recv(UPDATE), if_(eq(V("is clone"), 1),
 # ============================================================================================
 #                                          PICKUPS (items + keys)
 # ============================================================================================
-I = Target(P, "Pickup", layer=2, visible=False)
-for nm, art in (("item 1", assets2.MEDKIT), ("item 2", assets2.SHELLS), ("item 3", assets2.RED_KEY),
+pickup = Target(project, "Pickup", layer=2, visible=False)
+for costume_name, art in (("item 1", assets2.MEDKIT), ("item 2", assets2.SHELLS), ("item 3", assets2.RED_KEY),
                 ("item 4", assets2.BLUE_KEY), ("item 6", assets6.BULLETS), ("item 7", assets6.ROCKETS)):
-    I.costume(nm, art, 20, 40)
-I.costume("item 5", assets6.SKULL_KEY, 20, 44)
-for nm, art in (("item 8", assets6.SHOTGUN_PICKUP), ("item 9", assets6.CHAINGUN_PICKUP), ("item 10", assets6.LAUNCHER_PICKUP)):
-    I.costume(nm, art, 32, 34)
-for nm, fn in (("item", assets2.item), ("key", assets2.key), ("weapon", assets6.weapon_pickup)):
-    d, n = fn(); I.sound(nm, d, assets.RATE, n)
+    pickup.costume(costume_name, art, 20, 40)
+pickup.costume("item 5", assets6.SKULL_KEY, 20, 44)
+for costume_name, art in (("item 8", assets6.SHOTGUN_PICKUP), ("item 9", assets6.CHAINGUN_PICKUP), ("item 10", assets6.LAUNCHER_PICKUP)):
+    pickup.costume(costume_name, art, 32, 34)
+for sound_name, make_sound in (("item", assets2.item), ("key", assets2.key), ("weapon", assets6.weapon_pickup)):
+    add_sound(pickup, sound_name, make_sound)
 for name in ["item id", "is clone", "item x", "item y", "item type", "is taken", "was picked up", "has dropped",
              "offset x from player", "offset y from player", "distance to player", "sideways in view",
              "depth in view", "screen x", "screen column index"]:
-    I.var(name)
-I.script(flag(), hide(), setv("is clone", 0),
+    pickup.var(name)
+pickup.script(flag(), hide(), setv("is clone", 0),
          comment="The original Pickup sprite never appears. It only makes clones.\n"
                  "Item types: 1 health pack, 2 shells, 3 red key, 4 blue key,\n"
                  "5 skull key (dropped by a boss), 6 bullets, 7 rockets,\n"
                  "8 shotgun, 9 chaingun, 10 rocket launcher.")
-I.script(recv(CLEAR), if_(eq(V("is clone"), 1), delete_clone()),
+pickup.script(recv(CLEAR), if_(eq(V("is clone"), 1), delete_clone()),
          comment="CLEAR LEVEL: every item clone deletes itself.")
-I.script(recv(SPAWN),
+pickup.script(recv(SPAWN),
          if_(eq(V("is clone"), 0), setv("item id", 0), repeat(length("item start x"), chg("item id", 1), clone())),
          comment="SPAWN: one clone per item letter on the map (and one skull key per boss).")
-I.script(as_clone(), setv("is clone", 1),
+pickup.script(as_clone(), setv("is clone", 1),
          setv("item x", add(item(V("item id"), "item start x"), 0.5)),
          setv("item y", add(item(V("item id"), "item start y"), 0.5)),
          setv("item type", item(V("item id"), "item start type")), setv("is taken", 0), setv("has dropped", 0),
@@ -2019,7 +2026,7 @@ def weapon_pickup(type_number, slot, ammo_slot, amount):
                if_(eq(item(slot, "weapons owned"), 0), setv("current weapon", slot), setv("weapon switch timer", 8)),
                replace("weapons owned", slot, 1), *add_ammo(ammo_slot, amount), setv("was picked up", 1))
 
-I.script(recv(UPDATE), if_(and_(eq(V("is clone"), 1), eq(V("is taken"), 0)),
+pickup.script(recv(UPDATE), if_(and_(eq(V("is clone"), 1), eq(V("is taken"), 0)),
     ifelse(and_(eq(V("item type"), 5), eq(V("boss is dead"), 0)),
            [note("SKULL KEY: stays hidden (and can't be picked up) until the boss dies.",
                  hide())],
@@ -2062,34 +2069,34 @@ I.script(recv(UPDATE), if_(and_(eq(V("is clone"), 1), eq(V("is taken"), 0)),
 # ============================================================================================
 #                                     BARRELS (explode when shot)
 # ============================================================================================
-BR = Target(P, "Barrel", layer=2, visible=False)
-BR.costume("barrel", assets3.BARREL, 20, 52)
-for i, art in enumerate(assets3.EXPLOSIONS):
-    BR.costume(f"explosion {i + 1}", art, 45, 78)
-d, n = assets3.explosion(); BR.sound("explosion", d, assets.RATE, n)
+barrel = Target(project, "Barrel", layer=2, visible=False)
+barrel.costume("barrel", assets3.BARREL, 20, 52)
+for frame_number, art in enumerate(assets3.EXPLOSIONS, start=1):
+    barrel.costume(f"explosion {frame_number}", art, 45, 78)
+add_sound(barrel, "explosion", assets3.explosion)
 for name in ["barrel id", "is clone", "barrel x", "barrel y", "barrel state", "fuse timer", "blast frame",
              "blast damage", "explosion number", "distance to blast", "offset x from player", "offset y from player",
              "distance to player", "sideways in view", "depth in view", "screen x", "screen column index"]:
-    BR.var(name)
-BR.script(flag(), hide(), setv("is clone", 0),
+    barrel.var(name)
+barrel.script(flag(), hide(), setv("is clone", 0),
           comment="Barrels. 'barrel state': 0 = sitting there, 1 = about to blow\n"
                   "(fuse lit), 2 = exploding, 3 = gone.")
-BR.script(recv(CLEAR), if_(eq(V("is clone"), 1), delete_clone()))
-BR.script(recv(SPAWN),
+barrel.script(recv(CLEAR), if_(eq(V("is clone"), 1), delete_clone()))
+barrel.script(recv(SPAWN),
           if_(eq(V("is clone"), 0), setv("barrel id", 0), repeat(length("barrel start x"), chg("barrel id", 1), clone())),
           comment="SPAWN: one clone per E on the map.")
-BR.script(as_clone(), setv("is clone", 1),
+barrel.script(as_clone(), setv("is clone", 1),
           setv("barrel x", add(item(V("barrel id"), "barrel start x"), 0.5)),
           setv("barrel y", add(item(V("barrel id"), "barrel start y"), 0.5)),
           setv("barrel state", 0), costume("barrel"), hide())
-BR.script(Def("check nearby explosions"),
+barrel.script(Def("check nearby explosions"),
           *explosion_scan("barrel x", "barrel y",
                           if_(and_(eq(V("barrel state"), 0), lt(V("distance to blast"), 2.2)),
                               setv("barrel state", 1), setv("fuse timer", 5))),
           comment="CHECK NEARBY EXPLOSIONS: any blast within 2.2 squares lights my fuse.\n"
                   "(A loop, so it lives in a 'run without screen refresh' block.)")
 
-BR.script(recv(UPDATE), if_(and_(eq(V("is clone"), 1), lt(V("barrel state"), 3)),
+barrel.script(recv(UPDATE), if_(and_(eq(V("is clone"), 1), lt(V("barrel state"), 3)),
     note("SITTING THERE: a shotgun hit lights the fuse at once. A nearby\n"
          "explosion lights a short fuse, which makes chain reactions ripple\n"
          "outward instead of all going off in the same frame.",
@@ -2130,24 +2137,24 @@ BR.script(recv(UPDATE), if_(and_(eq(V("is clone"), 1), lt(V("barrel state"), 3))
 # ============================================================================================
 #                                 PROJECTILES (acid and fireballs)
 # ============================================================================================
-PR = Target(P, "Projectile", layer=2, visible=False)
-PR.costume("shot acid", assets3.ACID_SHOT, 13, 13)
-PR.costume("shot fire", assets3.FIRE_SHOT, 15, 15)
-PR.costume("shot plasma", assets6.PLASMA_SHOT, 15, 15)
-PR.costume("shot rocket", assets6.ROCKET_SHOT, 13, 13)
-for i_, art in enumerate(assets3.EXPLOSIONS):
-    PR.costume(f"explosion {i_ + 1}", art, 45, 78)
-d, n = assets.player_hurt(); PR.sound("player hurt", d, assets.RATE, n)
-d, n = assets3.explosion(); PR.sound("explosion", d, assets.RATE, n)
+projectile = Target(project, "Projectile", layer=2, visible=False)
+projectile.costume("shot acid", assets3.ACID_SHOT, 13, 13)
+projectile.costume("shot fire", assets3.FIRE_SHOT, 15, 15)
+projectile.costume("shot plasma", assets6.PLASMA_SHOT, 15, 15)
+projectile.costume("shot rocket", assets6.ROCKET_SHOT, 13, 13)
+for frame_number, art in enumerate(assets3.EXPLOSIONS, start=1):
+    projectile.costume(f"explosion {frame_number}", art, 45, 78)
+add_sound(projectile, "player hurt", assets.player_hurt)
+add_sound(projectile, "explosion", assets3.explosion)
 for name in ["is clone", "queue position", "shot x", "shot y", "shot speed x", "shot speed y", "shot damage",
              "shot look", "shot owner", "frames left", "offset x from player", "offset y from player", "distance to player",
              "sideways in view", "depth in view", "screen x", "screen column index",
              "is exploding", "blast frame", "blast damage", "draw height", "previous x", "previous y",
              "monster number", "distance to monster", "rocket hit something"]:
-    PR.var(name)
-PR.script(flag(), hide(), setv("is clone", 0))
-PR.script(recv(CLEAR), if_(eq(V("is clone"), 1), delete_clone()))
-PR.script(Def("launch new shots"),
+    projectile.var(name)
+projectile.script(flag(), hide(), setv("is clone", 0))
+projectile.script(recv(CLEAR), if_(eq(V("is clone"), 1), delete_clone()))
+projectile.script(Def("launch new shots"),
 note("THE ORIGINAL launches every shot the monsters (and your rocket\n"
           "launcher) asked for: copy one entry from the 'new shot ...' lists into\n"
           "my variables, then make a clone (a clone starts with a copy of my\n"
@@ -2168,7 +2175,7 @@ note("THE ORIGINAL launches every shot the monsters (and your rocket\n"
           comment="LAUNCH NEW SHOTS (runs without screen refresh, so the loop finishes\n"
                   "in one go before the next frame's broadcast can restart it).")
 
-PR.script(Def("check rocket hits"),
+projectile.script(Def("check rocket hits"),
     note("Did my rocket fly into a monster? Check every living monster's\n"
          "position in the 'monster ... positions' lists.",
          setv("rocket hit something", 0)), setv("monster number", 1),
@@ -2183,7 +2190,7 @@ PR.script(Def("check rocket hits"),
            chg("monster number", 1)),
     comment="CHECK ROCKET HITS (a loop, so it runs without screen refresh).")
 
-PR.script(Def("explode rocket"),
+projectile.script(Def("explode rocket"),
     note("BOOM, one step back from whatever I hit. The explosion goes in the\n"
          "same 'new explosion' lists barrels use, so monsters and barrels\n"
          "nearby get hurt next frame. Too close to YOU hurts you too.",
@@ -2197,7 +2204,7 @@ PR.script(Def("explode rocket"),
     costume("explosion 1"),
     comment="EXPLODE ROCKET: turn this rocket into an explosion.")
 
-PR.script(recv(UPDATE), ifelse(eq(V("is clone"), 0),
+projectile.script(recv(UPDATE), ifelse(eq(V("is clone"), 0),
     [call("launch new shots")],
     [if_(eq(V("game state"), PLAYING),
          ifelse(eq(V("is exploding"), 1),
@@ -2229,7 +2236,7 @@ PR.script(recv(UPDATE), ifelse(eq(V("is clone"), 0),
          *place_on_screen([], "shot", height=V("draw height")))]),
     comment="PROJECTILES: acid (spitters), fireballs (warden), plasma (colossus)\n"
             "and YOUR rockets. The 'shot look' picks the costume.")
-PR.script(as_clone(), setv("is clone", 1), setv("frames left", 150), setv("is exploding", 0),
+projectile.script(as_clone(), setv("is clone", 1), setv("frames left", 150), setv("is exploding", 0),
           ifelse(eq(V("shot look"), "rocket"), [setv("draw height", -70)], [setv("draw height", -50)]),
           costume("shot acid", join("shot ", V("shot look"))), hide())
 
@@ -2238,20 +2245,20 @@ PR.script(as_clone(), setv("is clone", 1), setv("frames left", 150), setv("is ex
 # ============================================================================================
 playing = eq(V("screen showing"), NONE)
 
-Gn = Target(P, "Weapon", layer=3, x=0, y=-190, size=105, visible=False)
+weapon = Target(project, "Weapon", layer=3, x=0, y=-190, size=105, visible=False)
 WEAPON_COSTUMES = {"shotgun": (assets.GUN_IDLE, assets.GUN_FIRE), **assets6.WEAPON_ART}
 for weapon_name in assets6.WEAPON_NAMES:
     ready, firing = WEAPON_COSTUMES[weapon_name]
-    Gn.costume(f"{weapon_name} ready", ready, 80, 190)
-    Gn.costume(f"{weapon_name} firing", firing, 80, 190)
-    Gn.costume(f"{weapon_name} firing 2", assets6.CHAINGUN_FIRE_2 if weapon_name == "chaingun" else firing, 80, 190)
-for nm, fn in (("shotgun", assets.shotgun), ("fist", assets2.punch), ("pistol", assets6.pistol),
+    weapon.costume(f"{weapon_name} ready", ready, 80, 190)
+    weapon.costume(f"{weapon_name} firing", firing, 80, 190)
+    weapon.costume(f"{weapon_name} firing 2", assets6.CHAINGUN_FIRE_2 if weapon_name == "chaingun" else firing, 80, 190)
+for sound_name, make_sound in (("shotgun", assets.shotgun), ("fist", assets2.punch), ("pistol", assets6.pistol),
                ("chaingun", assets6.chaingun), ("rocket launcher", assets6.rocket_launch)):
-    d, n = fn(); Gn.sound(nm, d, assets.RATE, n)
+    add_sound(weapon, sound_name, make_sound)
 for name in ["weapon name", "firing pose timer", "flash number", "jab amount"]:
-    Gn.var(name)
-Gn.script(flag(), costume("pistol ready"), setsize(105), gotoxy(0, -190), setv("firing pose timer", 0), hide())
-Gn.script(recv(DRAW_HUD), ifelse(playing,
+    weapon.var(name)
+weapon.script(flag(), costume("pistol ready"), setsize(105), gotoxy(0, -190), setv("firing pose timer", 0), hide())
+weapon.script(recv(DRAW_HUD), ifelse(playing,
           [setv("weapon name", item(V("current weapon"), "weapon names")),
            note("Costume '<weapon> ready', or '<weapon> firing' (and 'firing 2',\n"
                 "so the chaingun's barrels flash in turn) just after a shot.",
@@ -2272,23 +2279,23 @@ Gn.script(recv(DRAW_HUD), ifelse(playing,
                            mul(V("weapon switch timer"), 12))))],
           [hide()]),
           comment="DRAW HUD: the weapon in your hands, always in front of the 3D view.")
-Gn.script(recv(FIRE), play_named("pistol", item(V("current weapon"), "weapon names")),
+weapon.script(recv(FIRE), play_named("pistol", item(V("current weapon"), "weapon names")),
           setv("firing pose timer", 2), chg("flash number", 1),
           comment="FIRE: the sound named after the weapon + 2 frames of muzzle flash.")
-Gn.script(recv(PUNCH), play("fist"), setv("firing pose timer", 5),
+weapon.script(recv(PUNCH), play("fist"), setv("firing pose timer", 5),
           comment="PUNCH: the fist jabs forward for 5 frames.")
 
-X = Target(P, "Crosshair", layer=4, visible=False)
-X.costume("crosshair", assets.CROSSHAIR, 10, 10)
-X.script(flag(), gotoxy(0, 0), hide())
-X.script(recv(DRAW_HUD), ifelse(playing, [show(), front()], [hide()]),
+crosshair = Target(project, "Crosshair", layer=4, visible=False)
+crosshair.costume("crosshair", assets.CROSSHAIR, 10, 10)
+crosshair.script(flag(), gotoxy(0, 0), hide())
+crosshair.script(recv(DRAW_HUD), ifelse(playing, [show(), front()], [hide()]),
          comment="Always in the exact middle: the column the shot checks.")
 
-Hd = Target(P, "HUD", layer=5, visible=False)
-for i, art in enumerate(assets6.HUDS):
-    Hd.costume(f"keys {i}", art, 240, 180)
-Hd.script(flag(), gotoxy(0, 0), hide())
-Hd.script(recv(DRAW_HUD), ifelse(playing,
+hud = Target(project, "HUD", layer=5, visible=False)
+for keys_held, art in enumerate(assets6.HUDS):   # keys held = red + 2 x blue + 4 x skull
+    hud.costume(f"keys {keys_held}", art, 240, 180)
+hud.script(flag(), gotoxy(0, 0), hide())
+hud.script(recv(DRAW_HUD), ifelse(playing,
           [costume("keys 0", join("keys ", add(add(V("has red key"), mul(V("has blue key"), 2)),
                                                mul(V("has skull key"), 4)))), show(), front()],
           [hide()]),
@@ -2297,11 +2304,11 @@ Hd.script(recv(DRAW_HUD), ifelse(playing,
                   "'keys 0' = no keys ... 'keys 7' = all three. Like binary!\n"
                   "The Digits sprite draws the numbers.")
 
-AP = Target(P, "Arms Panel", layer=5, visible=False)
+arms_panel = Target(project, "Arms Panel", layer=5, visible=False)
 for (owned_code, weapon_slot), art in assets6.ARMS.items():
-    AP.costume(f"arms {owned_code} {weapon_slot}", art, 240, 180)
-AP.script(flag(), gotoxy(0, 0), hide())
-AP.script(recv(DRAW_HUD), ifelse(playing,
+    arms_panel.costume(f"arms {owned_code} {weapon_slot}", art, 240, 180)
+arms_panel.script(flag(), gotoxy(0, 0), hide())
+arms_panel.script(recv(DRAW_HUD), ifelse(playing,
           [costume("arms 0 2", joins("arms ", add(add(item(3, "weapons owned"), mul(item(4, "weapons owned"), 2)),
                                                     mul(item(5, "weapons owned"), 4)),
                                      " ", V("current weapon"))), show(), front()],
@@ -2311,11 +2318,11 @@ AP.script(recv(DRAW_HUD), ifelse(playing,
                   "2 for the chaingun, 4 for the rocket launcher (the same binary\n"
                   "trick as the HUD's keys); <holding> = the weapon in your hands.")
 
-BB = Target(P, "Boss Bar", layer=5, visible=False)
+boss_bar = Target(project, "Boss Bar", layer=5, visible=False)
 for boss_name, art in assets6.BOSS_BARS.items():
-    BB.costume(f"boss bar {boss_name}", art, 240, 180)
-BB.script(flag(), gotoxy(0, 0), hide())
-BB.script(recv(DRAW_HUD), ifelse(and_(playing, and_(eq(V("boss is awake"), 1), gt(V("boss health"), 0))),
+    boss_bar.costume(f"boss bar {boss_name}", art, 240, 180)
+boss_bar.script(flag(), gotoxy(0, 0), hide())
+boss_bar.script(recv(DRAW_HUD), ifelse(and_(playing, and_(eq(V("boss is awake"), 1), gt(V("boss health"), 0))),
           [costume("boss bar warden", join("boss bar ", V("boss name"))), show(), front()], [hide()]),
           comment="BOSS BAR: the frame and name. The red health line inside it is\n"
                   "drawn with the pen at the end of 'draw 3D view'.")
@@ -2327,11 +2334,11 @@ MESSAGES = {"door hint": "hintd", "switch hint": "hintx", "need red key": "needr
 EXTRA_MESSAGES = {"found secret": assets2.toast("You found a secret area!", "#ffd23f"),
                   "out of breath": assets2.toast("Out of breath! Wait for the sprint bar", "#ffa040"),
                   **assets6.TOASTS}
-T = Target(P, "Message", layer=6, visible=False)
+message = Target(project, "Message", layer=6, visible=False)
 for name, old in MESSAGES.items():
-    T.costume(f"message {name}", assets2.TOASTS[old] if old else EXTRA_MESSAGES[name], 240, 180)
-T.script(flag(), gotoxy(0, 0), hide())
-T.script(recv(DRAW_HUD), ifelse(and_(playing, gt(V("message timer"), 0)),
+    message.costume(f"message {name}", assets2.TOASTS[old] if old else EXTRA_MESSAGES[name], 240, 180)
+message.script(flag(), gotoxy(0, 0), hide())
+message.script(recv(DRAW_HUD), ifelse(and_(playing, gt(V("message timer"), 0)),
          [costume("message door hint", join("message ", V("message name"))),
           show(), front(), chg("message timer", -1)],
          [hide()]),
@@ -2339,12 +2346,12 @@ T.script(recv(DRAW_HUD), ifelse(and_(playing, gt(V("message timer"), 0)),
                  "set 'message name' (it picks the costume 'message <name>') and\n"
                  "'message timer' (how many frames it stays up).")
 
-S = Target(P, "Screens", layer=7, visible=True)
+screens = Target(project, "Screens", layer=7, visible=True)
 for costume_name, art in assets7.TALLY_SCREENS.items():
-    S.costume(costume_name, art, 240, 180)
-S.var("screen costume name"); S.var("under par ending")
-S.script(flag(), gotoxy(0, 0), hide())
-S.script(recv(DRAW_HUD),
+    screens.costume(costume_name, art, 240, 180)
+screens.var("screen costume name"); screens.var("under par ending")
+screens.script(flag(), gotoxy(0, 0), hide())
+screens.script(recv(DRAW_HUD),
          ifelse(eq(V("screen showing"), COMPLETE),
                 [note("Level 3 ends episode 1, so it gets its own heading. Then add\n"
                       "' under par' to the costume name if you beat the par time.",
@@ -2358,18 +2365,18 @@ S.script(recv(DRAW_HUD),
                  "colons are in the costume; the Digits sprite draws the numbers.\n"
                  "(The death and victory screens have their own animated sprites.)")
 
-Dg = Target(P, "Digits", layer=8, visible=False)
-for c, art in assets2.DIGITS.items():
-    Dg.costume(f"digit {c}", art, 21, 14)
+digits = Target(project, "Digits", layer=8, visible=False)
+for digit_character, art in assets2.DIGITS.items():
+    digits.costume(f"digit {digit_character}", art, 21, 14)
 for name in ["is clone", "number slot", "digit place", "number text"]:
-    Dg.var(name)
-Dg.script(flag(), hide(), setv("is clone", 0), setv("number slot", 0),
+    digits.var(name)
+digits.script(flag(), hide(), setv("is clone", 0), setv("number slot", 0),
           repeat(HUD_SLOTS, chg("number slot", 1), setv("digit place", 0), repeat(3, chg("digit place", 1), clone())),
           comment=f"Makes {HUD_SLOTS * 3} clones = {HUD_SLOTS} numbers x 3 digits each.\n"
                   "'number slot' = which number (see 'HUD number values').\n"
                   "'digit place' = 1 for the ones digit, 2 tens, 3 hundreds.")
-Dg.script(as_clone(), setv("is clone", 1))
-Dg.script(recv(DRAW_NUMBERS), if_(eq(V("is clone"), 1),
+digits.script(as_clone(), setv("is clone", 1))
+digits.script(recv(DRAW_NUMBERS), if_(eq(V("is clone"), 1),
     setv("number text", item(V("number slot"), "HUD number values")),
     note("Show me only on the right screen ('HUD number screen') and only if\n"
          "the number has enough digits (no leading zeros).",
@@ -2401,15 +2408,15 @@ stage.script(recv(SHOW_TITLE), backdrop("title sky"), cleareffects(), setv("ligh
                    setv("lightning glow", mul(V("lightning glow"), 0.82)), wait(0)),
              cleareffects(), backdrop("black"),
              comment="TITLE BACKDROP: the sky, fortress and controls are the Stage's\n"
-                     "'title sky' backdrop. It switches back to black for the game.", x=1300)
+                     "'title sky' backdrop. It switches back to black for the game.", canvas_x=1300)
 
-TL = Target(P, "Title Logo", layer=12, visible=False)
-TL.costume("logo", assets4.LOGO, 220, 67)
-d, n = assets4.thud(); TL.sound("thud", d, assets.RATE, n)
+title_logo = Target(project, "Title Logo", layer=12, visible=False)
+title_logo.costume("logo", assets4.LOGO, 220, 67)
+add_sound(title_logo, "thud", assets4.thud)
 for name in ["fall speed", "bounces", "logo time", "shake timer"]:
-    TL.var(name)
-TL.script(flag(), hide())
-TL.script(recv(SHOW_TITLE),
+    title_logo.var(name)
+title_logo.script(flag(), hide())
+title_logo.script(recv(SHOW_TITLE),
           note("Start near the top, invisible, then fall.", gotoxy(0, 175)),
           setv("fall speed", 0), setv("bounces", 0), setv("logo time", 0), setv("shake timer", 0),
           setsize(100), seteffect("GHOST", 100), show(), front(),
@@ -2434,25 +2441,25 @@ TL.script(recv(SHOW_TITLE),
           hide(),
           comment="TITLE LOGO: drops in, bounces, then pulses.")
 
-TM = Target(P, "Title Monster", layer=10, visible=False)
+title_monster = Target(project, "Title Monster", layer=10, visible=False)
 for monster_name, art in MONSTER_ART.items():
     for pose, svg_art in zip(("walk 1", "walk 2", "attack", "dead"), art):
-        TM.costume(f"{monster_name} {pose}", svg_art, 40, 120)
-d, n = assets.monster_pain(); TM.sound("pain", d, assets.RATE, n)
-TM.lst("lineup types", [3, 6, 4, 5, 1])
-TM.lst("lineup x", [-175, -92, 0, 92, 178])
-TM.lst("lineup y", [-98, -106, -80, -102, -90])
-TM.lst("lineup size", [118, 100, 140, 108, 90])
+        title_monster.costume(f"{monster_name} {pose}", svg_art, 40, 120)
+add_sound(title_monster, "pain", assets.monster_pain)
+title_monster.lst("lineup types", [3, 6, 4, 5, 1])
+title_monster.lst("lineup x", [-175, -92, 0, 92, 178])
+title_monster.lst("lineup y", [-98, -106, -80, -102, -90])
+title_monster.lst("lineup size", [118, 100, 140, 108, 90])
 for name in ["is clone", "lineup slot", "monster type", "monster name", "target x", "base y", "anim time",
              "pose timer", "has arrived"]:
-    TM.var(name)
-TM.script(flag(), hide(), setv("is clone", 0))
-TM.script(recv(SHOW_TITLE),
+    title_monster.var(name)
+title_monster.script(flag(), hide(), setv("is clone", 0))
+title_monster.script(recv(SHOW_TITLE),
           if_(eq(V("is clone"), 0), setv("lineup slot", 0),
               repeat(length("lineup types"), chg("lineup slot", 1), clone())),
           comment="One clone per entry in the 'lineup' lists (this sprite's own lists).\n"
                   "Type numbers match the 'monster ...' lists: 1 imp, 2 spitter,\n3 golem, 4 warden, 5 charger, 6 wraith, 7 colossus.")
-TM.script(as_clone(), setv("is clone", 1),
+title_monster.script(as_clone(), setv("is clone", 1),
           setv("monster type", item(V("lineup slot"), "lineup types")),
           setv("monster name", item(V("monster type"), "monster names")),
           setv("target x", item(V("lineup slot"), "lineup x")), setv("base y", item(V("lineup slot"), "lineup y")),
@@ -2488,17 +2495,17 @@ TM.script(as_clone(), setv("is clone", 1),
                        [if_(eq(V("has arrived"), 1), costume("imp walk 1", join(V("monster name"), " walk 1")))])),
           delete_clone())
 
-EM = Target(P, "Title Embers", layer=11, visible=False)
-EM.costume("ember", assets4.EMBER, 7, 7)
+title_embers = Target(project, "Title Embers", layer=11, visible=False)
+title_embers.costume("ember", assets4.EMBER, 7, 7)
 for name in ["is clone", "rise speed", "drift phase"]:
-    EM.var(name)
+    title_embers.var(name)
 ember_time = or_(on_title, eq(V("card is up"), 1))
-EM.script(flag(), hide(), setv("is clone", 0))
+title_embers.script(flag(), hide(), setv("is clone", 0))
 for hat in (SHOW_TITLE, SHOW_CARD):
-    EM.script(recv(hat), if_(eq(V("is clone"), 0),
+    title_embers.script(recv(hat), if_(eq(V("is clone"), 0),
                              until(not_(ember_time), if_(lt(rnd(1, 100), 28), clone()), wait(0))),
               comment="EMITTER: on about 1 frame in 4, make a new ember clone.")
-EM.script(as_clone(), setv("is clone", 1),
+title_embers.script(as_clone(), setv("is clone", 1),
           gotoxy(rnd(-235, 235), -175), setsize(rnd(30, 100)), seteffect("GHOST", rnd(0, 30)),
           setv("rise speed", rnd(1.2, 3.5)), setv("drift phase", rnd(0, 360)), show(),
           until(or_(gt(ypos(), 170), not_(ember_time)),
@@ -2508,15 +2515,15 @@ EM.script(as_clone(), setv("is clone", 1),
           delete_clone(),
           comment="EMBER: float up at my own speed, wobble with sin(), fade out.")
 
-TT = Target(P, "Prompt Text", layer=13, visible=False)
-TT.costume("press space", assets4.PRESS_SPACE, 150, 20)
-TT.costume("press space retry", assets5.PROMPT_RETRY, 135, 15)
-TT.costume("green flag again", assets5.PROMPT_AGAIN, 213, 15)
-d, n = assets5.victory_theme(); TT.sound("victory theme", d, assets.RATE, n)
-d, n = assets4.title_riff(); TT.sound("title theme", d, assets.RATE, n)
-TT.var("pulse time")
-TT.script(flag(), hide())
-TT.script(recv(SHOW_TITLE), costume("press space"), gotoxy(0, -110), setv("pulse time", 0), seteffect("GHOST", 100), show(), wait(1.4),
+prompt_text = Target(project, "Prompt Text", layer=13, visible=False)
+prompt_text.costume("press space", assets4.PRESS_SPACE, 150, 20)
+prompt_text.costume("press space retry", assets5.PROMPT_RETRY, 135, 15)
+prompt_text.costume("green flag again", assets5.PROMPT_AGAIN, 213, 15)
+add_sound(prompt_text, "victory theme", assets5.victory_theme)
+add_sound(prompt_text, "title theme", assets4.title_riff)
+prompt_text.var("pulse time")
+prompt_text.script(flag(), hide())
+prompt_text.script(recv(SHOW_TITLE), costume("press space"), gotoxy(0, -110), setv("pulse time", 0), seteffect("GHOST", 100), show(), wait(1.4),
           until(not_(on_title),
                 chg("pulse time", 1),
                 note("Pulse between solid and 70 percent see-through.",
@@ -2524,9 +2531,9 @@ TT.script(recv(SHOW_TITLE), costume("press space"), gotoxy(0, -110), setv("pulse
                 if_(eq(V("options open"), 0), front())),
           hide(),
           comment="PRESS SPACE TO START, pulsing.")
-TT.script(recv(APPLY_MUSIC), set_volume(mul(V("music is on"), 100)),
+prompt_text.script(recv(APPLY_MUSIC), set_volume(mul(V("music is on"), 100)),
           comment="MUSIC ON/OFF: volume 100 or 0. Changing the volume also affects a\nsound that's already playing.")
-TT.script(recv(SHOW_TITLE), set_volume(mul(V("music is on"), 100)), until(not_(on_title), play_until_done("title theme")),
+prompt_text.script(recv(SHOW_TITLE), set_volume(mul(V("music is on"), 100)), until(not_(on_title), play_until_done("title theme")),
           comment="TITLE MUSIC: an original 6-second riff that loops (the Engine stops\nit when you press SPACE).")
 
 # ============================================================================================
@@ -2534,12 +2541,12 @@ TT.script(recv(SHOW_TITLE), set_volume(mul(V("music is on"), 100)), until(not_(o
 # ============================================================================================
 card_up = eq(V("card is up"), 1)
 
-CB = Target(P, "Card Background", layer=14, visible=False)
-CB.costume("card next level", assets4.CARD_NEXT, 240, 180)
-for i, art in enumerate(assets6.CARD_ART):
-    CB.costume(f"card {i + 1}", art, 240, 180)
-CB.script(flag(), hide())
-CB.script(recv(SHOW_CARD),
+card_background = Target(project, "Card Background", layer=14, visible=False)
+card_background.costume("card next level", assets4.CARD_NEXT, 240, 180)
+for level_number, art in enumerate(assets6.CARD_ART, start=1):
+    card_background.costume(f"card {level_number}", art, 240, 180)
+card_background.script(flag(), hide())
+card_background.script(recv(SHOW_CARD),
           note("Pick 'card N' for this level. If there isn't one (a level you\n"
                "added), Scratch keeps 'card next level'.",
                costume("card next level")), costume("card next level", join("card ", V("current level"))),
@@ -2549,13 +2556,13 @@ CB.script(recv(SHOW_CARD),
           wait_until(not_(card_up)), repeat(6, change_effect("GHOST", 17)), hide(),
           comment="LEVEL CARD background: name, goal and the new enemy's description.")
 
-CH = Target(P, "Card Heading", layer=15, visible=False)
-CH.costume("heading next level", assets4.HEADING_NEXT, assets4.text_width("NEXT LEVEL", 8) // 2 + 6, 35)
-for i, art in enumerate(assets6.HEADINGS):
-    CH.costume(f"heading {i + 1}", art, assets4.text_width(f"LEVEL {i + 1}", 8) // 2 + 6, 35)
-d, n = assets4.thud(); CH.sound("thud", d, assets.RATE, n)
-CH.script(flag(), hide())
-CH.script(recv(SHOW_CARD),
+card_heading = Target(project, "Card Heading", layer=15, visible=False)
+card_heading.costume("heading next level", assets4.HEADING_NEXT, assets4.text_width("NEXT LEVEL", 8) // 2 + 6, 35)
+for level_number, art in enumerate(assets6.HEADINGS, start=1):
+    card_heading.costume(f"heading {level_number}", art, assets4.text_width(f"LEVEL {level_number}", 8) // 2 + 6, 35)
+add_sound(card_heading, "thud", assets4.thud)
+card_heading.script(flag(), hide())
+card_heading.script(recv(SHOW_CARD),
           costume("heading next level"), costume("heading next level", join("heading ", V("current level"))),
           setsize(260), seteffect("GHOST", 100), gotoxy(0, 122), show(), front(), wait(0.25),
           note("SLAM: shrink from huge to normal while fading in, then thud and\nshake the heading.",
@@ -2564,23 +2571,23 @@ CH.script(recv(SHOW_CARD),
           wait_until(not_(card_up)), repeat(6, change_effect("GHOST", 17)), hide(),
           comment="LEVEL N heading.")
 
-CM = Target(P, "Card Monster", layer=16, visible=False)
+card_monster = Target(project, "Card Monster", layer=16, visible=False)
 for monster_name, art in MONSTER_ART.items():
     for pose, svg_art in zip(("walk 1", "walk 2", "attack", "dead"), art):
-        CM.costume(f"{monster_name} {pose}", svg_art, 40, 120)
-d, n = assets.monster_pain(); CM.sound("pain", d, assets.RATE, n)
+        card_monster.costume(f"{monster_name} {pose}", svg_art, 40, 120)
+add_sound(card_monster, "pain", assets.monster_pain)
 for name in ["is clone", "card role", "monster type", "monster name", "base y", "anim time", "pose timer",
              "has arrived"]:
-    CM.var(name)
-CM.script(flag(), hide(), setv("is clone", 0))
-CM.script(recv(SHOW_CARD), if_(eq(V("is clone"), 0),
+    card_monster.var(name)
+card_monster.script(flag(), hide(), setv("is clone", 0))
+card_monster.script(recv(SHOW_CARD), if_(eq(V("is clone"), 0),
           note("Role 1 = the level's new enemy ('level intro monster').\n"
                "Role 2 = a boss waiting in the background ('level intro boss').",
                setv("monster type", item(V("current level"), "level intro monster"))),
           if_(not_(eq(V("monster type"), "")), setv("card role", 1), clone()),
           setv("monster type", item(V("current level"), "level intro boss")),
           if_(gt(V("monster type"), 0), setv("card role", 2), clone())))
-CM.script(as_clone(), setv("is clone", 1),
+card_monster.script(as_clone(), setv("is clone", 1),
           setv("monster name", item(V("monster type"), "monster names")),
           set_sound_effect("PITCH", item(V("monster type"), "monster voice pitch")),
           costume("imp walk 1", join(V("monster name"), " walk 1")),
@@ -2613,35 +2620,35 @@ CM.script(as_clone(), setv("is clone", 1),
 on_death = eq(V("screen showing"), DIED)
 on_win = eq(V("screen showing"), WIN)
 
-def pulse_prompt(hat, prompt_costume, y, delay, condition):
-    TT.script(recv(hat), costume(prompt_costume), gotoxy(0, y), setv("pulse time", 0), seteffect("GHOST", 100),
+def pulse_prompt(hat, prompt_costume, stage_y, delay, condition):
+    prompt_text.script(recv(hat), costume(prompt_costume), gotoxy(0, stage_y), setv("pulse time", 0), seteffect("GHOST", 100),
               show(), front(), wait(delay),
               until(not_(condition), chg("pulse time", 1),
                     seteffect("GHOST", mul(35, add(1, sin_(mul(V("pulse time"), 8))))), front()),
               hide())
 pulse_prompt(SHOW_DEATH, "press space retry", -158, 1.4, on_death)
 pulse_prompt(SHOW_WIN, "green flag again", -157, 2.2, on_win)
-TT.script(recv(SHOW_WIN), set_volume(mul(V("music is on"), 100)), until(not_(on_win), play_until_done("victory theme")),
+prompt_text.script(recv(SHOW_WIN), set_volume(mul(V("music is on"), 100)), until(not_(on_win), play_until_done("victory theme")),
           comment="VICTORY MUSIC: an original loop that plays until the green flag.")
 
-DO = Target(P, "Death Overlay", layer=17, visible=False)
-DO.costume("blood red", assets5.DEATH_OVERLAY, 240, 180)
-DO.script(flag(), hide())
-DO.script(recv(SHOW_DEATH), gotoxy(0, 0), seteffect("GHOST", 100), show(), front(),
+death_overlay = Target(project, "Death Overlay", layer=17, visible=False)
+death_overlay.costume("blood red", assets5.DEATH_OVERLAY, 240, 180)
+death_overlay.script(flag(), hide())
+death_overlay.script(recv(SHOW_DEATH), gotoxy(0, 0), seteffect("GHOST", 100), show(), front(),
           note("The frozen game fades to blood red (ghost 100 -> 10).",
                repeat(15, change_effect("GHOST", -6))),
           wait_until(not_(on_death)), hide(),
           comment="DEATH OVERLAY: a red vignette over the last frame of the game.")
 
-BD = Target(P, "Blood Drips", layer=18, visible=False)
-BD.costume("drop", assets5.BLOOD_DROP, 5, 10)
+blood_drips = Target(project, "Blood Drips", layer=18, visible=False)
+blood_drips.costume("drop", assets5.BLOOD_DROP, 5, 10)
 for name in ["is clone", "fall speed"]:
-    BD.var(name)
-BD.script(flag(), hide(), setv("is clone", 0))
-BD.script(recv(SHOW_DEATH), if_(eq(V("is clone"), 0),
+    blood_drips.var(name)
+blood_drips.script(flag(), hide(), setv("is clone", 0))
+blood_drips.script(recv(SHOW_DEATH), if_(eq(V("is clone"), 0),
           until(not_(on_death), if_(lt(rnd(1, 100), 14), clone()), wait(0))),
           comment="EMITTER: about 1 frame in 7, start a new drop at the top.")
-BD.script(as_clone(), setv("is clone", 1), gotoxy(rnd(-230, 230), 176), setsize(rnd(60, 130)),
+blood_drips.script(as_clone(), setv("is clone", 1), gotoxy(rnd(-230, 230), 176), setsize(rnd(60, 130)),
           setv("fall speed", 0), show(), front(),
           until(or_(lt(ypos(), -172), not_(on_death)),
                 note("Gravity: each frame the drop falls a little faster.",
@@ -2649,17 +2656,17 @@ BD.script(as_clone(), setv("is clone", 1), gotoxy(rnd(-230, 230), 176), setsize(
           delete_clone(),
           comment="DROP: slide down the screen, speeding up, then vanish.")
 
-DK = Target(P, "Death Killer", layer=19, visible=False)
+death_killer = Target(project, "Death Killer", layer=19, visible=False)
 for monster_name, art in MONSTER_ART.items():
     for pose, svg_art in zip(("walk 1", "walk 2", "attack", "dead"), art):
-        DK.costume(f"{monster_name} {pose}", svg_art, 40, 120)
-for i, art in enumerate(assets3.EXPLOSIONS):
-    DK.costume(f"explosion {i + 1}", art, 45, 78)
-d, n = assets.monster_pain(); DK.sound("pain", d, assets.RATE, n)
+        death_killer.costume(f"{monster_name} {pose}", svg_art, 40, 120)
+for frame_number, art in enumerate(assets3.EXPLOSIONS, start=1):
+    death_killer.costume(f"explosion {frame_number}", art, 45, 78)
+add_sound(death_killer, "pain", assets.monster_pain)
 for name in ["anim time", "pose timer", "base y"]:
-    DK.var(name)
-DK.script(flag(), hide())
-DK.script(recv(SHOW_DEATH),
+    death_killer.var(name)
+death_killer.script(flag(), hide())
+death_killer.script(recv(SHOW_DEATH),
           note("Barrel: show a looping explosion. Monster: wear its costumes,\nand use its voice pitch.",
                ifelse(or_(eq(V("killer name"), "barrel"), eq(V("killer name"), "rocket")),
                       [costume("explosion 1"), setsize(150), setv("base y", -20)],
@@ -2682,13 +2689,13 @@ DK.script(recv(SHOW_DEATH),
           hide(),
           comment="DEATH KILLER: whatever killed you ('killer name') gloats.")
 
-DH = Target(P, "Death Heading", layer=20, visible=False)
-DH.costume("you died", assets5.YOU_DIED, *assets5.YOU_DIED_CENTER)
-for nm, fn in (("thud", assets4.thud), ("death sting", assets5.death_sting)):
-    d, n = fn(); DH.sound(nm, d, assets.RATE, n)
-DH.var("throb time")
-DH.script(flag(), hide())
-DH.script(recv(SHOW_DEATH), setsize(260), seteffect("GHOST", 100), gotoxy(0, 118), show(), front(), wait(0.3),
+death_heading = Target(project, "Death Heading", layer=20, visible=False)
+death_heading.costume("you died", assets5.YOU_DIED, *assets5.YOU_DIED_CENTER)
+for sound_name, make_sound in (("thud", assets4.thud), ("death sting", assets5.death_sting)):
+    add_sound(death_heading, sound_name, make_sound)
+death_heading.var("throb time")
+death_heading.script(flag(), hide())
+death_heading.script(recv(SHOW_DEATH), setsize(260), seteffect("GHOST", 100), gotoxy(0, 118), show(), front(), wait(0.3),
           note("SLAM: shrink from huge while fading in, then thud and shake.",
                repeat(8, change_size(-20), change_effect("GHOST", -12.5), front())),
           play("thud"), play("death sting"),
@@ -2699,13 +2706,13 @@ DH.script(recv(SHOW_DEATH), setsize(260), seteffect("GHOST", 100), gotoxy(0, 118
           hide(),
           comment="YOU DIED heading.")
 
-DM = Target(P, "Death Message", layer=21, visible=False)
-DM.costume("killed by monster", assets5.KILLED_BY["monster"], 220, 25)
+death_message = Target(project, "Death Message", layer=21, visible=False)
+death_message.costume("killed by monster", assets5.KILLED_BY["monster"], 220, 25)
 for name, art in {**assets5.KILLED_BY, **assets6.KILLED_BY}.items():
     if name != "monster":
-        DM.costume(f"killed by {name}", art, 220, 25)
-DM.script(flag(), hide())
-DM.script(recv(SHOW_DEATH),
+        death_message.costume(f"killed by {name}", art, 220, 25)
+death_message.script(flag(), hide())
+death_message.script(recv(SHOW_DEATH),
           note("'killed by <name>' + a tip for that enemy. A monster you add with\n"
                "no costume here gets the general 'killed by monster' one.",
                costume("killed by monster")), costume("killed by monster", join("killed by ", V("killer name"))),
@@ -2718,15 +2725,15 @@ DM.script(recv(SHOW_DEATH),
 #                                     ANIMATED VICTORY SCREEN
 # ============================================================================================
 stage.script(recv(SHOW_WIN), backdrop("victory sky"), cleareffects(),
-             comment="VICTORY BACKDROP: dawn over the fortress.", x=1300)
+             comment="VICTORY BACKDROP: dawn over the fortress.", canvas_x=1300)
 
-VL = Target(P, "Victory Logo", layer=22, visible=False)
-VL.costume("victory", assets6.VICTORY_LOGO, *assets5.VICTORY_CENTER)
-d, n = assets4.thud(); VL.sound("thud", d, assets.RATE, n)
+victory_logo = Target(project, "Victory Logo", layer=22, visible=False)
+victory_logo.costume("victory", assets6.VICTORY_LOGO, *assets5.VICTORY_CENTER)
+add_sound(victory_logo, "thud", assets4.thud)
 for name in ["fall speed", "bounces", "logo time"]:
-    VL.var(name)
-VL.script(flag(), hide())
-VL.script(recv(SHOW_WIN), gotoxy(0, 175), setv("fall speed", 0), setv("bounces", 0), setv("logo time", 0),
+    victory_logo.var(name)
+victory_logo.script(flag(), hide())
+victory_logo.script(recv(SHOW_WIN), gotoxy(0, 175), setv("fall speed", 0), setv("bounces", 0), setv("logo time", 0),
           setsize(100), seteffect("GHOST", 100), show(), front(),
           until(not_(on_win),
                 chg("logo time", 1),
@@ -2742,46 +2749,46 @@ VL.script(recv(SHOW_WIN), gotoxy(0, 175), setv("fall speed", 0), setv("bounces",
           hide(),
           comment="VICTORY logo: drops in, bounces, pulses.")
 
-VM = Target(P, "Victory Monsters", layer=21, visible=False)
+victory_monsters = Target(project, "Victory Monsters", layer=21, visible=False)
 for monster_name, art in MONSTER_ART.items():
-    VM.costume(f"{monster_name} dead", art[3], 40, 120)
-VM.lst("fallen types", [2, 6, 7, 5, 1])
-VM.lst("fallen x", [-185, -100, 5, 105, 185])
-VM.lst("fallen y", [-48, -52, -46, -50, -48])
-VM.lst("fallen size", [100, 100, 150, 120, 95])
+    victory_monsters.costume(f"{monster_name} dead", art[3], 40, 120)
+victory_monsters.lst("fallen types", [2, 6, 7, 5, 1])
+victory_monsters.lst("fallen x", [-185, -100, 5, 105, 185])
+victory_monsters.lst("fallen y", [-48, -52, -46, -50, -48])
+victory_monsters.lst("fallen size", [100, 100, 150, 120, 95])
 for name in ["is clone", "fallen slot"]:
-    VM.var(name)
-VM.script(flag(), hide(), setv("is clone", 0))
-VM.script(recv(SHOW_WIN), if_(eq(V("is clone"), 0), setv("fallen slot", 0),
+    victory_monsters.var(name)
+victory_monsters.script(flag(), hide(), setv("is clone", 0))
+victory_monsters.script(recv(SHOW_WIN), if_(eq(V("is clone"), 0), setv("fallen slot", 0),
           repeat(length("fallen types"), chg("fallen slot", 1), clone())),
           comment="The defeated monsters, one clone per entry in the 'fallen' lists.")
-VM.script(as_clone(), setv("is clone", 1),
+victory_monsters.script(as_clone(), setv("is clone", 1),
           costume("imp dead", join(item(item(V("fallen slot"), "fallen types"), "monster names"), " dead")),
           gotoxy(item(V("fallen slot"), "fallen x"), item(V("fallen slot"), "fallen y")),
           setsize(item(V("fallen slot"), "fallen size")), seteffect("GHOST", 100), show(), wait(0.4),
           repeat(12, change_effect("GHOST", -8.4)), wait_until(not_(on_win)), delete_clone())
 
-SP = Target(P, "Victory Stats", layer=20, visible=False)
-SP.costume("stats panel", assets5.STATS_PANEL, 150, 38)
-SP.script(flag(), hide())
-SP.script(recv(SHOW_WIN), gotoxy(0, -95), seteffect("GHOST", 100), show(), go_back(), wait(1),
+victory_stats = Target(project, "Victory Stats", layer=20, visible=False)
+victory_stats.costume("stats panel", assets5.STATS_PANEL, 150, 38)
+victory_stats.script(flag(), hide())
+victory_stats.script(recv(SHOW_WIN), gotoxy(0, -95), seteffect("GHOST", 100), show(), go_back(), wait(1),
           repeat(10, change_effect("GHOST", -10)), wait_until(not_(on_win)), hide(),
           comment="STATS PANEL: labels only. The numbers are Digits slots 7, 10 and 11.\n"
                   "'go to back' keeps it behind the digits and fireworks.")
 
-FW = Target(P, "Fireworks", layer=19, visible=False)
-FW.costume("rocket", assets5.ROCKET, 4, 9)
+fireworks = Target(project, "Fireworks", layer=19, visible=False)
+fireworks.costume("rocket", assets5.ROCKET, 4, 9)
 for name, art in assets5.SPARKS.items():
-    FW.costume(f"spark {name}", art, 6, 6)
-d, n = assets5.firework_pop(); FW.sound("pop", d, assets.RATE, n)
-FW.lst("spark colors", list(assets5.SPARKS))
+    fireworks.costume(f"spark {name}", art, 6, 6)
+add_sound(fireworks, "pop", assets5.firework_pop)
+fireworks.lst("spark colors", list(assets5.SPARKS))
 for name in ["is clone", "role", "speed x", "speed y", "frames left", "spark color", "spark number"]:
-    FW.var(name)
-FW.script(flag(), hide(), setv("is clone", 0))
-FW.script(recv(SHOW_WIN), if_(eq(V("is clone"), 0), wait(0.8), setv("role", 1), clone(),
+    fireworks.var(name)
+fireworks.script(flag(), hide(), setv("is clone", 0))
+fireworks.script(recv(SHOW_WIN), if_(eq(V("is clone"), 0), wait(0.8), setv("role", 1), clone(),
           until(not_(on_win), if_(lt(rnd(1, 100), 4), setv("role", 1), clone()), wait(0))),
           comment="LAUNCHER: about one rocket a second. role 1 = rocket, role 2 = spark.")
-FW.script(as_clone(), setv("is clone", 1),
+fireworks.script(as_clone(), setv("is clone", 1),
           ifelse(eq(V("role"), 1),
                  [note("ROCKET: shoot upward, slowing down (gravity), until it almost\n"
                        "stops. Then burst into 14 sparks of one random color.",
@@ -2810,11 +2817,11 @@ FW.script(as_clone(), setv("is clone", 1),
 #                                     OPTIONS MENU
 # ============================================================================================
 options_up = eq(V("options open"), 1)
-OP = Target(P, "Options Panel", layer=23, visible=False)
-OP.costume("options title", assets6.OPTIONS_TITLE, 240, 180)
-OP.costume("options paused", assets6.OPTIONS_PAUSED, 240, 180)
-OP.script(flag(), gotoxy(0, 0), hide())
-OP.script(recv(DRAW_OPTIONS_PANEL),
+options_panel = Target(project, "Options Panel", layer=23, visible=False)
+options_panel.costume("options title", assets6.OPTIONS_TITLE, 240, 180)
+options_panel.costume("options paused", assets6.OPTIONS_PAUSED, 240, 180)
+options_panel.script(flag(), gotoxy(0, 0), hide())
+options_panel.script(recv(DRAW_OPTIONS_PANEL),
           ifelse(options_up,
                  [ifelse(eq(V("options from game"), 1), [costume("options paused")], [costume("options title")]),
                   show(), front()],
@@ -2824,30 +2831,30 @@ OP.script(recv(DRAW_OPTIONS_PANEL),
 
 ROW_Y = assets6.OPTION_ROW_Y
 TRACK_LEFT, TRACK_RIGHT = assets6.TRACK_LEFT, assets6.TRACK_RIGHT
-OW = Target(P, "Options Widgets", layer=24, visible=False)
-OW.costume("row highlight", assets6.ROW_HIGHLIGHT, 190, 13)
-OW.costume("knob", assets6.KNOB, 10, 10)
-OW.costume("switch on", assets6.TOGGLE_ON, 28, 11)
-OW.costume("switch off", assets6.TOGGLE_OFF, 28, 11)
+options_widgets = Target(project, "Options Widgets", layer=24, visible=False)
+options_widgets.costume("row highlight", assets6.ROW_HIGHLIGHT, 190, 13)
+options_widgets.costume("knob", assets6.KNOB, 10, 10)
+options_widgets.costume("switch on", assets6.TOGGLE_ON, 28, 11)
+options_widgets.costume("switch off", assets6.TOGGLE_OFF, 28, 11)
 for difficulty_name in assets7.DIFFICULTY_COLORS:
-    OW.costume(f"difficulty {difficulty_name}", assets7.difficulty_word(difficulty_name), 50, 11)
+    options_widgets.costume(f"difficulty {difficulty_name}", assets7.difficulty_word(difficulty_name), 50, 11)
 for name in ["is clone", "widget role"]:
-    OW.var(name)
-OW.script(flag(), hide(), setv("is clone", 0), setv("widget role", 0), repeat(7, chg("widget role", 1), clone()),
+    options_widgets.var(name)
+options_widgets.script(flag(), hide(), setv("is clone", 0), setv("widget role", 0), repeat(7, chg("widget role", 1), clone()),
           comment="Seven clones, one per 'widget role':\n"
                   "1 the highlight on the chosen row, 2 turn speed knob,\n"
                   "3 mouse steering switch, 4 sensitivity knob, 5 field of view knob,\n6 music switch, "
                   "7 the difficulty word.")
-OW.script(as_clone(), setv("is clone", 1))
+options_widgets.script(as_clone(), setv("is clone", 1))
 
-def knob_at(setting, low, high, y):
+def knob_at(setting, low, high, stage_y):
     """Slide the knob along the track: (setting - low) / (high - low) of the way across."""
-    return [costume("knob"), gotoxy(add(TRACK_LEFT, mul(TRACK_RIGHT - TRACK_LEFT, div(sub(V(setting), low), high - low))), y)]
+    return [costume("knob"), gotoxy(add(TRACK_LEFT, mul(TRACK_RIGHT - TRACK_LEFT, div(sub(V(setting), low), high - low))), stage_y)]
 
-def switch_at(setting, y):
-    return [ifelse(eq(V(setting), 1), [costume("switch on")], [costume("switch off")]), gotoxy(40, y)]
+def switch_at(setting, stage_y):
+    return [ifelse(eq(V(setting), 1), [costume("switch on")], [costume("switch off")]), gotoxy(40, stage_y)]
 
-OW.script(recv(DRAW_OPTIONS_HIGHLIGHT), if_(eq(V("widget role"), 1),
+options_widgets.script(recv(DRAW_OPTIONS_HIGHLIGHT), if_(eq(V("widget role"), 1),
     ifelse(options_up,
            [costume("row highlight"), gotoxy(0, sub(ROW_Y[0], mul(sub(V("options row"), 1), assets6.OPTION_ROW_STEP))),
             show(), front()],
@@ -2860,7 +2867,7 @@ OW.script(recv(DRAW_OPTIONS_HIGHLIGHT), if_(eq(V("widget role"), 1),
             "places every frame, and the box would cover the words every other\n"
             "frame (a flicker).")
 
-OW.script(recv(DRAW_OPTIONS_WIDGETS), if_(and_(eq(V("is clone"), 1), gt(V("widget role"), 1)),
+options_widgets.script(recv(DRAW_OPTIONS_WIDGETS), if_(and_(eq(V("is clone"), 1), gt(V("widget role"), 1)),
     ifelse(options_up,
            [if_(eq(V("widget role"), 2), *knob_at("turn speed", 1, 10, ROW_Y[0])),
             if_(eq(V("widget role"), 3), *switch_at("mouse steering", ROW_Y[1])),
@@ -2881,13 +2888,13 @@ OW.script(recv(DRAW_OPTIONS_WIDGETS), if_(and_(eq(V("is clone"), 1), gt(V("widge
 # ============================================================================================
 #                                          MUSIC
 # ============================================================================================
-MU = Target(P, "Music", layer=1, visible=False)
-MU.costume("speaker", assets.TINY, 1, 1)
-for nm, fn in (("episode 1 theme", assets6.episode_1_theme), ("episode 2 theme", assets6.episode_2_theme)):
-    d, n = fn(); MU.sound(nm, d, assets.RATE, n)
-MU.var("episode number")
-MU.script(flag(), hide())
-MU.script(recv(START_MUSIC), stop_sounds(), set_volume(mul(V("music is on"), 100)),
+music = Target(project, "Music", layer=1, visible=False)
+music.costume("speaker", assets.TINY, 1, 1)
+for sound_name, make_sound in (("episode 1 theme", assets6.episode_1_theme), ("episode 2 theme", assets6.episode_2_theme)):
+    add_sound(music, sound_name, make_sound)
+music.var("episode number")
+music.script(flag(), hide())
+music.script(recv(START_MUSIC), stop_sounds(), set_volume(mul(V("music is on"), 100)),
           note("Levels 1-3 are episode 1, levels 4-6 episode 2. Each has its own loop.",
                ifelse(lt(V("current level"), 4), [setv("episode number", 1)], [setv("episode number", 2)])),
           note("Loop the track until you die, go back to the title, or win. (Dying\n"
@@ -2895,19 +2902,19 @@ MU.script(recv(START_MUSIC), stop_sounds(), set_volume(mul(V("music is on"), 100
                until(or_(or_(eq(V("game state"), DEAD), eq(V("game state"), TITLE)), eq(V("screen showing"), WIN)),
                      play_until_done_named("episode 1 theme", joins("episode ", V("episode number"), " theme")))),
           comment="IN-GAME MUSIC: starts when each level starts.")
-MU.script(recv(APPLY_MUSIC), set_volume(mul(V("music is on"), 100)),
+music.script(recv(APPLY_MUSIC), set_volume(mul(V("music is on"), 100)),
           comment="MUSIC ON/OFF (N key or the options menu): volume 100 or 0.")
 
 # ---------------- sanity checks: names must be unique between the Stage and each sprite ----------------
-for sprite in P.targets[1:]:
-    clash = set(sprite.vars) & set(P.stage_vars)
+for sprite in project.targets[1:]:
+    clash = set(sprite.vars) & set(project.stage_vars)
     assert not clash, (sprite.name, clash)
-    for n in list(sprite.vars) + list(P.stage_vars) + list(P.stage_lists):
-        assert len(n) > 2, f"name too short: {n}"
+    for name in list(sprite.vars) + list(project.stage_vars) + list(project.stage_lists):
+        assert len(name) > 2, f"name too short: {name}"
 
 if __name__ == "__main__":
     import sys
-    out = sys.argv[1] if len(sys.argv) > 1 else "scratch-slayer.sb3"
-    proj = P.save(out)
-    print("saved", out, "blocks:", sum(len(t["blocks"]) for t in proj["targets"]),
-          "comments:", sum(len(t["comments"]) for t in proj["targets"]))
+    output_path = sys.argv[1] if len(sys.argv) > 1 else "scratch-slayer.sb3"
+    project_json = project.save(output_path)
+    print("saved", output_path, "blocks:", sum(len(target["blocks"]) for target in project_json["targets"]),
+          "comments:", sum(len(target["comments"]) for target in project_json["targets"]))

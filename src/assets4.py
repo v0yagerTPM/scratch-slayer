@@ -15,49 +15,49 @@ LETTERS = {
 }
 LETTERS.update(assets2.GLYPHS)
 
-def block_text(text, unit, x0, y0, grad_id, depth=0.4):
+def block_text(text, unit, left, top, grad_id, depth=0.4):
     """Chunky beveled pixel letters: black outline, dark extrusion, then a gradient face."""
     cells = []
-    for i, ch in enumerate(text):
-        rows = LETTERS[ch].split()
-        for ry, row in enumerate(rows):
-            for rx, bit in enumerate(row):
+    for letter_number, character in enumerate(text):
+        rows = LETTERS[character].split()
+        for pixel_row, row in enumerate(rows):
+            for pixel_column, bit in enumerate(row):
                 if bit == "1":
-                    cells.append((x0 + (i * 6 + rx) * unit, y0 + ry * unit))
-    u, d, o = unit, unit * depth, max(1.5, unit * 0.22)
-    outline = "".join(f'<rect x="{x - o:.1f}" y="{y - o:.1f}" width="{u + 2 * o + d:.1f}" height="{u + 2 * o + d:.1f}" fill="#000"/>' for x, y in cells)
-    extrude = "".join(f'<rect x="{x + d:.1f}" y="{y + d:.1f}" width="{u + 0.6:.1f}" height="{u + 0.6:.1f}" fill="#3a0000"/>' for x, y in cells)
-    face = "".join(f'<rect x="{x:.1f}" y="{y:.1f}" width="{u + 0.6:.1f}" height="{u + 0.6:.1f}" fill="url(#{grad_id})"/>' for x, y in cells)
-    shine = "".join(f'<rect x="{x:.1f}" y="{y:.1f}" width="{u + 0.6:.1f}" height="{max(1, u * 0.18):.1f}" fill="#fff6c8" opacity="0.55"/>' for x, y in cells)
+                    cells.append((left + (letter_number * 6 + pixel_column) * unit, top + pixel_row * unit))
+    pixel_size, shadow_depth, outline_width = unit, unit * depth, max(1.5, unit * 0.22)
+    outline = "".join(f'<rect x="{pixel_x - outline_width:.1f}" y="{pixel_y - outline_width:.1f}" width="{pixel_size + 2 * outline_width + shadow_depth:.1f}" height="{pixel_size + 2 * outline_width + shadow_depth:.1f}" fill="#000"/>' for pixel_x, pixel_y in cells)
+    extrude = "".join(f'<rect x="{pixel_x + shadow_depth:.1f}" y="{pixel_y + shadow_depth:.1f}" width="{pixel_size + 0.6:.1f}" height="{pixel_size + 0.6:.1f}" fill="#3a0000"/>' for pixel_x, pixel_y in cells)
+    face = "".join(f'<rect x="{pixel_x:.1f}" y="{pixel_y:.1f}" width="{pixel_size + 0.6:.1f}" height="{pixel_size + 0.6:.1f}" fill="url(#{grad_id})"/>' for pixel_x, pixel_y in cells)
+    shine = "".join(f'<rect x="{pixel_x:.1f}" y="{pixel_y:.1f}" width="{pixel_size + 0.6:.1f}" height="{max(1, pixel_size * 0.18):.1f}" fill="#fff6c8" opacity="0.55"/>' for pixel_x, pixel_y in cells)
     return outline + extrude + face + shine
 
 def text_width(text, unit):
     return (len(text) * 6 - 1) * unit
 
 def gradient(grad_id, y_top, y_bottom, stops):
-    s = "".join(f'<stop offset="{o}" stop-color="{c}"/>' for o, c in stops)
+    stop_tags = "".join(f'<stop offset="{offset}" stop-color="{color}"/>' for offset, color in stops)
     return (f'<linearGradient id="{grad_id}" gradientUnits="userSpaceOnUse" x1="0" y1="{y_top}" x2="0" y2="{y_bottom}">'
-            f'{s}</linearGradient>')
+            f'{stop_tags}</linearGradient>')
 
 FIRE_STOPS = [(0, "#fff3a0"), (0.35, "#ffc23a"), (0.7, "#ff6a00"), (1, "#c41400")]
 
 # =============================== TITLE LOGO ===============================
 def _logo():
     small, big = 5, 10
-    w1, w2 = text_width("SCRATCH", small), text_width("SLAYER", big)
-    W, H = 440, 134
-    y1, y2 = 8, 8 + 7 * small + 12
-    body = "<defs>" + gradient("fire1", y1, y1 + 7 * small, FIRE_STOPS) + gradient("fire2", y2, y2 + 7 * big, FIRE_STOPS) + "</defs>"
-    body += f'<ellipse cx="{W / 2}" cy="{y2 + 35}" rx="210" ry="48" fill="#ff3a00" opacity="0.18"/>'
-    body += block_text("SCRATCH", small, (W - w1) / 2, y1, "fire1")
-    body += block_text("SLAYER", big, (W - w2) / 2, y2, "fire2")
-    return svg(W, H, body)
+    small_width, big_width = text_width("SCRATCH", small), text_width("SLAYER", big)
+    logo_width, logo_height = 440, 134
+    small_top, big_top = 8, 8 + 7 * small + 12
+    body = "<defs>" + gradient("fire1", small_top, small_top + 7 * small, FIRE_STOPS) + gradient("fire2", big_top, big_top + 7 * big, FIRE_STOPS) + "</defs>"
+    body += f'<ellipse cx="{logo_width / 2}" cy="{big_top + 35}" rx="210" ry="48" fill="#ff3a00" opacity="0.18"/>'
+    body += block_text("SCRATCH", small, (logo_width - small_width) / 2, small_top, "fire1")
+    body += block_text("SLAYER", big, (logo_width - big_width) / 2, big_top, "fire2")
+    return svg(logo_width, logo_height, body)
 LOGO = _logo()
 
 # =============================== TITLE SKY (stage backdrop) ===============================
 def _title_sky():
     rnd = random.Random(21)
-    b = ('<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">'
+    picture = ('<defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">'
          '<stop offset="0" stop-color="#070104"/><stop offset="0.55" stop-color="#2a0608"/>'
          '<stop offset="1" stop-color="#6a160c"/></linearGradient>'
          '<linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">'
@@ -65,29 +65,29 @@ def _title_sky():
          '<radialGradient id="moon"><stop offset="0" stop-color="#ffb070"/><stop offset="0.6" stop-color="#e0401c"/>'
          '<stop offset="1" stop-color="#e0401c" stop-opacity="0"/></radialGradient></defs>'
          '<rect width="480" height="250" fill="url(#sky)"/>')
-    b += "".join(f'<circle cx="{rnd.uniform(0, 480):.0f}" cy="{rnd.uniform(0, 150):.0f}" r="{rnd.choice([0.7, 1, 1.3])}" '
+    picture += "".join(f'<circle cx="{rnd.uniform(0, 480):.0f}" cy="{rnd.uniform(0, 150):.0f}" r="{rnd.choice([0.7, 1, 1.3])}" '
                  f'fill="#ffd9c0" opacity="{rnd.uniform(0.3, 0.8):.2f}"/>' for _ in range(45))
-    b += '<circle cx="402" cy="58" r="70" fill="url(#moon)" opacity="0.5"/><circle cx="402" cy="58" r="30" fill="#e8582a"/>'
-    b += '<circle cx="392" cy="50" r="6" fill="#c2401c" opacity="0.6"/><circle cx="412" cy="68" r="4" fill="#c2401c" opacity="0.6"/>'
+    picture += '<circle cx="402" cy="58" r="70" fill="url(#moon)" opacity="0.5"/><circle cx="402" cy="58" r="30" fill="#e8582a"/>'
+    picture += '<circle cx="392" cy="50" r="6" fill="#c2401c" opacity="0.6"/><circle cx="412" cy="68" r="4" fill="#c2401c" opacity="0.6"/>'
     # far mountains
-    b += '<path d="M0 205 L40 170 L80 190 L130 150 L170 185 L215 160 L260 190 L310 145 L355 180 L400 160 L440 185 L480 165 L480 250 L0 250 Z" fill="#250707"/>'
+    picture += '<path d="M0 205 L40 170 L80 190 L130 150 L170 185 L215 160 L260 190 L310 145 L355 180 L400 160 L440 185 L480 165 L480 250 L0 250 Z" fill="#250707"/>'
     # fortress silhouette
     fort = "M60 250 V196 H72 V184 H80 V196 H96 V170 H104 V160 H112 V170 H120 V196 H150 V176 H164 V196 H330 V180 H344 V196 H360 V166 H368 V150 H376 V166 H384 V196 H404 V186 H414 V196 H420 V250 Z"
-    b += f'<path d="{fort}" fill="#120305"/>'
-    for x, y in ((106, 176), (106, 186), (370, 170), (370, 182), (156, 184), (336, 188), (84, 200), (300, 206), (200, 208)):
-        b += f'<rect x="{x}" y="{y}" width="4" height="6" fill="#ffb347"/><rect x="{x - 2}" y="{y - 2}" width="8" height="10" fill="#ff8a1f" opacity="0.25"/>'
+    picture += f'<path d="{fort}" fill="#120305"/>'
+    for window_x, window_y in ((106, 176), (106, 186), (370, 170), (370, 182), (156, 184), (336, 188), (84, 200), (300, 206), (200, 208)):
+        picture += f'<rect x="{window_x}" y="{window_y}" width="4" height="6" fill="#ffb347"/><rect x="{window_x - 2}" y="{window_y - 2}" width="8" height="10" fill="#ff8a1f" opacity="0.25"/>'
     # ground with glowing cracks
-    b += '<rect y="236" width="480" height="124" fill="url(#ground)"/>'
-    for d in ("M0 270 L60 262 L110 275 L170 266", "M300 280 L350 270 L410 284 L480 272", "M150 320 L210 306 L260 322 L330 310",
+    picture += '<rect y="236" width="480" height="124" fill="url(#ground)"/>'
+    for crack_path in ("M0 270 L60 262 L110 275 L170 266", "M300 280 L350 270 L410 284 L480 272", "M150 320 L210 306 L260 322 L330 310",
               "M20 340 L80 330 L120 345", "M380 340 L440 326 L480 334"):
-        b += f'<path d="{d}" stroke="#ff6a00" stroke-width="4" fill="none" opacity="0.25"/><path d="{d}" stroke="#ffb347" stroke-width="1.5" fill="none" opacity="0.8"/>'
+        picture += f'<path d="{crack_path}" stroke="#ff6a00" stroke-width="4" fill="none" opacity="0.25"/><path d="{crack_path}" stroke="#ffb347" stroke-width="1.5" fill="none" opacity="0.8"/>'
     # bottom strip with controls
-    b += '<rect y="318" width="480" height="42" fill="#000" opacity="0.62"/>'
-    b += ('<text x="240" y="334" font-family="Sans Serif" font-size="10.5" font-weight="bold" fill="#e8a070" '
+    picture += '<rect y="318" width="480" height="42" fill="#000" opacity="0.62"/>'
+    picture += ('<text x="240" y="334" font-family="Sans Serif" font-size="10.5" font-weight="bold" fill="#e8a070" '
           'text-anchor="middle" letter-spacing="1.5">A RAYCASTING SHOOTER BUILT ENTIRELY IN SCRATCH</text>')
-    b += ('<text x="240" y="351" font-family="Sans Serif" font-size="11.5" fill="#cfcfcf" text-anchor="middle">'
+    picture += ('<text x="240" y="351" font-family="Sans Serif" font-size="11.5" fill="#cfcfcf" text-anchor="middle">'
           'ARROWS / WASD move  •  Q sprint  •  SPACE shoot  •  E open / use  •  M map</text>')
-    return svg(480, 360, b)
+    return svg(480, 360, picture)
 TITLE_SKY = _title_sky()
 
 PRESS_SPACE = svg(300, 40,
@@ -111,37 +111,35 @@ CARDS = [
 ]
 
 def card(info):
-    b = (f'<defs><radialGradient id="glow" cx="0.7" cy="0.7" r="0.7"><stop offset="0" stop-color="{info["tint"]}"/>'
+    picture = (f'<defs><radialGradient id="glow" cx="0.7" cy="0.7" r="0.7"><stop offset="0" stop-color="{info["tint"]}"/>'
          f'<stop offset="1" stop-color="{CARD_COLOR}"/></radialGradient>'
          '<radialGradient id="spot"><stop offset="0" stop-color="#ffd9a0" stop-opacity="0.45"/>'
          '<stop offset="1" stop-color="#ffd9a0" stop-opacity="0"/></radialGradient></defs>'
          '<rect width="480" height="360" fill="url(#glow)"/>'
          '<rect x="8" y="8" width="464" height="344" rx="10" fill="none" stroke="#ff6a00" stroke-opacity="0.35" stroke-width="2"/>'
          '<ellipse cx="370" cy="302" rx="95" ry="18" fill="url(#spot)"/>')
-    b += (f'<text x="30" y="132" font-family="Sans Serif" font-size="{22 if len(info["name"]) < 16 else 18}" font-weight="bold" '
+    picture += (f'<text x="30" y="132" font-family="Sans Serif" font-size="{22 if len(info["name"]) < 16 else 18}" font-weight="bold" '
           f'fill="#ff4a24" stroke="#000" stroke-width="3" paint-order="stroke">{info["name"]}</text>'
           f'<text x="30" y="154" font-family="Sans Serif" font-size="13" fill="#dddddd">{info["goal"]}</text>'
           '<rect x="30" y="168" width="200" height="2" fill="#ff6a00" opacity="0.6"/>'
           '<text x="30" y="192" font-family="Sans Serif" font-size="11" font-weight="bold" fill="#ffd23f" letter-spacing="2">NEW ENEMY</text>'
           f'<text x="30" y="218" font-family="Sans Serif" font-size="24" font-weight="bold" fill="#ffffff">{info["enemy"]}</text>')
-    for i, line in enumerate(info["lines"]):
-        b += f'<text x="30" y="{242 + 16 * i}" font-family="Sans Serif" font-size="12" fill="#d8d8d8">{line}</text>'
+    for line_number, line in enumerate(info["lines"]):
+        picture += f'<text x="30" y="{242 + 16 * line_number}" font-family="Sans Serif" font-size="12" fill="#d8d8d8">{line}</text>'
     if info["boss"]:
-        b += (f'<text x="30" y="292" font-family="Sans Serif" font-size="12" font-weight="bold" fill="#ff5050">{info["boss"]}</text>')
-    b += '<text x="462" y="344" font-family="Sans Serif" font-size="10" fill="#8a8a8a" text-anchor="end">SPACE to skip</text>'
-    return svg(480, 360, b)
+        picture += (f'<text x="30" y="292" font-family="Sans Serif" font-size="12" font-weight="bold" fill="#ff5050">{info["boss"]}</text>')
+    picture += '<text x="462" y="344" font-family="Sans Serif" font-size="10" fill="#8a8a8a" text-anchor="end">SPACE to skip</text>'
+    return svg(480, 360, picture)
 
-CARD_ART = [card(c) for c in CARDS]
 CARD_NEXT = card(dict(tint="#3a1a10", name="NEXT LEVEL", goal="Find the exit switch", enemy="?",
                       lines=["Stay sharp.", ""], boss=None))
 
 def heading(text):
     unit = 8
-    W = text_width(text, unit) + 12
+    heading_width = text_width(text, unit) + 12
     body = "<defs>" + gradient("hfire", 4, 4 + 7 * unit, FIRE_STOPS) + "</defs>" + block_text(text, unit, 4, 4, "hfire")
-    return svg(W, 7 * unit + 14, body)
+    return svg(heading_width, 7 * unit + 14, body)
 
-HEADINGS = [heading(f"LEVEL {i + 1}") for i in range(3)]
 HEADING_NEXT = heading("NEXT LEVEL")
 
 # =============================== SOUNDS ===============================
@@ -151,51 +149,51 @@ def _note_freq(midi):
 def title_riff():
     """An original chugging riff: 2 bars of sixteenths at 150 BPM, with kick and snare. Loops cleanly."""
     step = 60 / 150 / 4
-    E = 40
-    bar1 = [E, E, E + 3, E, E, E, E + 6, E + 5, E, E, E + 3, E, E, E, E - 2, E - 1]
-    bar2 = [E, E, E + 3, E, E, E, E + 6, E + 5, E, E, E + 7, E + 6, E + 5, E + 3, E + 2, E]
+    low_e = 40
+    bar1 = [low_e, low_e, low_e + 3, low_e, low_e, low_e, low_e + 6, low_e + 5, low_e, low_e, low_e + 3, low_e, low_e, low_e, low_e - 2, low_e - 1]
+    bar2 = [low_e, low_e, low_e + 3, low_e, low_e, low_e, low_e + 6, low_e + 5, low_e, low_e, low_e + 7, low_e + 6, low_e + 5, low_e + 3, low_e + 2, low_e]
     notes = bar1 + bar2 + bar1 + bar2
-    n = int(RATE * step * len(notes))
-    out = [0.0] * n
+    sample_count = int(RATE * step * len(notes))
+    out = [0.0] * sample_count
     rnd = random.Random(5)
-    for i, midi in enumerate(notes):
-        start = int(i * step * RATE)
-        accent = midi != E
+    for note_number, midi in enumerate(notes):
+        start = int(note_number * step * RATE)
+        accent = midi != low_e
         length = int(RATE * step * (0.95 if accent else 0.55))
-        f, ph = _note_freq(midi), 0.0
-        for k in range(length):
-            if start + k >= n: break
-            t = k / RATE
-            ph += f / RATE
-            saw = 2 * (ph % 1) - 1 + 0.6 * (2 * ((ph * 2.005) % 1) - 1)
-            env = min(1, t * 400) * math.exp(-t * (6 if accent else 22))
-            out[start + k] += math.tanh(3.2 * saw) * 0.32 * env
+        pitch, phase = _note_freq(midi), 0.0
+        for sample_in_note in range(length):
+            if start + sample_in_note >= sample_count: break
+            seconds = sample_in_note / RATE
+            phase += pitch / RATE
+            saw = 2 * (phase % 1) - 1 + 0.6 * (2 * ((phase * 2.005) % 1) - 1)
+            env = min(1, seconds * 400) * math.exp(-seconds * (6 if accent else 22))
+            out[start + sample_in_note] += math.tanh(3.2 * saw) * 0.32 * env
     for beat in range(len(notes) // 4):                      # kick on every beat, snare on 2 and 4
         start = int(beat * 4 * step * RATE)
-        for k in range(int(RATE * 0.18)):
-            if start + k >= n: break
-            t = k / RATE
-            out[start + k] += math.sin(2 * math.pi * (110 - 260 * t) * t) * math.exp(-t * 22) * 0.75
+        for sample_in_note in range(int(RATE * 0.18)):
+            if start + sample_in_note >= sample_count: break
+            seconds = sample_in_note / RATE
+            out[start + sample_in_note] += math.sin(2 * math.pi * (110 - 260 * seconds) * seconds) * math.exp(-seconds * 22) * 0.75
         if beat % 2 == 1:
-            for k in range(int(RATE * 0.16)):
-                if start + k >= n: break
-                t = k / RATE
-                out[start + k] += rnd.uniform(-1, 1) * math.exp(-t * 26) * 0.35
+            for sample_in_note in range(int(RATE * 0.16)):
+                if start + sample_in_note >= sample_count: break
+                seconds = sample_in_note / RATE
+                out[start + sample_in_note] += rnd.uniform(-1, 1) * math.exp(-seconds * 26) * 0.35
     smooth = _lowpass(out, 0.35)
-    return _wav([max(-1, min(1, s)) * 0.9 for s in smooth])
+    return _wav([max(-1, min(1, sample)) * 0.9 for sample in smooth])
 
 def thud():
     rnd = random.Random(31); out = []
-    for i in range(int(RATE * 0.45)):
-        t = i / RATE
-        out.append(math.sin(2 * math.pi * (70 - 50 * t) * t) * math.exp(-t * 9) * 1.1 + rnd.uniform(-1, 1) * math.exp(-t * 40) * 0.5)
+    for sample_number in range(int(RATE * 0.45)):
+        seconds = sample_number / RATE
+        out.append(math.sin(2 * math.pi * (70 - 50 * seconds) * seconds) * math.exp(-seconds * 9) * 1.1 + rnd.uniform(-1, 1) * math.exp(-seconds * 40) * 0.5)
     return _wav(_lowpass(out, 0.3))
 
 def melt():
-    rnd = random.Random(32); n = int(RATE * 1.2); out, y = [], 0.0
-    for i in range(n):
-        t = i / RATE
-        a = 0.25 * (1 - t / 1.2) + 0.02
-        y += a * (rnd.uniform(-1, 1) - y)
-        out.append(y * 3 * min(1, t * 20) * (1 - t / 1.2) + math.sin(2 * math.pi * (180 - 120 * t) * t) * 0.15 * (1 - t / 1.2))
+    rnd = random.Random(32); sample_count = int(RATE * 1.2); out, smoothed = [], 0.0
+    for sample_number in range(sample_count):
+        seconds = sample_number / RATE
+        smoothing = 0.25 * (1 - seconds / 1.2) + 0.02
+        smoothed += smoothing * (rnd.uniform(-1, 1) - smoothed)
+        out.append(smoothed * 3 * min(1, seconds * 20) * (1 - seconds / 1.2) + math.sin(2 * math.pi * (180 - 120 * seconds) * seconds) * 0.15 * (1 - seconds / 1.2))
     return _wav(out)

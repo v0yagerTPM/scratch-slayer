@@ -1,9 +1,9 @@
 """Original SVG art + synthesized WAV sound effects for the game."""
 import math, random, struct, io, wave
 
-def svg(w, h, body):
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" '
-            f'viewBox="0 0 {w} {h}">{body}</svg>')
+def svg(width, height, body):
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
+            f'viewBox="0 0 {width} {height}">{body}</svg>')
 
 OUT = 'stroke="#2a0e04" stroke-width="1.5"'
 SKIN, SKIN2, CHEST, BONE = "#8b3a1a", "#6e2c12", "#a8542b", "#e0d6b0"
@@ -25,17 +25,17 @@ def _body():
             '<path d="M32 62 Q40 65 48 62 M31 69 Q40 72 49 69 M32 76 Q40 79 48 76" stroke="#6e2c12" stroke-width="1.5" fill="none"/>'
             f'<path d="M19 46 L13 37 L24 43 Z M61 46 L67 37 L56 43 Z" fill="{BONE}" stroke="#5a5030" stroke-width="1"/>')
 
-def _claws(x, y, up=False):
-    d = -1 if up else 1
-    return "".join(f'<path d="M{x+i*3-1} {y} L{x+i*3} {y+6*d} L{x+i*3+1.5} {y} Z" fill="{BONE}"/>' for i in range(3))
+def _claws(left, top, pointing_up=False):
+    direction = -1 if pointing_up else 1
+    return "".join(f'<path d="M{left+claw_number*3-1} {top} L{left+claw_number*3} {top+6*direction} L{left+claw_number*3+1.5} {top} Z" fill="{BONE}"/>' for claw_number in range(3))
 
 def _legs(lift_left=False, lift_right=False):
-    ly = 108 if lift_left else 116
-    ry = 108 if lift_right else 116
-    return (f'<path d="M28 84 L24 {ly} L34 {ly} L37 86 Z" fill="{SKIN2}" {OUT}/>'
-            f'<path d="M52 84 L56 {ry} L46 {ry} L43 86 Z" fill="{SKIN2}" {OUT}/>'
-            f'<path d="M21 {ly} L36 {ly} L35 {ly+3} L20 {ly+3} Z" fill="#2a0e04"/>'
-            f'<path d="M44 {ry} L59 {ry} L60 {ry+3} L45 {ry+3} Z" fill="#2a0e04"/>')
+    left_foot_y = 108 if lift_left else 116
+    right_foot_y = 108 if lift_right else 116
+    return (f'<path d="M28 84 L24 {left_foot_y} L34 {left_foot_y} L37 86 Z" fill="{SKIN2}" {OUT}/>'
+            f'<path d="M52 84 L56 {right_foot_y} L46 {right_foot_y} L43 86 Z" fill="{SKIN2}" {OUT}/>'
+            f'<path d="M21 {left_foot_y} L36 {left_foot_y} L35 {left_foot_y+3} L20 {left_foot_y+3} Z" fill="#2a0e04"/>'
+            f'<path d="M44 {right_foot_y} L59 {right_foot_y} L60 {right_foot_y+3} L45 {right_foot_y+3} Z" fill="#2a0e04"/>')
 
 def _arms_down(swing=0):
     return (f'<path d="M21 50 Q{10+swing} 70 {13+swing} 90 L{20+swing} 90 Q{18+swing} 72 27 58 Z" fill="#7a3215" {OUT}/>'
@@ -45,7 +45,7 @@ def _arms_down(swing=0):
 def _arms_up():
     return (f'<path d="M22 50 Q8 34 12 12 L19 12 Q17 32 28 46 Z" fill="#7a3215" {OUT}/>'
             f'<path d="M58 50 Q72 34 68 12 L61 12 Q63 32 52 46 Z" fill="#7a3215" {OUT}/>'
-            + _claws(12, 12, up=True) + _claws(61, 12, up=True))
+            + _claws(12, 12, pointing_up=True) + _claws(61, 12, pointing_up=True))
 
 IMP_WALK1 = svg(80, 120, _legs(lift_left=True) + _arms_down(2) + _body() + _head())
 IMP_WALK2 = svg(80, 120, _legs(lift_right=True) + _arms_down(-2) + _body() + _head())
@@ -60,13 +60,13 @@ IMP_DEAD = svg(80, 120,
     + _claws(66, 110))
 
 def _gun(flash):
-    g = ""
+    picture = ""
     if flash:
-        g += ('<polygon points="80,0 89,38 112,16 96,50 134,48 98,62 80,66 62,62 26,48 64,50 48,16 71,38" '
+        picture += ('<polygon points="80,0 89,38 112,16 96,50 134,48 98,62 80,66 62,62 26,48 64,50 48,16 71,38" '
               'fill="#ffd23f" stroke="#ff7a00" stroke-width="3"/>'
               '<circle cx="80" cy="56" r="13" fill="#fff8d0"/>')
     shade = "#5a5a5a" if flash else "#3b3b3b"
-    g += ('<g transform="translate(0,60)">'
+    picture += ('<g transform="translate(0,60)">'
           f'<path d="M70 0 L90 0 L100 70 L60 70 Z" fill="{shade}" stroke="#111" stroke-width="2"/>'
           '<path d="M73 0 L87 0 L86 6 L74 6 Z" fill="#111"/>'
           '<line x1="80" y1="2" x2="80" y2="70" stroke="#777" stroke-width="2"/>'
@@ -80,7 +80,7 @@ def _gun(flash):
           '<path d="M104 100 Q122 94 134 106 L138 130 L104 130 Z" fill="#3e5a2a" stroke="#1d2b12" stroke-width="2"/>'
           '<path d="M134 106 L150 130 L138 130 Z" fill="#4a6b33" stroke="#1d2b12" stroke-width="2"/>'
           '</g>')
-    return svg(160, 190, g)
+    return svg(160, 190, picture)
 
 GUN_IDLE, GUN_FIRE = _gun(False), _gun(True)
 
@@ -90,80 +90,57 @@ CROSSHAIR = svg(20, 20, '<path d="M10 1 V7 M10 13 V19 M1 10 H7 M13 10 H19" strok
 TINY = svg(2, 2, '<rect width="2" height="2" fill="#000" fill-opacity="0"/>')
 BACKDROP = svg(480, 360, '<rect width="480" height="360" fill="#000"/>')
 
-def _screen(bg, op, title, color, lines):
-    body = f'<rect width="480" height="360" fill="{bg}" fill-opacity="{op}"/>'
-    body += (f'<text x="240" y="120" font-family="Pixel" font-size="40" fill="{color}" stroke="#000" '
-             f'stroke-width="2" text-anchor="middle">{title}</text>')
-    y = 170
-    for txt, size, fill in lines:
-        body += (f'<text x="240" y="{y}" font-family="Sans Serif" font-size="{size}" fill="{fill}" '
-                 f'text-anchor="middle">{txt}</text>')
-        y += size + 10
-    return svg(480, 360, body)
-
-TITLE = _screen("#000", 0.7, "SCRATCH SLAYER", "#e02424", [
-    ("A raycasting shooter built entirely in Scratch", 15, "#bbbbbb"),
-    ("UP / DOWN  or  W / S  -  move", 16, "#ffffff"),
-    ("LEFT / RIGHT  -  turn       A / D  -  strafe", 16, "#ffffff"),
-    ("SPACE  -  shoot       M  -  toggle map", 16, "#ffffff"),
-    ("Press SPACE to start", 20, "#ffe14d")])
-DIED = _screen("#600000", 0.6, "YOU DIED", "#ff4040", [
-    ("The monsters got you.", 18, "#ffffff"),
-    ("Click the green flag to try again", 18, "#ffe14d")])
-WIN = _screen("#002a10", 0.6, "AREA CLEARED", "#40ff70", [
-    ("Every monster has been defeated!", 18, "#ffffff"),
-    ("Click the green flag to play again", 18, "#ffe14d")])
 
 # ---------------- sounds ----------------
 RATE = 22050
 def _wav(samples):
-    buf = io.BytesIO()
-    with wave.open(buf, "wb") as w:
-        w.setnchannels(1); w.setsampwidth(2); w.setframerate(RATE)
-        w.writeframes(b"".join(struct.pack("<h", int(max(-1, min(1, s)) * 30000)) for s in samples))
-    return buf.getvalue(), len(samples)
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as wav_file:
+        wav_file.setnchannels(1); wav_file.setsampwidth(2); wav_file.setframerate(RATE)
+        wav_file.writeframes(b"".join(struct.pack("<h", int(max(-1, min(1, sample)) * 30000)) for sample in samples))
+    return buffer.getvalue(), len(samples)
 
-def _lowpass(xs, a):
-    y, out = 0.0, []
-    for x in xs:
-        y += a * (x - y); out.append(y)
+def _lowpass(samples, smoothing):
+    smoothed, out = 0.0, []
+    for sample in samples:
+        smoothed += smoothing * (sample - smoothed); out.append(smoothed)
     return out
 
 def shotgun():
     rnd = random.Random(1)
-    n = int(RATE * 0.6)
-    noise = _lowpass([rnd.uniform(-1, 1) for _ in range(n)], 0.3)
+    sample_count = int(RATE * 0.6)
+    noise = _lowpass([rnd.uniform(-1, 1) for _ in range(sample_count)], 0.3)
     out = []
-    for i in range(n):
-        t = i / RATE
-        s = noise[i] * 2.2 * math.exp(-t * 10) * min(1, t * 400)
-        s += math.sin(2 * math.pi * 55 * t) * math.exp(-t * 16) * 0.9
-        for c in (0.36, 0.45):  # pump click-clack
-            if c <= t < c + 0.025:
-                s += rnd.uniform(-1, 1) * 0.5 * math.exp(-(t - c) * 120)
-        out.append(s * 0.8)
+    for sample_number in range(sample_count):
+        seconds = sample_number / RATE
+        sample = noise[sample_number] * 2.2 * math.exp(-seconds * 10) * min(1, seconds * 400)
+        sample += math.sin(2 * math.pi * 55 * seconds) * math.exp(-seconds * 16) * 0.9
+        for click_time in (0.36, 0.45):  # pump click-clack
+            if click_time <= seconds < click_time + 0.025:
+                sample += rnd.uniform(-1, 1) * 0.5 * math.exp(-(seconds - click_time) * 120)
+        out.append(sample * 0.8)
     return _wav(out)
 
-def _growl(dur, f0, f1, vib, seed):
+def _growl(dur, start_pitch, end_pitch, vib, seed):
     rnd = random.Random(seed)
-    n, ph, out = int(RATE * dur), 0.0, []
-    for i in range(n):
-        t = i / RATE
-        f = f0 + (f1 - f0) * (t / dur)
-        f *= 1 + 0.08 * math.sin(2 * math.pi * vib * t)
-        ph += f / RATE
-        saw = 2 * (ph % 1) - 1
-        env = min(1, t * 60) * (1 - t / dur) ** 1.5
+    sample_count, phase, out = int(RATE * dur), 0.0, []
+    for sample_number in range(sample_count):
+        seconds = sample_number / RATE
+        pitch = start_pitch + (end_pitch - start_pitch) * (seconds / dur)
+        pitch *= 1 + 0.08 * math.sin(2 * math.pi * vib * seconds)
+        phase += pitch / RATE
+        saw = 2 * (phase % 1) - 1
+        env = min(1, seconds * 60) * (1 - seconds / dur) ** 1.5
         out.append((saw * 0.7 + rnd.uniform(-1, 1) * 0.3) * env)
-    return _wav([s * 1.4 for s in _lowpass(out, 0.18)])
+    return _wav([sample * 1.4 for sample in _lowpass(out, 0.18)])
 
 def monster_pain(): return _growl(0.22, 260, 150, 30, 2)
 def monster_death(): return _growl(0.85, 170, 45, 14, 3)
 def player_hurt():
-    n, ph, out = int(RATE * 0.22), 0.0, []
-    for i in range(n):
-        t = i / RATE
-        ph += (150 - 200 * t) / RATE
-        sq = 1 if (ph % 1) < 0.5 else -1
-        out.append(sq * min(1, t * 80) * (1 - t / 0.22))
-    return _wav([s * 1.2 for s in _lowpass(out, 0.12)])
+    sample_count, phase, out = int(RATE * 0.22), 0.0, []
+    for sample_number in range(sample_count):
+        seconds = sample_number / RATE
+        phase += (150 - 200 * seconds) / RATE
+        square_wave = 1 if (phase % 1) < 0.5 else -1
+        out.append(square_wave * min(1, seconds * 80) * (1 - seconds / 0.22))
+    return _wav([sample * 1.2 for sample in _lowpass(out, 0.12)])
