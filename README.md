@@ -37,6 +37,21 @@ Check that every level is still valid after editing a map:
 python3 src/levels.py
 ```
 
+### Using a map made in Scratch
+
+The maps live in `src/maps/` as plain text files, in exactly the format Scratch uses to
+export and import lists. To bring a student's map into the project:
+
+1. In Scratch, show the list (for example "level 1 map"), right-click it on the stage and
+   choose **export**. Scratch saves `level 1 map.txt`.
+2. Put that file in `src/maps/`, replacing the old one with the same name.
+3. Run `npm test`. The build checks the map; if something is wrong (a missing exit, a key
+   behind its own door...) it says what and where. Then open the new `dist/scratch-slayer.sb3`.
+
+To go the other way, right-click the list in Scratch, choose **import** and pick a file from
+`src/maps/`. Edit maps in a plain text editor with a monospace font. Don't add notes to the
+files: Scratch would import every line, notes included, as a row of the map.
+
 ## What's where
 
 | Path | What it is |
@@ -44,7 +59,8 @@ python3 src/levels.py
 | `src/build.py` | The whole game: every sprite, script, variable and comment. Run it to build. |
 | `src/sb3lib.py` | A small compiler: Python functions that become Scratch blocks, written out as `project.json` inside the `.sb3`. |
 | `src/sb3extra.py` | More block helpers (mouse, sound, list and pen blocks). |
-| `src/levels.py` | The six level maps (text grids) and `validate()`, which checks every level can be finished and explains any problem it finds. |
+| `src/maps/` | The six level maps as text files (`level 1 map.txt` ...), one row per line. Same format as Scratch's list export. |
+| `src/levels.py` | Loads the maps, adds each level's settings, and `validate()`, which checks every level can be finished and explains any problem it finds. |
 | `tests/test_levels.py` | Tests for the map checker: broken maps it must catch. |
 | `src/assets*.py` | All the art (hand-written SVG) and sound (synthesized WAV), one file per round of features. Nothing is downloaded from the internet. |
 | `tests/harness.js` | Runs the `.sb3` in a headless Scratch VM, presses keys, and checks variables. |

@@ -1,25 +1,37 @@
 """Level maps for Scratch Slayer.
 
-HOW A LEVEL IS STORED
-=====================
-Every level is a GRID OF LETTERS: a Python list of strings, one string per ROW, top row first.
-Each letter is one SQUARE of the map. This is exactly the same shape as the Scratch lists
-"level 1 map" ... "level 6 map": build.py copies each list of strings straight into a Scratch
-list (one string = one list item), and the Engine's 'load level' block reads it back letter by
-letter. So whatever grid this file produces IS the level the game plays.
+WHERE THE MAPS ARE
+==================
+Each level's map is a plain text file in the src/maps folder:
+    src/maps/level 1 map.txt   ...   src/maps/level 6 map.txt
+One line of the file = one ROW of the map, top row first. Each letter is one SQUARE.
+
+These are EXACTLY the files Scratch makes when you right-click the list "level 1 map" on the
+stage and choose "export", and the files it reads with "import". (Scratch names an exported
+list after the list, which is where the file names come from.) So a map can travel both ways:
+  - from Scratch into this project: export the list, put the file in src/maps (replacing the
+    old one, same name), then run npm test. The build checks the map and puts it in the game.
+  - from this project into Scratch: import the file into the list in the Scratch editor.
+That's why the files hold nothing but map rows: no comments or notes, because Scratch would
+import every line, notes included, as a row of the map. The notes about each level's layout
+are in this file instead, next to the level's settings further down.
+
+Edit a map in any plain text editor (Notepad, TextEdit in plain text mode, VS Code). Use a
+monospace font such as Consolas or Courier so the columns line up; most code editors show the
+column number at the bottom, which helps find a square.
+
+HOW A MAP IS USED
+=================
+load_map() reads a file into a Python list of strings, one string per row. build.py copies
+that list straight into the Scratch list "level N map" (one string = one list item), and the
+Engine's 'load level' block reads it back letter by letter. So the file IS the level.
 
 COORDINATES: a square is (column, row), both counting from 0.
-  column = how far along the row (0 = the left end of the string)
-  row    = which string in the list (0 = the TOP row)
+  column = how far along the row (0 = the first letter of the line)
+  row    = which line of the file (0 = the TOP line)
 So map_rows[row][column] is the letter on a square. Notice the order: row first, then column.
 The game uses the same numbers ("player x" 3.5 = the middle of column 3, "player y" = the row).
-In Scratch the lists count from 1 instead, so row 0, column 0 is item 1, letter 1.
-
-HOW THE MAPS ARE MADE
-  Levels 1-3   typed out in full below. What you see is exactly what you play. The column
-               ruler above each map and the row numbers on the right help you find a square.
-  Levels 4-6   too big to type comfortably (36 to 40 squares wide), so they are DRAWN with the
-               Grid "drawing kit" class: fill rectangles, carve rooms, then place things.
+Scratch lists and text editors count from 1 instead: row 0, column 0 is line 1, letter 1.
 
 At the bottom, validate() plays detective: it checks every map can really be finished.
 build.py runs validate() on every level each time it builds, so a broken map stops the build
@@ -42,6 +54,7 @@ LEGEND (one character per grid cell)
   K      red key         J  blue key
   E      exploding barrel
 """
+import os
 # deque = a "double-ended queue": a list you can quickly take items off the FRONT of.
 # The flood fill in reachable_squares() below uses it as a to-do list of squares to visit.
 from collections import deque
@@ -63,339 +76,42 @@ def check(condition, message):
 
 
 # =================================================================================================
-# LEVEL 1: THE OUTPOST (20 x 20). Monsters: imps.
+# READING A MAP FILE
 # =================================================================================================
-#   rows 1-5    the start room (P at column 1, row 2, the shotgun N just below), then a door
-#               (D at column 5, row 2) into the north hall
-#   row 6       a wall of 2s with one door (column 12)
-#   rows 7-11   the middle hall: the imp pack, two barrels (E), crates (3 and 4)
-#   row 12      a wall with one door (column 15)
-#   rows 13-18  the bottom room. The exit X is in the LEFT wall (column 0, row 16).
-#               Bottom right: a secret wall S (column 15, row 18) hides a closet with shells (A)
-#               and a health pack (H).
-LEVEL_1_MAP = [
-    #          1111111111     <- column numbers (tens)
-    #01234567890123456789     <- column numbers (ones)
-    "11111111111111111111",    # row 0
-    "100001000000000000I1",    # row 1
-    "1P000D000000M0000001",    # row 2
-    "10000100020000200001",    # row 3
-    "10N0010000000000M001",    # row 4
-    "11111100000000000001",    # row 5
-    "122222222222D2222221",    # row 6
-    "10000030000000000001",    # row 7
-    "100M003000M0E000M001",    # row 8
-    "10000000000400400001",    # row 9
-    "10H000300000000M0E01",    # row 10
-    "10000030A00000000001",    # row 11
-    "111111111111111D1111",    # row 12
-    "100000I0000000000001",    # row 13
-    "100M0002200000000H01",    # row 14
-    "10000M00000022000001",    # row 15
-    "X0000000000000002221",    # row 16
-    "100022000M0000020A01",    # row 17
-    "10000000000000ASH001",    # row 18
-    "11111111111111111111",    # row 19
-]
-# =================================================================================================
-# LEVEL 2: THE PROCESSING PLANT (24 x 24). Monsters: spitters. One key: red.
-# =================================================================================================
-#   rows 1-7    north rooms, split by a wall of 7s at column 15. The RED door R (column 15,
-#               row 4) leads to the north-east room, which has the exit X in its top wall
-#               (column 19, row 0). Top left: a secret wall S (column 3, row 1) hides a closet.
-#   row 8       a wall with one door (column 12)
-#   rows 9-16   the middle: a west room with the red key K (column 2, row 10), its door at
-#               column 8, row 12, and a big east hall with the chaingun Q (column 12, row 10)
-#   row 17      a wall with one door (column 16)
-#   rows 18-22  the bottom: the player starts in the west room (P at column 2, row 20)
-# The route: bottom -> middle -> red key -> north -> red door -> exit.
-LEVEL_2_MAP = [
-    #          11111111112222     <- column numbers (tens)
-    #012345678901234567890123     <- column numbers (ones)
-    "5555555555555555555X5555",    # row 0
-    "5H0S00000000000700000005",    # row 1
-    "50A7V0000000000700V00005",    # row 2
-    "577000600060000700000005",    # row 3
-    "50000000E0000H0R00000V05",    # row 4
-    "500000600060V00700000005",    # row 5
-    "50I000000000000700000005",    # row 6
-    "500000000000000700000005",    # row 7
-    "577777777777D77777777775",    # row 8
-    "500000007000000000000005",    # row 9
-    "50K00V00700HQ00000V00005",    # row 10
-    "500000007000600000060005",    # row 11
-    "50000000D000000V0E000005",    # row 12
-    "500V00A0700000000000H005",    # row 13
-    "5000000070006000H0060005",    # row 14
-    "5000000070V0000000000V05",    # row 15
-    "500000007000000000000005",    # row 16
-    "5777777777777777D7777775",    # row 17
-    "50000000500000000000V005",    # row 18
-    "500000005000600006000005",    # row 19
-    "50P00000D00000V000000005",    # row 20
-    "500000005000600E06000A05",    # row 21
-    "500000005000000000V0I005",    # row 22
-    "555555555555555555555555",    # row 23
-]
-# =================================================================================================
-# LEVEL 3: THE FORTRESS (28 x 28). Monsters: golems, and the WARDEN (boss). Keys: red and blue.
-# =================================================================================================
-#   rows 1-11   three wings side by side, split by walls at columns 9 and 18:
-#               west wing (red key K) | inner keep (blue key J) | east wing (the warden W)
-#   row 12      a wall with three doors: a plain door D into the west wing, the RED door R
-#               into the keep, and the BLUE door B into the east wing
-#   rows 13-20  the courtyard, with pillars (4) and a central block (9)
-#   row 21      a wall with three doors into the side rooms
-#   rows 22-26  the side rooms. The player starts in the middle one (P at column 13, row 25).
-# The exit X (column 27, row 3) is in a closet sealed by a SKULL DOOR Z (column 25, row 3).
-# Only the warden's skull key opens it, so the boss must fall first.
-# The keep's top-right corner has a secret wall S (column 15, row 1) hiding shells and health.
-LEVEL_3_MAP = [
-    #          111111111122222222     <- column numbers (tens)
-    #0123456789012345678901234567     <- column numbers (ones)
-    "8888888888888888888888888888",    # row 0
-    "8I0000000900000SAH90H0000008",    # row 1
-    "80G00000090G0J00999000000998",    # row 2
-    "800000000900000000900G000Z0X",    # row 3
-    "8008880009004004009000000998",    # row 4
-    "8000000G09000000009000000008",    # row 5
-    "80K0000009000000G09999999008",    # row 6
-    "8000000009000000009000000008",    # row 7
-    "80800080090040040090000E0A08",    # row 8
-    "8000G08009000G000090G0000008",    # row 9
-    "8000000A09000000H09000000W08",    # row 10
-    "8000000009000000009000000008",    # row 11
-    "8999D99999999R99999999B99998",    # row 12
-    "8H000000A00000000000000000A8",    # row 13
-    "800G000000000000G000GE000008",    # row 14
-    "8000040000000000000000400008",    # row 15
-    "8000000000400990040000000008",    # row 16
-    "8000000000000990000000000008",    # row 17
-    "8000040000000000000000400008",    # row 18
-    "80000000G00E000000000000G008",    # row 19
-    "8000000000000000000A00000008",    # row 20
-    "8888D88888888D88888888D88888",    # row 21
-    "8000000008000000008000000008",    # row 22
-    "80H00000080I0000008000000H08",    # row 23
-    "800G00000800000000800000G008",    # row 24
-    "800000A008000P0000800I000008",    # row 25
-    "8000000008000000008000000008",    # row 26
-    "8888888888888888888888888888",    # row 27
-]
+# The maps folder, found from where this file is, so it works whichever folder you run from.
+MAPS_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "maps")
 
-# =================================================================================================
-# THE Grid DRAWING KIT (used for the big levels 4-6)
-# =================================================================================================
-class Grid:
-    """A tiny drawing kit for big maps: start solid or hollow, then carve rooms and add walls.
 
-    Typing a 40 x 40 map by hand is slow and easy to get wrong, so levels 4-6 are DRAWN with
-    rectangles instead, a bit like a paint program:
-        drawing = Grid(36, "2")            a 36 x 36 map: an outside wall of "2", floor inside
-        drawing = Grid(38, "7", fill="7")  a 38 x 38 map that is SOLID wall 7 (dig caves into it)
-        drawing.fill(left, top, right, bottom, "5")
-                                           fill the rectangle from square (left, top) to square
-                                           (right, bottom) with "5". Both corners are included.
-                                           A rectangle one square wide is a wall; filling with
-                                           "0" carves out a room.
-        drawing.put(column, row, "D")      put one letter on one square (doors, the exit, secrets)
-        drawing.things("M", [(5, 30), ...])
-                                           put a thing on each (column, row) square in the list.
-                                           It must land on empty floor (see things() below).
-        drawing.rows()                     the finished map, as a list of strings
-    Order matters: later drawing covers earlier drawing, so draw walls first, then cut doors
-    into them, and add things last.
+def map_file_path(level_number):
+    """src/maps/level 1 map.txt, src/maps/level 2 map.txt ..."""
+    return os.path.join(MAPS_FOLDER, f"level {level_number} map.txt")
+
+
+def load_map(level_number):
+    """Read one map file and return its rows: a list of strings, top row first.
+
+    Line endings: Windows ends each line with two characters (carriage return + new line),
+    Mac and Linux with one (new line). splitlines() understands both, so a file exported from
+    Scratch on any computer works. A file may or may not end with a final line break; blank
+    lines at the very end are ignored. Everything else is kept exactly as it is, so a stray
+    space or tab becomes an 'unknown letter' that validate() points out.
     """
-    def __init__(self, size, border, fill="0"):
-        # size   = width AND height (these maps are square)
-        # border = the letter for the outside wall
-        # fill   = what everything inside starts as: "0" (open floor) or a wall (solid rock)
-        self.size = size
-        # A list of rows, each a list of letters. Lists (not strings) because Python can change
-        # one item of a list, but can't change one letter inside a string.
-        self.squares = [[fill] * size for _ in range(size)]
-        # The outside wall: the top row, the bottom row, the left column and the right column.
-        last = size - 1
-        for position in range(size):
-            self.squares[0][position] = self.squares[last][position] = border
-            self.squares[position][0] = self.squares[position][last] = border
-
-    def put(self, column, row, letter):
-        """One letter on one square."""
-        self.squares[row][column] = letter
-
-    def fill(self, left, top, right, bottom, letter):
-        """Every square from (left, top) to (right, bottom), corners included. The + 1 is there
-        because Python's range() stops just BEFORE its end number: range(3, 6) is 3, 4, 5."""
-        for row in range(top, bottom + 1):
-            for column in range(left, right + 1):
-                self.squares[row][column] = letter
-
-    def things(self, letter, squares):
-        """Put a thing (a monster, pickup, key, barrel, the player...) on every (column, row) in
-        squares. Each square must still be empty floor, so a typo can't hide a monster inside a
-        wall or drop two things on one square."""
-        for column, row in squares:
-            already_there = self.squares[row][column]
-            check(already_there == "0",
-                  f"can't put '{letter}' at {where(column, row)}: there is already a "
-                  f"'{already_there}' there. Things need an empty floor square (0).")
-            self.squares[row][column] = letter
-
-    def rows(self):
-        """The finished map: each row of letters glued into one string."""
-        return ["".join(letters) for letters in self.squares]
+    path = map_file_path(level_number)
+    check(os.path.exists(path), f"level {level_number}: the map file is missing. Expected {path}")
+    with open(path, encoding="utf-8-sig") as map_file:   # utf-8-sig also skips the invisible
+        map_rows = map_file.read().splitlines()          # marker some Windows editors add
+    while map_rows and map_rows[-1].strip() == "":       # drop blank lines at the end
+        map_rows.pop()
+    check(map_rows, f"level {level_number}: the map file {path} is empty.")
+    return map_rows
 
 
 # =================================================================================================
-# LEVELS 4-6, drawn with Grid. Each function draws one level and returns its rows.
-# Read them top to bottom: walls and rooms first, then doors, then pillars, then things.
-# =================================================================================================
-def _draw_level_4():
-    """THE FOUNDRY (36 x 36): a loading bay, a huge pillared furnace hall full of chargers,
-    two side corridors, and three north rooms. Red key in the north-west, exit in the north-east.
-
-    Layout, top to bottom:
-      rows 1-7    three north rooms (walls at columns 11 and 24), the red key K in the west one
-      row 8       a wall with two plain doors and the RED door at column 32
-      rows 9-26   west corridor | furnace hall | east corridor (walls at columns 6 and 29)
-      row 27      a wall with two doors
-      rows 28-34  the loading bay, where the player starts (P at column 18, row 33)
-    The exit X is in the top wall at column 30, in the north-east room behind the red door.
-    """
-    drawing = Grid(36, "2")
-    drawing.fill(1, 27, 34, 27, "5"); drawing.put(8, 27, "D"); drawing.put(27, 27, "D")   # bay / hall wall
-    drawing.fill(6, 9, 6, 26, "5"); drawing.put(6, 18, "D")                               # hall / west corridor
-    drawing.fill(29, 9, 29, 26, "5"); drawing.put(29, 14, "D")                            # hall / east corridor
-    drawing.fill(1, 8, 34, 8, "5")                                                        # wall below the north rooms,
-    drawing.put(3, 8, "D"); drawing.put(17, 8, "D"); drawing.put(32, 8, "R")              # with its three doors
-    drawing.fill(11, 1, 11, 7, "5"); drawing.fill(24, 1, 24, 7, "5")                      # walls between them
-    drawing.put(30, 0, "X")                                                               # the exit, in the top wall
-    for column in (10, 24):                                                               # furnace pillars,
-        for row in (12, 17, 22):                                                          # each one 2 x 2
-            drawing.fill(column, row, column + 1, row + 1, "4")
-    for row in (12, 22):
-        drawing.fill(17, row, 18, row + 1, "4")
-    # The middle pillar is HOLLOW: a 3 x 3 block, its center carved back to floor, with a secret
-    # wall S on its north side. The center square gets rockets (U) a few lines down.
-    drawing.fill(16, 16, 18, 18, "4"); drawing.put(17, 17, "0"); drawing.put(17, 16, "S")
-    drawing.fill(14, 31, 15, 32, "5"); drawing.fill(21, 31, 22, 32, "5")                  # bay crates
-    drawing.fill(3, 3, 4, 4, "5"); drawing.fill(29, 3, 30, 4, "5")                        # cover in the
-    drawing.fill(15, 3, 15, 5, "4"); drawing.fill(20, 3, 20, 5, "4")                      # north rooms
-    # THINGS: the letter first, then the (column, row) squares it goes on.
-    drawing.things("P", [(18, 33)])                                                       # player start
-    drawing.things("U", [(17, 17)])                                                       # rockets in the hollow pillar
-    drawing.things("C", [(13, 15), (21, 15), (13, 20), (21, 20), (8, 11), (27, 24), (19, 10)])   # chargers
-    drawing.things("M", [(5, 30), (30, 30), (26, 33), (3, 20)])                           # imps
-    drawing.things("V", [(2, 12), (4, 24), (32, 12), (32, 23), (27, 5)])                  # spitters
-    drawing.things("G", [(7, 4), (21, 2), (33, 2)])                                       # golems
-    drawing.things("K", [(2, 2)]); drawing.things("L", [(17, 2)])                         # red key, rocket launcher
-    drawing.things("H", [(2, 33), (33, 33), (9, 2), (33, 18), (2, 15)])                   # health
-    drawing.things("A", [(16, 30), (12, 2), (31, 25)])                                    # shells
-    drawing.things("I", [(10, 33), (28, 10), (4, 10), (25, 26)])                          # bullets
-    drawing.things("U", [(22, 6), (8, 25)])                                               # rockets
-    drawing.things("E", [(12, 25), (23, 10), (31, 30), (2, 26), (26, 2)])                 # barrels
-    return drawing.rows()
-
-
-def _draw_level_5():
-    """THE SUNKEN VAULTS (38 x 38): solid rock with caverns carved out, joined by narrow
-    tunnels. Red key north-west, blue key north, exit east behind the blue door. Dark!
-
-    This one works the OTHER way round from level 4: the Grid starts completely SOLID (fill="7")
-    and the caves and tunnels are carved out of it with floor ("0"), like digging.
-    """
-    drawing = Grid(38, "7", fill="7")
-    # Each cave is a rectangle: (left, top, right, bottom).
-    caves = {"start": (2, 28, 9, 35), "west": (2, 13, 12, 23), "south": (15, 26, 24, 35),
-             "vault": (16, 11, 27, 22), "southeast": (29, 24, 35, 35), "east": (29, 2, 35, 20),
-             "northwest": (2, 2, 13, 9), "north": (16, 2, 26, 7)}
-    for left, top, right, bottom in caves.values():
-        drawing.fill(left, top, right, bottom, "0")                                       # dig the cave out
-        for corner_column, corner_row in ((left, top), (right, top), (left, bottom), (right, bottom)):
-            drawing.put(corner_column, corner_row, "3")                                   # round the corners off
-    # Tunnels one square wide join the caves.
-    for column, top, bottom in ((5, 24, 27), (7, 10, 12), (20, 23, 25), (21, 8, 10)):     # up-and-down tunnels
-        drawing.fill(column, top, column, bottom, "0")
-    for row, left, right in ((31, 10, 14), (17, 13, 15), (30, 25, 28), (14, 28, 28)):     # left-and-right tunnels
-        drawing.fill(left, row, right, row, "0")
-    # The red door blocks the tunnel to the north cave, the blue door blocks the tunnel to the
-    # east cave, and the exit is in the east wall of the east cave.
-    drawing.put(21, 9, "R"); drawing.put(28, 14, "B"); drawing.put(36, 5, "X")
-    for column, row in ((19, 14), (24, 14), (19, 19), (24, 19)):                          # vault pillars
-        drawing.fill(column, row, column + 1, row + 1, "9")
-    drawing.fill(6, 17, 7, 18, "3"); drawing.fill(32, 9, 33, 10, "9"); drawing.fill(19, 30, 20, 31, "3")   # rocks for cover
-    # A one-square closet dug into the rock above the south-east cave, behind a secret wall.
-    drawing.put(32, 23, "S")
-    drawing.put(32, 22, "0")
-    drawing.things("P", [(5, 33)])                                                        # player start
-    drawing.things("F", [(4, 15), (10, 21), (22, 33), (17, 12), (26, 21), (33, 30), (31, 6), (24, 4)])   # wraiths
-    drawing.things("V", [(11, 15), (26, 12), (34, 26), (20, 3)])                          # spitters
-    drawing.things("G", [(22, 17), (3, 6), (33, 16)])                                     # golems
-    drawing.things("M", [(8, 33), (16, 28), (11, 4)])                                     # imps
-    drawing.things("K", [(3, 3)]); drawing.things("J", [(25, 3)])                         # red key, blue key
-    drawing.things("H", [(32, 22), (3, 22), (23, 28), (34, 33), (17, 21), (34, 3)])       # health (first: the closet)
-    drawing.things("A", [(11, 14), (16, 34), (8, 8)])                                     # shells
-    drawing.things("I", [(2, 30), (25, 12), (30, 25), (12, 3)])                           # bullets
-    drawing.things("U", [(34, 35), (17, 6), (4, 20)])                                     # rockets
-    drawing.things("E", [(22, 13), (21, 21), (18, 33)])                                   # barrels
-    return drawing.rows()
-
-
-def _draw_level_6():
-    """THE CORE (40 x 40): a ring corridor around four wings, and the Colossus's arena in the
-    middle. Red key west, blue key east (behind the red door), the arena's blue door is in the
-    south wing, and the exit closet is sealed by a skull door in the arena's north wall.
-
-    The route a player has to take: start at the bottom of the ring -> red key in the west wing
-    -> red door into the east wing -> blue key -> blue door from the south wing into the arena
-    -> beat the Colossus for the skull key -> skull door -> exit.
-    """
-    drawing = Grid(40, "8")
-    # Everything from (5, 5) to (34, 34) starts solid. The 4 squares left open all the way
-    # around it (between it and the outside wall) become the RING corridor.
-    drawing.fill(5, 5, 34, 34, "9")                                   # solid core, then carve it
-    drawing.fill(6, 6, 17, 10, "0"); drawing.fill(23, 6, 33, 10, "0") # two north rooms
-    drawing.fill(6, 13, 10, 27, "0"); drawing.fill(29, 13, 33, 27, "0")   # west + east wings
-    drawing.fill(8, 29, 31, 33, "0")                                  # south wing
-    # The arena: a 16 x 16 block of wall 4, then its inside carved out, leaving a 1-square wall.
-    drawing.fill(12, 12, 27, 27, "4"); drawing.fill(13, 13, 26, 26, "0")
-    # Doors from the ring into each part. The east wing's door is the RED one.
-    drawing.put(11, 5, "D"); drawing.put(28, 5, "D"); drawing.put(5, 20, "D")
-    drawing.put(34, 20, "R"); drawing.put(20, 34, "D")
-    # (20, 27) is a square of the arena's own wall: clearing it makes the gap behind the blue door.
-    drawing.put(20, 28, "B"); drawing.put(20, 27, "0")                # blue door into the arena
-    drawing.put(20, 12, "Z"); drawing.put(20, 11, "0"); drawing.put(20, 10, "X")   # skull door -> exit closet
-    for column, row in ((15, 15), (23, 15), (15, 23), (23, 23)):      # arena pillars
-        drawing.fill(column, row, column + 1, row + 1, "9")
-    drawing.fill(19, 8, 21, 9, "9")                                   # keep the closet walled off
-    drawing.put(5, 31, "S"); drawing.put(6, 31, "0")                  # secret closet off the ring
-    drawing.fill(12, 30, 13, 31, "4"); drawing.fill(26, 30, 27, 31, "4")   # cover in the south wing
-    drawing.things("P", [(20, 37)])                                   # player start (bottom of the ring)
-    drawing.things("T", [(20, 18)])                                   # the Colossus, in the arena
-    drawing.things("C", [(30, 2), (9, 37), (20, 31), (31, 37), (31, 20)])   # chargers
-    drawing.things("F", [(2, 10), (37, 28), (14, 8), (25, 8), (8, 24)])     # wraiths
-    drawing.things("G", [(2, 30), (37, 10), (10, 31)])                      # golems
-    drawing.things("V", [(8, 15), (32, 15), (29, 31), (16, 2)])             # spitters
-    drawing.things("M", [(9, 2), (2, 20), (37, 20)])                        # imps
-    drawing.things("K", [(7, 20)]); drawing.things("J", [(32, 26)])         # red key, blue key
-    drawing.things("H", [(6, 31), (14, 14), (25, 25), (2, 2), (37, 37), (31, 9), (9, 27)])   # health (first: closet)
-    drawing.things("A", [(14, 25), (8, 9), (33, 13)])                       # shells
-    drawing.things("I", [(25, 14), (2, 37), (37, 2), (16, 32)])             # bullets
-    drawing.things("U", [(13, 20), (26, 20), (24, 32), (6, 6)])             # rockets
-    drawing.things("E", [(18, 22), (22, 22), (2, 15), (37, 25), (10, 9)])   # barrels
-    return drawing.rows()
-
-
-LEVEL_4_MAP, LEVEL_5_MAP, LEVEL_6_MAP = _draw_level_4(), _draw_level_5(), _draw_level_6()
-
-
-# =================================================================================================
-# THE LEVEL LIST: the maps plus a few settings each. build.py reads this.
+# THE LEVEL LIST: each level's map plus a few settings. build.py reads this.
 # =================================================================================================
 # For each level:
 #   name         used in this file's messages (the level cards' names are drawn in assets6.py)
-#   rows         the map (becomes the Scratch list "level N map")
+#   rows         the map, read from its file (becomes the Scratch list "level N map")
 #   angle        the direction the player faces at the start, in degrees:
 #                0 = right (along the row), 90 = down, 180 = left, 270 = up (toward row 0)
 #                -> the Scratch list "level start angles"
@@ -407,13 +123,75 @@ LEVEL_4_MAP, LEVEL_5_MAP, LEVEL_6_MAP = _draw_level_4(), _draw_level_5(), _draw_
 #                -> "level secret wall looks"
 # Other per-level settings (how far rays travel, darkness, par times...) are tables at the top
 # of build.py, and the level cards are in assets6.py.
+#
+# Above each level: a plan of its map, so you can find your way around the text file.
+# Positions are (column, row), counting from 0 like the rest of this file.
 LEVELS = [
-    dict(name="The Outpost", rows=LEVEL_1_MAP, angle=0, ceil=(0, 10), floor=(7, 45), secret_look="2"),
-    dict(name="The Processing Plant", rows=LEVEL_2_MAP, angle=0, ceil=(50, 30), floor=(35, 30), secret_look="7"),
-    dict(name="The Fortress", rows=LEVEL_3_MAP, angle=270, ceil=(95, 45), floor=(2, 40), secret_look="9"),
-    dict(name="The Foundry", rows=LEVEL_4_MAP, angle=270, ceil=(5, 40), floor=(8, 35), secret_look="4"),
-    dict(name="The Sunken Vaults", rows=LEVEL_5_MAP, angle=270, ceil=(55, 20), floor=(50, 25), secret_look="7"),
-    dict(name="The Core", rows=LEVEL_6_MAP, angle=270, ceil=(98, 60), floor=(0, 50), secret_look="9"),
+    # LEVEL 1: THE OUTPOST (20 x 20). Monsters: imps.
+    #   rows 1-5    the start room (P at 1, 2, the shotgun N just below), then a door (D at 5, 2)
+    #               into the north hall
+    #   row 6       a wall of 2s with one door (column 12)
+    #   rows 7-11   the middle hall: the imp pack, two barrels (E), crates (3 and 4)
+    #   row 12      a wall with one door (column 15)
+    #   rows 13-18  the bottom room. The exit X is in the LEFT wall (0, 16). Bottom right: a
+    #               secret wall S (15, 18) hides a closet with shells (A) and health (H).
+    dict(name="The Outpost", rows=load_map(1), angle=0, ceil=(0, 10), floor=(7, 45), secret_look="2"),
+
+    # LEVEL 2: THE PROCESSING PLANT (24 x 24). Monsters: spitters. One key: red.
+    #   rows 1-7    north rooms, split by a wall of 7s at column 15. The RED door R (15, 4) leads
+    #               to the north-east room, which has the exit X in its top wall (19, 0).
+    #               Top left: a secret wall S (3, 1) hides a closet.
+    #   row 8       a wall with one door (column 12)
+    #   rows 9-16   a west room with the red key K (2, 10) and its door at (8, 12), and a big
+    #               east hall with the chaingun Q (12, 10)
+    #   row 17      a wall with one door (column 16)
+    #   rows 18-22  the bottom: the player starts in the west room (P at 2, 20)
+    #   Route: bottom -> middle -> red key -> north -> red door -> exit.
+    dict(name="The Processing Plant", rows=load_map(2), angle=0, ceil=(50, 30), floor=(35, 30), secret_look="7"),
+
+    # LEVEL 3: THE FORTRESS (28 x 28). Monsters: golems, and the WARDEN (boss). Keys: red, blue.
+    #   rows 1-11   three wings side by side, split by walls at columns 9 and 18:
+    #               west wing (red key K) | inner keep (blue key J) | east wing (the warden W)
+    #   row 12      a wall with three doors: plain D into the west wing, RED R into the keep,
+    #               BLUE B into the east wing
+    #   rows 13-20  the courtyard, with pillars (4) and a central block (9)
+    #   row 21      a wall with three doors into the side rooms
+    #   rows 22-26  the side rooms; the player starts in the middle one (P at 13, 25)
+    #   The exit X (27, 3) is in a closet sealed by a SKULL DOOR Z (25, 3): only the warden's
+    #   skull key opens it. A secret wall S (15, 1) in the keep hides shells and health.
+    dict(name="The Fortress", rows=load_map(3), angle=270, ceil=(95, 45), floor=(2, 40), secret_look="9"),
+
+    # LEVEL 4: THE FOUNDRY (36 x 36). Chargers, plus imps, spitters and golems. One key: red.
+    #   rows 1-7    three north rooms (walls at columns 11 and 24); the red key K (2, 2) and the
+    #               rocket launcher L (17, 2) are up here
+    #   row 8       a wall with two plain doors and the RED door (32, 8)
+    #   rows 9-26   west corridor | the furnace hall with 2 x 2 pillars | east corridor
+    #               (walls at columns 6 and 29). The middle pillar is hollow: a secret wall S
+    #               (17, 16) hides rockets inside it.
+    #   row 27      a wall with two doors
+    #   rows 28-34  the loading bay, where the player starts (P at 18, 33)
+    #   The exit X (30, 0) is in the top wall of the north-east room, behind the red door.
+    dict(name="The Foundry", rows=load_map(4), angle=270, ceil=(5, 40), floor=(8, 35), secret_look="4"),
+
+    # LEVEL 5: THE SUNKEN VAULTS (38 x 38). Wraiths, plus the others. Keys: red, blue. Dark!
+    #   Solid rock (7) with caves dug out of it, joined by tunnels one square wide. Cave corners
+    #   are rounded off with wall 3.
+    #   The player starts in the south-west cave (P at 5, 33). The red key K (3, 3) is in the
+    #   north-west cave; the RED door (21, 9) blocks the tunnel to the north cave with the blue
+    #   key J (25, 3); the BLUE door (28, 14) blocks the tunnel from the middle vault to the east
+    #   cave, which has the exit X (36, 5) in its east wall.
+    #   A secret wall S (32, 23) above the south-east cave hides a health pack.
+    dict(name="The Sunken Vaults", rows=load_map(5), angle=270, ceil=(55, 20), floor=(50, 25), secret_look="7"),
+
+    # LEVEL 6: THE CORE (40 x 40). Everything, and the COLOSSUS (boss). Keys: red, blue.
+    #   A ring corridor 4 squares wide runs all the way round the outside. Inside it: two north
+    #   rooms, a west wing, an east wing, a south wing, and the arena in the middle.
+    #   Route: start at the bottom of the ring (P at 20, 37) -> red key K (7, 20) in the west wing
+    #   -> RED door (34, 20) into the east wing -> blue key J (32, 26) -> BLUE door (20, 28) from
+    #   the south wing into the arena -> beat the colossus T (20, 18) for the skull key ->
+    #   SKULL door Z (20, 12) in the arena's north wall -> the exit X (20, 10).
+    #   A secret wall S (5, 31) off the ring hides a health pack.
+    dict(name="The Core", rows=load_map(6), angle=270, ceil=(98, 60), floor=(0, 50), secret_look="9"),
 ]
 
 

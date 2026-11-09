@@ -6,9 +6,11 @@ LevelError whose message explains the problem. Run with: python3 tests/test_leve
 """
 import os
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from levels import LEVELS, Grid, LevelError, validate  # noqa: E402
+import levels  # noqa: E402
+from levels import LEVELS, LevelError, validate  # noqa: E402
 
 # A tiny map that passes every check: the start, a red key, a barrel, a secret closet with a
 # health pack, a red door, a boss, a skull door, and the exit (in the outside wall).
@@ -113,15 +115,53 @@ def test_skull_door_that_can_be_walked_around():
     expect_problem(change(change(GOOD_MAP, 5, 5, "0"), 5, 6, "0"), "without going through the skull door")
 
 
-def test_grid_things_must_land_on_floor():
-    drawing = Grid(5, "1")
-    drawing.put(2, 2, "1")
+def load_from_text(file_bytes):
+    """Write a map file into a temporary maps folder, load it with load_map(), and return the rows."""
+    with tempfile.TemporaryDirectory() as folder:
+        with open(os.path.join(folder, "level 1 map.txt"), "wb") as map_file:
+            map_file.write(file_bytes)
+        real_folder, levels.MAPS_FOLDER = levels.MAPS_FOLDER, folder
+        try:
+            return levels.load_map(1)
+        finally:
+            levels.MAPS_FOLDER = real_folder
+
+
+def test_map_files_load_like_scratch_exports():
+    # Scratch on Windows: carriage return + new line between rows, and no line break at the end.
+    assert load_from_text(b"111\r\n1P1\r\n111") == ["111", "1P1", "111"]
+    # Mac / Linux, with a final line break and some blank lines at the end.
+    assert load_from_text(b"111\n1P1\n111\n\n\n") == ["111", "1P1", "111"]
+    # Saved by a Windows editor that adds an invisible "byte order mark" at the start.
+    assert load_from_text("\ufeff111\n1P1\n111".encode("utf-8")) == ["111", "1P1", "111"]
+
+
+def test_stray_spaces_are_kept_so_the_checker_can_point_at_them():
+    rows = load_from_text(b"11111\n1P0X1 \n11111")
+    expect_problem(rows, "row 1 has 6 letters")
+
+
+def test_empty_map_file():
     try:
-        drawing.things("M", [(2, 2)])
+        load_from_text(b"\n\n")
     except LevelError as problem:
-        assert "can't put 'M'" in str(problem) and "column 2, row 2" in str(problem), str(problem)
+        assert "is empty" in str(problem), str(problem)
     else:
-        raise AssertionError("putting a monster inside a wall should fail")
+        raise AssertionError("an empty map file should fail")
+
+
+def test_missing_map_file():
+    try:
+        levels.load_map(99)
+    except LevelError as problem:
+        assert "map file is missing" in str(problem) and "level 99 map.txt" in str(problem), str(problem)
+    else:
+        raise AssertionError("a missing map file should fail")
+
+
+def test_every_level_has_its_map_file():
+    for number in range(1, len(LEVELS) + 1):
+        assert os.path.exists(levels.map_file_path(number)), levels.map_file_path(number)
 
 
 if __name__ == "__main__":

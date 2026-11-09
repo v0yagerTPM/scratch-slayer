@@ -324,6 +324,9 @@ BETTER WAY (big changes or a whole new map):
    Use a monospace font like Consolas or Courier so the grid lines up.
 4. Edit the grid. One row per line. Save the file.
 5. Right-click the list on the stage -> "import" and pick your file.
+(Teachers: the game's Python source keeps its maps in exactly this
+format, in src/maps/level 1 map.txt and so on, so an exported map can
+go straight into the project.)
 
 RULES FOR A MAP THAT WORKS
 - Every row must be the SAME LENGTH.
