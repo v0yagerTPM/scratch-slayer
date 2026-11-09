@@ -2,13 +2,13 @@
 the level maps as lists, the HUD number slots, and the list boxes shown on the stage."""
 from sb3extra import *
 from game.config import *
-import assets, assets5, assets6, assets7
+import assets, assets4, assets5, assets6, assets7
 from levels import LEVELS
 
 project = Project()
 stage = Target(project, "Stage", is_stage=True)
 stage.costume("black", assets.BACKDROP, 240, 180)
-stage.costume("title sky", assets6.TITLE_SKY, 240, 180)
+stage.costume("title sky", assets4.TITLE_SKY, 240, 180)
 stage.costume("victory sky", assets5.VICTORY_SKY, 240, 180)
 
 STAGE_VARS = ["player x", "player y", "player angle", "look direction x", "look direction y",

@@ -10,7 +10,7 @@ stage.script(recv(SHOW_WIN), backdrop("victory sky"), cleareffects(),
              comment="VICTORY BACKDROP: dawn over the fortress.", canvas_x=1300)
 
 victory_logo = Target(project, "Victory Logo", layer=22, visible=False)
-victory_logo.costume("victory", assets6.VICTORY_LOGO, *assets5.VICTORY_CENTER)
+victory_logo.costume("victory", assets5.VICTORY_LOGO, *assets5.VICTORY_CENTER)
 add_sound(victory_logo, "thud", assets4.thud)
 for name in ["fall speed", "bounces", "logo time"]:
     victory_logo.var(name)

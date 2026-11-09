@@ -4,10 +4,6 @@ from assets import svg, _wav, _lowpass, RATE
 import assets2, assets4
 from assets4 import block_text, text_width, gradient
 
-assets4.LETTERS.update({
-    "I": "01110 00100 00100 00100 00100 00100 01110", "O": "01110 10001 10001 10001 10001 10001 01110",
-    "U": "10001 10001 10001 10001 10001 10001 01110", "D": "11110 10001 10001 10001 10001 10001 11110",
-})
 BLOOD_STOPS = [(0, "#ff6a5a"), (0.4, "#e01818"), (1, "#5a0000")]
 GOLD_STOPS = [(0, "#fffbe0"), (0.35, "#ffe066"), (0.75, "#f0a800"), (1, "#a05a00")]
 
@@ -43,6 +39,10 @@ KILLERS = {
     "warden": ("KILLED BY THE WARDEN", "Tip: the fireballs come in threes. Strafe sideways, then strike back."),
     "barrel": ("BLOWN UP BY A BARREL", "Tip: step back before you shoot a barrel!"),
     "monster": ("KILLED BY A MONSTER", "Tip: keep moving, and keep your shells topped up."),
+    "charger": ("FLATTENED BY A CHARGER", "Tip: when it lowers its head, sidestep! It slams into walls."),
+    "wraith": ("CAUGHT BY A WRAITH", "Tip: wraiths fade from far away. Keep your back to a wall."),
+    "colossus": ("CRUSHED BY THE COLOSSUS", "Tip: hide behind the pillars, and save rockets for the boss."),
+    "rocket": ("BLOWN UP BY YOUR OWN ROCKET", "Tip: don't fire rockets at monsters right next to you!"),
 }
 
 def killed_by(title, tip):
@@ -98,7 +98,7 @@ def _victory_logo():
     body += block_text(text, unit, 6, 4, "gold")
     body += (f'<text x="{logo_width / 2}" y="{logo_height - 6}" font-family="Sans Serif" font-size="15" font-weight="bold" fill="#fff6d8" '
              f'stroke="#3a1a00" stroke-width="3" paint-order="stroke" text-anchor="middle" letter-spacing="3">'
-             'YOU ESCAPED THE FORTRESS</text>')
+             'YOU DESTROYED THE CORE</text>')
     return svg(logo_width, logo_height, body)
 VICTORY_LOGO = _victory_logo()
 VICTORY_CENTER = ((text_width("VICTORY", 10) + 16) // 2, (7 * 10 + 40) // 2)

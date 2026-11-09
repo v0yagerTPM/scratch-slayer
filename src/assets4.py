@@ -12,14 +12,18 @@ LETTERS = {
     "E": "11111 10000 10000 11110 10000 10000 11111", "V": "10001 10001 10001 10001 10001 01010 00100",
     "N": "10001 11001 10101 10011 10001 10001 10001", "X": "10001 10001 01010 00100 01010 10001 10001",
     " ": "00000 00000 00000 00000 00000 00000 00000",
+    "I": "01110 00100 00100 00100 00100 00100 01110", "O": "01110 10001 10001 10001 10001 10001 01110",
+    "U": "10001 10001 10001 10001 10001 10001 01110", "D": "11110 10001 10001 10001 10001 10001 11110",
+    "P": "11110 10001 10001 11110 10000 10000 10000",
 }
 LETTERS.update(assets2.GLYPHS)
 
-def block_text(text, unit, left, top, grad_id, depth=0.4):
-    """Chunky beveled pixel letters: black outline, dark extrusion, then a gradient face."""
+def block_text(text, unit, left, top, grad_id, depth=0.4, font=LETTERS):
+    """Chunky beveled pixel letters: black outline, dark extrusion, then a gradient face.
+    font = which letter shapes to use (LETTERS unless a picture needs a different one)."""
     cells = []
     for letter_number, character in enumerate(text):
-        rows = LETTERS[character].split()
+        rows = font[character].split()
         for pixel_row, row in enumerate(rows):
             for pixel_column, bit in enumerate(row):
                 if bit == "1":
@@ -81,12 +85,14 @@ def _title_sky():
     for crack_path in ("M0 270 L60 262 L110 275 L170 266", "M300 280 L350 270 L410 284 L480 272", "M150 320 L210 306 L260 322 L330 310",
               "M20 340 L80 330 L120 345", "M380 340 L440 326 L480 334"):
         picture += f'<path d="{crack_path}" stroke="#ff6a00" stroke-width="4" fill="none" opacity="0.25"/><path d="{crack_path}" stroke="#ffb347" stroke-width="1.5" fill="none" opacity="0.8"/>'
-    # bottom strip with controls
-    picture += '<rect y="318" width="480" height="42" fill="#000" opacity="0.62"/>'
-    picture += ('<text x="240" y="334" font-family="Sans Serif" font-size="10.5" font-weight="bold" fill="#e8a070" '
-          'text-anchor="middle" letter-spacing="1.5">A RAYCASTING SHOOTER BUILT ENTIRELY IN SCRATCH</text>')
-    picture += ('<text x="240" y="351" font-family="Sans Serif" font-size="11.5" fill="#cfcfcf" text-anchor="middle">'
-          'ARROWS / WASD move  •  Q sprint  •  SPACE shoot  •  E open / use  •  M map</text>')
+    # bottom strip with the controls (two lines: there are a lot of keys)
+    picture += ('<rect y="308" width="480" height="52" fill="#000" opacity="0.62"/>'
+                '<text x="240" y="322" font-family="Sans Serif" font-size="9.5" font-weight="bold" fill="#e8a070" '
+                'text-anchor="middle" letter-spacing="1.5">A RAYCASTING SHOOTER BUILT ENTIRELY IN SCRATCH</text>'
+                '<text x="240" y="337" font-family="Sans Serif" font-size="11" fill="#cfcfcf" text-anchor="middle">'
+                'ARROWS / WASD move  •  Q sprint  •  SPACE shoot  •  1-5 weapons</text>'
+                '<text x="240" y="352" font-family="Sans Serif" font-size="11" fill="#cfcfcf" text-anchor="middle">'
+                'E open / use  •  M map  •  N music  •  P pause  •  O OPTIONS</text>')
     return svg(480, 360, picture)
 TITLE_SKY = _title_sky()
 
@@ -105,9 +111,16 @@ CARDS = [
          lines=["Fast and vicious up close.", "Keep your distance and blast it."], boss=None),
     dict(tint="#1f5a14", name="THE PROCESSING PLANT", goal="Find the red key, then the exit", enemy="SPITTER",
          lines=["Spits acid from far away. Strafe", "with A and D to dodge it."], boss=None),
-    dict(tint="#5a0f2a", name="THE FORTRESS", goal="Two keys guard the exit", enemy="GOLEM",
+    dict(tint="#5a0f2a", name="THE FORTRESS", goal="Two keys, then slay the Warden", enemy="GOLEM",
          lines=["Slow, tough, and hits like a truck.", "Lure it next to a barrel."],
-         boss="BOSS: THE WARDEN waits at the exit"),
+         boss="BOSS: THE WARDEN carries the SKULL KEY to the exit"),
+    dict(tint="#6a2a08", name="THE FOUNDRY", goal="Find the red key, then the exit", enemy="CHARGER",
+         lines=["Lowers its head, then charges.", "Sidestep it and it slams into a wall."], boss=None),
+    dict(tint="#0f3a4a", name="THE SUNKEN VAULTS", goal="Two keys, deep in the dark", enemy="WRAITH",
+         lines=["Almost invisible from far away,", "and it blinks sideways. Stay sharp."], boss=None),
+    dict(tint="#4a0a3a", name="THE CORE", goal="Destroy the Colossus, take its key", enemy="THE COLOSSUS",
+         lines=["Huge, armored, and it gets angrier.", "At half health it calls for help."],
+         boss="FINAL BOSS: the exit is sealed until it falls"),
 ]
 
 def card(info):
@@ -141,6 +154,8 @@ def heading(text):
     return svg(heading_width, 7 * unit + 14, body)
 
 HEADING_NEXT = heading("NEXT LEVEL")
+CARD_ART = [card(card_info) for card_info in CARDS]
+HEADINGS = [heading(f"LEVEL {level_index + 1}") for level_index in range(len(CARDS))]
 
 # =============================== SOUNDS ===============================
 def _note_freq(midi):

@@ -6,10 +6,9 @@ from assets import svg, _wav, _lowpass, RATE
 import assets2, assets3, assets4, assets5
 from assets4 import block_text, text_width, gradient, FIRE_STOPS
 
-assets4.LETTERS.update({          # extra block letters for PAUSED and OPTIONS
-    "P": "11110 10001 10001 11110 10000 10000 10000", "U": "10001 10001 10001 10001 10001 10001 01110",
-    "D": "11110 10001 10001 10001 10001 10001 11110", "O": "01110 10001 10001 10001 10001 10001 01110",
-    "I": "11111 00100 00100 00100 00100 00100 11111"})
+# The OPTIONS title uses an I with bars at the top and bottom, unlike the plain I in the other
+# block-letter headings (YOU DIED, VICTORY).
+OPTIONS_LETTERS = dict(assets4.LETTERS, I="11111 00100 00100 00100 00100 00100 11111")
 
 GLOVE, GLOVE_DARK, GLOVE_LINE = "#4a6b33", "#3e5a2a", "#1d2b12"
 
@@ -326,21 +325,6 @@ def boss_bar(name):
         + '<rect x="140" y="82" width="200" height="8" rx="2" fill="none" stroke="#ffd23f" stroke-width="1.5"/>')
 BOSS_BARS = {"warden": boss_bar("THE WARDEN"), "colossus": boss_bar("THE COLOSSUS")}
 
-TOASTS = {
-    "picked up 5": assets2.toast("Got the SKULL KEY! The exit unseals", "#d8a0ff"),
-    "picked up 6": assets2.toast("+20 BULLETS", "#ffd23f"),
-    "picked up 7": assets2.toast("+4 ROCKETS", "#ffa040"),
-    "picked up 8": assets2.toast("SHOTGUN!  Press 3", "#ffe14d"),
-    "picked up 9": assets2.toast("CHAINGUN!  Press 4", "#ffe14d"),
-    "picked up 10": assets2.toast("ROCKET LAUNCHER!  Press 5", "#ffe14d"),
-    "need skull key": assets2.toast("SEALED! Beat the boss for the SKULL KEY", "#d8a0ff"),
-    "out of ammo": assets2.toast("Out of ammo! Switching weapons", "#ffa040"),
-    "boss awake warden": assets2.toast("THE WARDEN AWAKENS", "#ff4040"),
-    "boss awake colossus": assets2.toast("THE COLOSSUS AWAKENS", "#ff4040"),
-    "boss enraged colossus": assets2.toast("THE COLOSSUS IS ENRAGED!", "#ff4040"),
-    "music on": assets2.toast("Music ON  (N to switch)", "#60ff80"),
-    "music off": assets2.toast("Music OFF  (N to switch)", "#aaaaaa"),
-}
 
 # =============================== OPTIONS MENU ===============================
 OPTION_ROWS = ["TURN SPEED", "MOUSE STEERING", "MOUSE SENSITIVITY", "FIELD OF VIEW", "MUSIC", "DIFFICULTY",
@@ -359,7 +343,7 @@ def options_panel(paused):
     unit = 5
     title_width = text_width(title, unit)
     picture += "<defs>" + gradient("ofire", 40, 40 + 7 * unit, FIRE_STOPS) + "</defs>"
-    picture += block_text(title, unit, 240 - title_width / 2, 40, "ofire")
+    picture += block_text(title, unit, 240 - title_width / 2, 40, "ofire", font=OPTIONS_LETTERS)
     for name, stage_y in zip(OPTION_ROWS, OPTION_ROW_Y):
         picture_y = 180 - stage_y
         picture += assets2._label(70, picture_y + 5, name, size=12, fill="#e8d8c8")
@@ -398,30 +382,8 @@ def _toggle(is_on):
                        f'text-anchor="middle">{text}</text>')
 TOGGLE_ON, TOGGLE_OFF = _toggle(True), _toggle(False)
 
-# =============================== LEVEL CARDS, HEADINGS, SCREENS ===============================
-CARDS = list(assets4.CARDS)
-CARDS[2] = dict(CARDS[2], goal="Two keys, then slay the Warden",
-                boss="BOSS: THE WARDEN carries the SKULL KEY to the exit")
-CARDS += [
-    dict(tint="#6a2a08", name="THE FOUNDRY", goal="Find the red key, then the exit", enemy="CHARGER",
-         lines=["Lowers its head, then charges.", "Sidestep it and it slams into a wall."], boss=None),
-    dict(tint="#0f3a4a", name="THE SUNKEN VAULTS", goal="Two keys, deep in the dark", enemy="WRAITH",
-         lines=["Almost invisible from far away,", "and it blinks sideways. Stay sharp."], boss=None),
-    dict(tint="#4a0a3a", name="THE CORE", goal="Destroy the Colossus, take its key", enemy="THE COLOSSUS",
-         lines=["Huge, armored, and it gets angrier.", "At half health it calls for help."],
-         boss="FINAL BOSS: the exit is sealed until it falls"),
-]
-CARD_ART = [assets4.card(card_info) for card_info in CARDS]
-HEADINGS = [assets4.heading(f"LEVEL {level_index + 1}") for level_index in range(len(CARDS))]
 
 
-KILLERS = {
-    "charger": ("FLATTENED BY A CHARGER", "Tip: when it lowers its head, sidestep! It slams into walls."),
-    "wraith": ("CAUGHT BY A WRAITH", "Tip: wraiths fade from far away. Keep your back to a wall."),
-    "colossus": ("CRUSHED BY THE COLOSSUS", "Tip: hide behind the pillars, and save rockets for the boss."),
-    "rocket": ("BLOWN UP BY YOUR OWN ROCKET", "Tip: don't fire rockets at monsters right next to you!"),
-}
-KILLED_BY = {name: assets5.killed_by(*text) for name, text in KILLERS.items()}
 
 # =============================== SOUNDS ===============================
 def _crack(dur, thump_hz, decay, seed, gain=1.0):
@@ -539,19 +501,3 @@ def episode_2_theme():
     riff = bar_a + bar_b + bar_a + bar_c
     return _music(130, riff, 38, "x.x...x.x.x...x.", "....x.......x...", 92)
 
-# =============================== TITLE SCREEN TEXT ===============================
-def title_sky():
-    """The title backdrop with a taller controls strip: the game has more keys now."""
-    sky = assets4.TITLE_SKY
-    start = sky.index('<rect y="318"')
-    strip = ('<rect y="308" width="480" height="52" fill="#000" opacity="0.62"/>'
-             '<text x="240" y="322" font-family="Sans Serif" font-size="9.5" font-weight="bold" fill="#e8a070" '
-             'text-anchor="middle" letter-spacing="1.5">A RAYCASTING SHOOTER BUILT ENTIRELY IN SCRATCH</text>'
-             '<text x="240" y="337" font-family="Sans Serif" font-size="11" fill="#cfcfcf" text-anchor="middle">'
-             'ARROWS / WASD move  •  Q sprint  •  SPACE shoot  •  1-5 weapons</text>'
-             '<text x="240" y="352" font-family="Sans Serif" font-size="11" fill="#cfcfcf" text-anchor="middle">'
-             'E open / use  •  M map  •  N music  •  P pause  •  O OPTIONS</text>')
-    return sky[:start] + strip + "</svg>"
-TITLE_SKY = title_sky()
-
-VICTORY_LOGO = assets5.VICTORY_LOGO.replace("YOU ESCAPED THE FORTRESS", "YOU DESTROYED THE CORE")

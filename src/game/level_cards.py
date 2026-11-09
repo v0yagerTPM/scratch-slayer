@@ -9,7 +9,7 @@ card_up = eq(V("card is up"), 1)
 
 card_background = Target(project, "Card Background", layer=14, visible=False)
 card_background.costume("card next level", assets4.CARD_NEXT, 240, 180)
-for level_number, art in enumerate(assets6.CARD_ART, start=1):
+for level_number, art in enumerate(assets4.CARD_ART, start=1):
     card_background.costume(f"card {level_number}", art, 240, 180)
 card_background.script(flag(), hide())
 card_background.script(recv(SHOW_CARD),
@@ -24,7 +24,7 @@ card_background.script(recv(SHOW_CARD),
 
 card_heading = Target(project, "Card Heading", layer=15, visible=False)
 card_heading.costume("heading next level", assets4.HEADING_NEXT, assets4.text_width("NEXT LEVEL", 8) // 2 + 6, 35)
-for level_number, art in enumerate(assets6.HEADINGS, start=1):
+for level_number, art in enumerate(assets4.HEADINGS, start=1):
     card_heading.costume(f"heading {level_number}", art, assets4.text_width(f"LEVEL {level_number}", 8) // 2 + 6, 35)
 add_sound(card_heading, "thud", assets4.thud)
 card_heading.script(flag(), hide())

@@ -97,7 +97,7 @@ death_heading.script(recv(SHOW_DEATH), setsize(260), seteffect("GHOST", 100), go
 
 death_message = Target(project, "Death Message", layer=21, visible=False)
 death_message.costume("killed by monster", assets5.KILLED_BY["monster"], 220, 25)
-for name, art in {**assets5.KILLED_BY, **assets6.KILLED_BY}.items():
+for name, art in assets5.KILLED_BY.items():
     if name != "monster":
         death_message.costume(f"killed by {name}", art, 220, 25)
 death_message.script(flag(), hide())

@@ -58,17 +58,33 @@ def toast(text, color="#ffffff"):
                          f'fill="{color}" text-anchor="middle">{text}</text>')
 
 
-TOASTS = {
-    "hintd": toast("Press E to open the door", "#ffe14d"),
-    "hintx": toast("Press E to flip the EXIT switch", "#40ff70"),
-    "needred": toast("You need the RED key to open this door", "#ff6060"),
-    "needblue": toast("You need the BLUE key to open this door", "#70a0ff"),
-    "p1": toast("+25 HEALTH", "#60ff80"),
-    "p2": toast("+8 SHELLS", "#ffd23f"),
-    "p3": toast("Picked up the RED KEY", "#ff6060"),
-    "p4": toast("Picked up the BLUE KEY", "#70a0ff"),
-    "noammo": toast("Out of shells - punching!", "#ffa040"),
-    "exit": toast("EXIT ACTIVATED", "#40ff70"),
+# Every message the Message sprite can show, in costume order. The key is the costume name
+# without "message " (so "door hint" is the costume "message door hint").
+MESSAGES = {
+    "door hint": toast("Press E to open the door", "#ffe14d"),
+    "switch hint": toast("Press E to flip the EXIT switch", "#40ff70"),
+    "need red key": toast("You need the RED key to open this door", "#ff6060"),
+    "need blue key": toast("You need the BLUE key to open this door", "#70a0ff"),
+    "picked up 1": toast("+25 HEALTH", "#60ff80"),
+    "picked up 2": toast("+8 SHELLS", "#ffd23f"),
+    "picked up 3": toast("Picked up the RED KEY", "#ff6060"),
+    "picked up 4": toast("Picked up the BLUE KEY", "#70a0ff"),
+    "exit activated": toast("EXIT ACTIVATED", "#40ff70"),
+    "found secret": toast("You found a secret area!", "#ffd23f"),
+    "out of breath": toast("Out of breath! Wait for the sprint bar", "#ffa040"),
+    "picked up 5": toast("Got the SKULL KEY! The exit unseals", "#d8a0ff"),
+    "picked up 6": toast("+20 BULLETS", "#ffd23f"),
+    "picked up 7": toast("+4 ROCKETS", "#ffa040"),
+    "picked up 8": toast("SHOTGUN!  Press 3", "#ffe14d"),
+    "picked up 9": toast("CHAINGUN!  Press 4", "#ffe14d"),
+    "picked up 10": toast("ROCKET LAUNCHER!  Press 5", "#ffe14d"),
+    "need skull key": toast("SEALED! Beat the boss for the SKULL KEY", "#d8a0ff"),
+    "out of ammo": toast("Out of ammo! Switching weapons", "#ffa040"),
+    "boss awake warden": toast("THE WARDEN AWAKENS", "#ff4040"),
+    "boss awake colossus": toast("THE COLOSSUS AWAKENS", "#ff4040"),
+    "boss enraged colossus": toast("THE COLOSSUS IS ENRAGED!", "#ff4040"),
+    "music on": toast("Music ON  (N to switch)", "#60ff80"),
+    "music off": toast("Music OFF  (N to switch)", "#aaaaaa"),
 }
 
 # ---------------- full-screen overlays ----------------

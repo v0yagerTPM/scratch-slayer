@@ -89,16 +89,9 @@ boss_bar.script(recv(DRAW_HUD), ifelse(and_(playing, and_(eq(V("boss is awake"),
           comment="BOSS BAR: the frame and name. The red health line inside it is\n"
                   "drawn with the pen at the end of 'draw 3D view'.")
 
-MESSAGES = {"door hint": "hintd", "switch hint": "hintx", "need red key": "needred", "need blue key": "needblue",
-            "picked up 1": "p1", "picked up 2": "p2", "picked up 3": "p3", "picked up 4": "p4",
-            "exit activated": "exit", "found secret": None, "out of breath": None,
-            **{name: None for name in assets6.TOASTS}}
-EXTRA_MESSAGES = {"found secret": assets2.toast("You found a secret area!", "#ffd23f"),
-                  "out of breath": assets2.toast("Out of breath! Wait for the sprint bar", "#ffa040"),
-                  **assets6.TOASTS}
 message = Target(project, "Message", layer=6, visible=False)
-for name, old in MESSAGES.items():
-    message.costume(f"message {name}", assets2.TOASTS[old] if old else EXTRA_MESSAGES[name], 240, 180)
+for name, art in assets2.MESSAGES.items():
+    message.costume(f"message {name}", art, 240, 180)
 message.script(flag(), gotoxy(0, 0), hide())
 message.script(recv(DRAW_HUD), ifelse(and_(playing, gt(V("message timer"), 0)),
          [costume("message door hint", join("message ", V("message name"))),
