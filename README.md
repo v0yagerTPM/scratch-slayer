@@ -51,26 +51,3 @@ python3 src/levels.py
 | `tests/render.js` | Turns test snapshots into PNG screenshots. |
 | `docs/project-page.md` | The Instructions and Notes & Credits text for the Scratch project page. |
 | `dist/` | Build output (ignored by git). |
-
-## Version control basics
-
-```bash
-git status                 # what changed?
-git diff                   # exactly what changed, line by line
-git add -A && git commit -m "Add a new monster"
-git log --oneline          # history
-```
-
-To put it on GitHub: create an **empty** repository on github.com (no README), then:
-
-```bash
-git remote add origin https://github.com/YOUR-NAME/scratch-slayer.git
-git push -u origin main
-```
-
-## Continuing with Claude Code
-
-Open a terminal in this folder and start Claude Code. `CLAUDE.md` in this folder tells it how
-the project is built, the Scratch quirks discovered so far, and the coding conventions
-(descriptive variable names, lots of comments for students). Ask it to run `npm test` after
-every change.
