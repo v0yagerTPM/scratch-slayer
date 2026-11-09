@@ -1,175 +1,387 @@
-let fakeNow = 1e6; const _realNow = Date.now; Date.now = () => (fakeNow += 0.01);
+// Headless test harness: loads the .sb3 into the real Scratch engine (scratch-vm), with a fake
+// renderer and a fake clock, then plays it frame by frame following a test plan.
+//
+//   node tests/harness.js dist/scratch-slayer.sb3 tests/plans/sprint.json tests/out/sprint
+//
+// A plan is a JSON list of steps. Each step can set things up, hold keys for some frames (or until
+// something happens), then log, snapshot and check what it expects. The step keys are listed in
+// CLAUDE.md ("Tests"). The harness exits with code 1 if any check fails or the engine logs an error.
+
+// ---- fake clock: the game reads Scratch's timer, so time must move exactly one frame per frame ----
+// (This must happen before scratch-vm is loaded.)
+let fakeNow = 1e6;
+const realNow = Date.now;
+Date.now = () => (fakeNow += 0.01);
 if (globalThis.performance) globalThis.performance.now = () => (fakeNow += 0.01);
-// Headless Scratch VM harness: loads the .sb3, drives keys, records pen + sprite state per frame.
+const FRAME_MS = 1000 / 30;
+
+// ---- seeded random numbers: Scratch's "pick random" uses Math.random. Seeding it makes every run
+// of a plan play out exactly the same, so a failure can be repeated step for step.
+// Set TEST_SEED=<number> to try a different (but still repeatable) run.
+let randomState = Number(process.env.TEST_SEED || 20261109) >>> 0;
+Math.random = () => {      // mulberry32: a small, well-known pseudo-random generator
+    randomState = (randomState + 0x6D2B79F5) >>> 0;
+    let mixed = randomState;
+    mixed = Math.imul(mixed ^ (mixed >>> 15), mixed | 1);
+    mixed ^= mixed + Math.imul(mixed ^ (mixed >>> 7), mixed | 61);
+    return ((mixed ^ (mixed >>> 14)) >>> 0) / 4294967296;
+};
+
 const fs = require('fs');
 const VM = require('scratch-vm');
 const ScratchStorage = require('scratch-storage').ScratchStorage || require('scratch-storage');
 
-const [,, sb3, script, outdir] = process.argv;
-fs.mkdirSync(outdir, {recursive: true});
+const [,, projectPath, planPath, outputFolder] = process.argv;
+fs.mkdirSync(outputFolder, {recursive: true});
 const failures = [];
-const plan = JSON.parse(fs.readFileSync(script, 'utf8')); // [{frames, keys:[...], snap:bool}]
+const plan = expandNamedSteps(JSON.parse(fs.readFileSync(planPath, 'utf8')));
 
-// ---- fake renderer ----
+// ---- named steps: common moves through the game, written once ----
+// Each one becomes a few ordinary steps. They wait for the game to get somewhere instead of
+// counting frames, so a change in how long a screen lasts doesn't break every plan.
+function expandNamedSteps(steps) {
+    const expanded = [];
+    for (const step of steps) {
+        if (step.startGame) {            // from the title screen into level play (the card times out by itself)
+            expanded.push({tap: 'space', while: {'game state': 'title'}, note: 'start the game'},
+                          {until: {'game state': 'playing'}, note: 'level card + melt'});
+        } else if (step.continueToNextLevel) {   // from the exit switch through the tally into the next level
+            expanded.push({until: {'screen showing': 'level complete'}, note: 'reach the tally'},
+                          {tap: 'space', while: {'screen showing': 'level complete'}, note: 'leave the tally'},
+                          {until: {'game state': 'playing'}, note: 'next level card + melt'});
+        } else if (step.retryLevel) {    // from dying back into the same level
+            expanded.push({until: {'screen showing': 'died'}, note: 'death screen'},
+                          {tap: 'space', while: {'screen showing': 'died'}, note: 'retry'},
+                          {until: {'game state': 'playing'}, note: 'melt back in'});
+        } else {
+            expanded.push(step);
+            continue;
+        }
+        const extra = {...step};          // anything else on the named step (log, expect...) runs at the end
+        delete extra.startGame; delete extra.continueToNextLevel; delete extra.retryLevel;
+        if (Object.keys(extra).length) expanded.push({frames: 0, ...extra});
+    }
+    return expanded;
+}
+
+// ---- fake renderer: records what would be drawn, so snapshots can be turned into PNGs ----
 let nextId = 1;
-const skins = {};      // id -> {svg,w,h,cx,cy}
-const drawables = {};  // id -> {skin, x, y, scale, visible, effects, layer}
-let order = [];
-let penOps = [];
-const R = {
-    createDrawable(group) { const id = nextId++; drawables[id] = {group, visible: true, x: 0, y: 0, scale: [100, 100], effects: {}}; order.push(id); return id; },
-    destroyDrawable(id) { delete drawables[id]; order = order.filter(o => o !== id); },
-    createSVGSkin(svg, rc) { const id = nextId++; const m = /width="([\d.]+)" height="([\d.]+)"/.exec(svg); skins[id] = {svg, w: +m[1], h: +m[2], cx: rc ? rc[0] : 0, cy: rc ? rc[1] : 0}; return id; },
-    updateSVGSkin(id, svg, rc) { const m = /width="([\d.]+)" height="([\d.]+)"/.exec(svg); skins[id] = {svg, w: +m[1], h: +m[2], cx: rc[0], cy: rc[1]}; },
+const skins = {};       // id -> {svg, w, h, cx, cy}   (a costume's picture, size and center)
+const drawables = {};   // id -> {group, skin, x, y, scale, visible, effects}   (a sprite on the stage)
+let layerOrder = [];    // drawable ids, back to front
+let penOperations = []; // ['l', color, size, x0, y0, x1, y1] lines and ['p', color, size, x, y] dots
+function svgSize(svg) { const match = /width="([\d.]+)" height="([\d.]+)"/.exec(svg); return [+match[1], +match[2]]; }
+const fakeRenderer = {
+    createDrawable(group) {
+        const id = nextId++;
+        drawables[id] = {group, visible: true, x: 0, y: 0, scale: [100, 100], effects: {}};
+        layerOrder.push(id); return id;
+    },
+    destroyDrawable(id) { delete drawables[id]; layerOrder = layerOrder.filter(other => other !== id); },
+    createSVGSkin(svg, center) {
+        const id = nextId++; const [w, h] = svgSize(svg);
+        skins[id] = {svg, w, h, cx: center ? center[0] : 0, cy: center ? center[1] : 0}; return id;
+    },
+    updateSVGSkin(id, svg, center) { const [w, h] = svgSize(svg); skins[id] = {svg, w, h, cx: center[0], cy: center[1]}; },
     createBitmapSkin() { return nextId++; },
     createPenSkin() { return 9999; },
     createTextSkin() { return nextId++; },
-    getSkinSize(id) { const s = skins[id]; return s ? [s.w, s.h] : [0, 0]; },
-    getSkinRotationCenter(id) { const s = skins[id]; return s ? [s.cx, s.cy] : [0, 0]; },
-    getCurrentSkinSize(did) { const d = drawables[did]; const s = d && skins[d.skin]; return s ? [s.w, s.h] : [0, 0]; },
-    updateDrawableSkinId(did, sid) { if (drawables[did]) drawables[did].skin = sid; },
-    updateDrawablePosition(did, p) { if (drawables[did]) { drawables[did].x = p[0]; drawables[did].y = p[1]; } },
-    updateDrawableDirectionScale(did, dir, sc) { if (drawables[did]) drawables[did].scale = sc; },
-    updateDrawableVisible(did, v) { if (drawables[did]) drawables[did].visible = v; },
-    updateDrawableEffect(did, e, v) { if (drawables[did]) drawables[did].effects[e] = v; },
-    updateDrawableProperties(did, p) {
-        const d = drawables[did]; if (!d) return;
-        if (p.skinId !== undefined) d.skin = p.skinId;
-        if (p.position) { d.x = p.position[0]; d.y = p.position[1]; }
-        if (p.scale) d.scale = p.scale;
-        if (p.visible !== undefined) d.visible = p.visible;
+    getSkinSize(id) { const skin = skins[id]; return skin ? [skin.w, skin.h] : [0, 0]; },
+    getSkinRotationCenter(id) { const skin = skins[id]; return skin ? [skin.cx, skin.cy] : [0, 0]; },
+    getCurrentSkinSize(drawableId) {
+        const drawable = drawables[drawableId]; const skin = drawable && skins[drawable.skin];
+        return skin ? [skin.w, skin.h] : [0, 0];
     },
-    getFencedPositionOfDrawable(did, pos) { return pos; },
-    setDrawableOrder(did, idx, group, isRelative, min) {
-        let cur = order.indexOf(did); if (cur < 0) return;
-        order.splice(cur, 1);
-        let target = isRelative ? cur + idx : idx;
-        if (target === Infinity || target > order.length) target = order.length;
-        target = Math.max(min || 0, Math.min(order.length, target));
-        order.splice(target, 0, did);
+    updateDrawableSkinId(drawableId, skinId) { if (drawables[drawableId]) drawables[drawableId].skin = skinId; },
+    updateDrawablePosition(drawableId, position) {
+        if (drawables[drawableId]) { drawables[drawableId].x = position[0]; drawables[drawableId].y = position[1]; }
+    },
+    updateDrawableDirectionScale(drawableId, direction, scale) { if (drawables[drawableId]) drawables[drawableId].scale = scale; },
+    updateDrawableVisible(drawableId, visible) { if (drawables[drawableId]) drawables[drawableId].visible = visible; },
+    updateDrawableEffect(drawableId, effect, value) { if (drawables[drawableId]) drawables[drawableId].effects[effect] = value; },
+    updateDrawableProperties(drawableId, properties) {
+        const drawable = drawables[drawableId]; if (!drawable) return;
+        if (properties.skinId !== undefined) drawable.skin = properties.skinId;
+        if (properties.position) { drawable.x = properties.position[0]; drawable.y = properties.position[1]; }
+        if (properties.scale) drawable.scale = properties.scale;
+        if (properties.visible !== undefined) drawable.visible = properties.visible;
+    },
+    getFencedPositionOfDrawable(drawableId, position) { return position; },
+    setDrawableOrder(drawableId, index, group, isRelative, minimum) {
+        const current = layerOrder.indexOf(drawableId); if (current < 0) return;
+        layerOrder.splice(current, 1);
+        let target = isRelative ? current + index : index;
+        if (target === Infinity || target > layerOrder.length) target = layerOrder.length;
+        target = Math.max(minimum || 0, Math.min(layerOrder.length, target));
+        layerOrder.splice(target, 0, drawableId);
         return target;
     },
-    getDrawableOrder(did) { return order.indexOf(did); },
-    penClear() { penOps = []; },
-    penPoint(skin, a, x, y) { penOps.push(['p', a.color4f.slice(), a.diameter, x, y]); },
-    penLine(skin, a, x0, y0, x1, y1) { penOps.push(['l', a.color4f.slice(), a.diameter, x0, y0, x1, y1]); },
+    getDrawableOrder(drawableId) { return layerOrder.indexOf(drawableId); },
+    penClear() { penOperations = []; },
+    penPoint(skin, pen, x, y) { penOperations.push(['p', pen.color4f.slice(), pen.diameter, x, y]); },
+    penLine(skin, pen, x0, y0, x1, y1) { penOperations.push(['l', pen.color4f.slice(), pen.diameter, x0, y0, x1, y1]); },
     penStamp() {},
     setLayerGroupOrdering() {},
     draw() {},
-    getBounds() { return null; }, getBoundsForBubble() { return null; },
+    getBounds() { return null; },
+    getBoundsForBubble() { return null; },
 };
-const renderer = new Proxy(R, { get(t, k) { if (k in t) return t[k]; return () => 0; } });
+// Anything the engine asks for that isn't listed above just returns 0.
+const renderer = new Proxy(fakeRenderer, {get(target, key) { return key in target ? target[key] : () => 0; }});
 
+// ---- the engine ----
 const vm = new VM();
 vm.attachStorage(new ScratchStorage());
 vm.attachRenderer(renderer);
 vm.runtime.addListener('PROJECT_RUN_STOP', () => {});
-const errors = [];
-const origWarn = console.warn; console.warn = (...a) => { errors.push(a.join(' ')); };
-const origErr = console.error; console.error = (...a) => { errors.push(a.join(' ')); };
+const engineErrors = [];
+console.warn = (...parts) => { engineErrors.push(parts.join(' ')); };
+console.error = (...parts) => { engineErrors.push(parts.join(' ')); };
 
-function setKeys(keys) {
-    const all = ['space', 'up arrow', 'down arrow', 'left arrow', 'right arrow', 'w', 'a', 's', 'd', 'm', 'e', 'z', 'q', '1', '2', '3', '4', '5', 'o', 'p', 'n'];
-    for (const k of all) {
-        const down = keys.includes(k);
-        vm.runtime.ioDevices.keyboard.postData({key: k === 'space' ? ' ' : k.includes('arrow') ? 'Arrow' + k.split(' ')[0][0].toUpperCase() + k.split(' ')[0].slice(1) : k, isDown: down});
+// ---- reading and changing the game ----
+const ALL_KEYS = ['space', 'up arrow', 'down arrow', 'left arrow', 'right arrow', 'w', 'a', 's', 'd', 'm', 'e', 'z', 'q',
+                  '1', '2', '3', '4', '5', 'o', 'p', 'n'];
+function scratchKeyName(key) {
+    if (key === 'space') return ' ';
+    if (key.includes('arrow')) { const direction = key.split(' ')[0]; return 'Arrow' + direction[0].toUpperCase() + direction.slice(1); }
+    return key;
+}
+function holdKeys(keys) {
+    for (const key of ALL_KEYS) vm.runtime.ioDevices.keyboard.postData({key: scratchKeyName(key), isDown: keys.includes(key)});
+}
+
+// Short names a plan may use for stage variables.
+const ALIAS = {"px": "player x", "py": "player y", "ang": "player angle", "HEALTH": "health", "KILLS": "total kills",
+               "level": "current level", "state": "game state", "overlay": "screen showing", "hasRed": "has red key",
+               "hasBlue": "has blue key", "levelKills": "level kills", "levelMonsters": "level monster count",
+               "levelGot": "level items collected", "levelItems": "level item count", "toast": "message name",
+               "toastT": "message timer"};
+const stage = () => vm.runtime.getTargetForStage();
+const stageVariable = name => Object.values(stage().variables).find(variable => variable.name === name);
+function stageValues() {     // every stage variable (not lists) by name, plus the aliases
+    const values = {};
+    for (const variable of Object.values(stage().variables)) if (!Array.isArray(variable.value)) values[variable.name] = variable.value;
+    for (const [alias, name] of Object.entries(ALIAS)) if (name in values) values[alias] = values[name];
+    return values;
+}
+const monsterClones = () => vm.runtime.targets.filter(target => target.sprite.name === 'Monster' && !target.isOriginal);
+const localVariable = (target, name) => Object.values(target.variables).find(variable => variable.name === name);
+function localValues(target, round) {
+    const values = {};
+    for (const variable of Object.values(target.variables)) {
+        values[variable.name] = round && typeof variable.value === 'number' ? Math.round(variable.value * 100) / 100 : variable.value;
     }
+    return values;
 }
-const ALIAS = {"px": "player x", "py": "player y", "ang": "player angle", "HEALTH": "health", "KILLS": "total kills", "level": "current level", "state": "game state", "overlay": "screen showing", "hasRed": "has red key", "hasBlue": "has blue key", "levelKills": "level kills", "levelMonsters": "level monster count", "levelGot": "level items collected", "levelItems": "level item count", "toast": "message name", "toastT": "message timer"};
-const MON = {"ex": "monster x", "ey": "monster y", "alive": "is alive", "myId": "monster id", "hp": "monster health"};
-function globals() {
-    const st = vm.runtime.getTargetForStage();
-    const o = {}; for (const v of Object.values(st.variables)) if (!Array.isArray(v.value)) o[v.name] = v.value;
-    for (const [a, n] of Object.entries(ALIAS)) if (n in o) o[a] = o[n];
-    return o;
+
+// Does the game match these conditions? Same rules as "expect":
+// {"name": value} must be equal (compared as text), {"name": {"gt": n, "lt": n}} a range,
+// "list:name" compares a whole list.
+function valueOf(name) { return name.startsWith('list:') ? (stageVariable(name.slice(5)) || {}).value : stageValues()[name]; }
+function matches(got, want) {
+    if (want && typeof want === 'object' && !Array.isArray(want)) {
+        return ('gt' in want ? +got > want.gt : true) && ('lt' in want ? +got < want.lt : true);
+    }
+    if (Array.isArray(want)) return Array.isArray(got) && JSON.stringify(got.map(String)) === JSON.stringify(want.map(String));
+    return String(got) === String(want);
 }
+const allMatch = conditions => Object.entries(conditions).every(([name, want]) => matches(valueOf(name), want));
+
 function snapshot(name) {
     const sprites = [];
-    order.forEach((id, i) => {
-        const d = drawables[id]; if (!d || !d.visible || !skins[d.skin]) return;
-        sprites.push({layer: i, x: d.x, y: d.y, scale: d.scale[0], skin: d.skin, effects: d.effects, bg: d.group === 'background'});
+    layerOrder.forEach((id, layer) => {
+        const drawable = drawables[id]; if (!drawable || !drawable.visible || !skins[drawable.skin]) return;
+        sprites.push({layer, x: drawable.x, y: drawable.y, scale: drawable.scale[0], skin: drawable.skin,
+                      effects: drawable.effects, bg: drawable.group === 'background'});
     });
-    fs.writeFileSync(`${outdir}/${name}.json`, JSON.stringify({pen: penOps, sprites, vars: globals()}));
+    fs.writeFileSync(`${outputFolder}/${name}.json`, JSON.stringify({pen: penOperations, sprites, vars: stageValues()}));
 }
 
-(async () => {
-    await vm.loadProject(fs.readFileSync(sb3));
-    fs.writeFileSync(`${outdir}/skins.json`, JSON.stringify(skins));
-    vm.setTurboMode(false); vm.runtime.currentStepTime = 1000 / 30;
-    vm.greenFlag();
-    let frame = 0, t0 = Date.now(), stepTimes = [];
-    for (const step of plan) {
-        setKeys(step.keys || []);
-        if (step.setList) { const st = vm.runtime.getTargetForStage(); for (const [k, val] of Object.entries(step.setList)) { const l = Object.values(st.variables).find(v => v.name === k); l.value = val.slice(); l._monitorUpToDate = false; } }
-        const monsterClones = () => vm.runtime.targets.filter(t => t.sprite.name === 'Monster' && !t.isOriginal);
-        const mvar = (t, n) => Object.values(t.variables).find(v => v.name === n);
-        if (step.setMonsterType) { for (const t of monsterClones()) if (+mvar(t, 'monster type').value === step.setMonsterType.type) for (const [k, val] of Object.entries(step.setMonsterType.vars)) mvar(t, k).value = val; }
-        if (step.hit) { const t = monsterClones().find(t => +mvar(t, 'monster type').value === step.hit.type && +mvar(t, 'is alive').value === 1);
-            const st = vm.runtime.getTargetForStage(); const sv = n => Object.values(st.variables).find(v => v.name === n);
-            if (t) { sv('shot fired this frame').value = 1; sv('shot target id').value = +mvar(t, 'monster id').value; sv('hit damage').value = step.hit.damage; } else console.log('  no monster of type', step.hit.type); }
-        if (step.mouse) { vm.runtime.ioDevices.mouse.postData({x: step.mouse.x + 240, y: 180 - step.mouse.y, canvasWidth: 480, canvasHeight: 360, isDown: !!step.mouse.down}); }
-        if (step.toBossKey) { const st = vm.runtime.getTargetForStage(); const sv = n => Object.values(st.variables).find(v => v.name === n); sv('player x').value = +sv('boss death x').value; sv('player y').value = +sv('boss death y').value; }
-        if (step.set) { const st = vm.runtime.getTargetForStage(); for (const v of Object.values(st.variables)) { for (const [k, val] of Object.entries(step.set)) if (v.name === k || v.name === ALIAS[k]) v.value = val; } }
-        for (let i = 0; i < step.frames; i++) {
-            if (step.auto) {   // bot: face nearest live monster, shoot when lined up
-                const g = globals();
-                let best = null, bd = 1e9;
-                for (const m of vm.runtime.targets.filter(t => t.sprite.name === 'Monster' && !t.isOriginal)) {
-                    const v = {}; for (const x of Object.values(m.variables)) v[x.name] = +x.value; for (const [a, n] of Object.entries(MON)) v[a] = v[n];
-                    if (!v.alive) continue;
-                    const d = Math.hypot(v.ex - g.px, v.ey - g.py); if (d < bd) { bd = d; best = v; }
-                }
-                const keys = [...(step.keys || [])];
-                if (best) {
-                    let want = Math.atan2(best.ey - g.py, best.ex - g.px) * 180 / Math.PI;
-                    let diff = ((want - g.ang) % 360 + 540) % 360 - 180;
-                    if (diff > 4) keys.push('right arrow'); else if (diff < -4) keys.push('left arrow');
-                    else if (i % 4 < 2) keys.push('space');
-                    if (Math.abs(diff) < 12 && bd > 2.5) keys.push('up arrow');
-                }
-                setKeys(keys);
-            }
-            const s = _realNow(); vm.runtime._step(); stepTimes.push(_realNow() - s); frame++; fakeNow += 1000 / 30; await new Promise(r => setImmediate(r));
-            if (step.snapEvery && frame % step.snapEvery === 0) snapshot(`${step.prefix}${frame}`);
-        }
-        if (step.snap) snapshot(step.snap);
-        if (step.log) { const g = globals(); const keep = ['px','py','ang','HEALTH','KILLS','level','state','overlay','hasRed','hasBlue','levelKills','levelMonsters','levelGot','levelItems','toast','toastT','stamina','is exhausted','speed boost','stamina rest timer'];
-            const o = {}; for (const k of keep) o[k] = typeof g[k] === 'number' ? Math.round(g[k]*100)/100 : g[k]; const cc = {}; for (const t of vm.runtime.targets) if (!t.isOriginal) cc[t.sprite.name] = (cc[t.sprite.name]||0)+1; /*CLONECOUNT*/ if (step.dumpMonsters) { for (const t of vm.runtime.targets.filter(t => t.sprite.name === 'Monster' && !t.isOriginal)) { const v = {}; for (const x of Object.values(t.variables)) v[x.name] = typeof x.value === 'number' ? Math.round(x.value*100)/100 : x.value; if (step.dumpMonsters === true || +v['monster type'] === step.dumpMonsters) console.log('   M', v['monster id'], v['monster name'], 'hp', v['monster health'], 'alive', v['is alive'], 'pos', v['monster x'], v['monster y'], 'charge', v['charge state'], 'chase', v['is chasing'], 'vis', t.visible, 'ghost', t.effects.ghost, 'bright', Math.round(t.effects.brightness)); } }
-            if (step.dumpSprite) { for (const t of vm.runtime.targets.filter(t => t.sprite.name === step.dumpSprite)) { const v = {}; for (const x of Object.values(t.variables)) v[x.name] = typeof x.value === 'number' ? Math.round(x.value*100)/100 : x.value; console.log('  ', t.isOriginal ? 'ORIG' : 'clone', JSON.stringify(v)); } } /*PROJDUMP*/ { const st = vm.runtime.getTargetForStage();  } { const st = vm.runtime.getTargetForStage(); const L = n => (Object.values(st.variables).find(v => v.name === n) || {}).value; o.ammo = L('ammo counts'); o.owned = L('weapons owned'); o.weapon = g['current weapon']; o.skull = g['has skull key']; o.bossDead = g['boss is dead']; o.boss = g['boss health']; } console.log(step.log, JSON.stringify(o), JSON.stringify(cc)); }
-        if (step.expect) {   // assertions: {"var name": value, "list:name": [..], "var": {"gt": n} / {"lt": n}}
-            const st = vm.runtime.getTargetForStage(); const g = globals();
-            for (const [k, want] of Object.entries(step.expect)) {
-                const got = k.startsWith('list:') ? (Object.values(st.variables).find(v => v.name === k.slice(5)) || {}).value : g[k];
-                let ok;
-                if (want && typeof want === 'object' && !Array.isArray(want)) ok = ('gt' in want ? +got > want.gt : true) && ('lt' in want ? +got < want.lt : true);
-                else if (Array.isArray(want)) ok = Array.isArray(got) && JSON.stringify(got.map(String)) === JSON.stringify(want.map(String));
-                else ok = String(got) === String(want);
-                if (!ok) { failures.push(`${step.log || 'frame ' + frame}: ${k} = ${JSON.stringify(got)}, expected ${JSON.stringify(want)}`); console.log('FAIL', failures[failures.length - 1]); }
-            }
-        }
-        if (step.expectMonsters) {   // {"type": 1, "monster health": 2}: every clone of that type must match
-            const {type, ...want} = step.expectMonsters;
-            const clones = vm.runtime.targets.filter(t => t.sprite.name === 'Monster' && !t.isOriginal &&
-                +Object.values(t.variables).find(v => v.name === 'monster type').value === type);
-            if (!clones.length) failures.push(`${step.log || 'frame ' + frame}: no monsters of type ${type}`);
-            for (const t of clones) for (const [k, val] of Object.entries(want)) {
-                const got = (Object.values(t.variables).find(v => v.name === k) || {}).value;
-                if (String(got) !== String(val)) { failures.push(`${step.log || 'frame ' + frame}: monster type ${type} ${k} = ${JSON.stringify(got)}, expected ${JSON.stringify(val)}`); console.log('FAIL', failures[failures.length - 1]); break; }
-            }
-        }
-        if (step.dumpList) { const st = vm.runtime.getTargetForStage(); const l = Object.values(st.variables).find(v => v.name === step.dumpList); console.log('LIST', step.dumpList, JSON.stringify(l.value, null, 1)); const mon = vm.runtime._monitorState.find((m, id) => id === l.id); console.log('monitor visible:', mon ? mon.get('visible') : 'none'); }
-        if (step.row !== undefined) { const st = vm.runtime.getTargetForStage(); const m = Object.values(st.variables).find(v => v.name === 'current map'); console.log('  map row', step.row, m.value[step.row]); }
+// ---- running frames ----
+let frame = 0;
+const stepTimes = [];
+async function runFrame(step, frameInStep) {
+    if (step.auto) autoAim(step, frameInStep);
+    const started = realNow();
+    vm.runtime._step();
+    stepTimes.push(realNow() - started);
+    frame++; fakeNow += FRAME_MS;
+    await new Promise(resolve => setImmediate(resolve));
+    if (step.snapEvery && frame % step.snapEvery === 0) snapshot(`${step.prefix}${frame}`);
+}
+
+// "auto": a simple bot. Turn toward the nearest live monster, shoot when lined up, walk closer.
+function autoAim(step, frameInStep) {
+    const player = stageValues();
+    let nearest = null, nearestDistance = 1e9;
+    for (const clone of monsterClones()) {
+        const monster = localValues(clone);
+        if (+monster['is alive'] !== 1) continue;
+        const distance = Math.hypot(monster['monster x'] - player.px, monster['monster y'] - player.py);
+        if (distance < nearestDistance) { nearestDistance = distance; nearest = monster; }
     }
-    stepTimes.sort((a, b) => a - b);
+    const keys = [...(step.keys || [])];
+    if (nearest) {
+        const wanted = Math.atan2(nearest['monster y'] - player.py, nearest['monster x'] - player.px) * 180 / Math.PI;
+        const turn = ((wanted - player.ang) % 360 + 540) % 360 - 180;
+        if (turn > 4) keys.push('right arrow');
+        else if (turn < -4) keys.push('left arrow');
+        else if (frameInStep % 4 < 2) keys.push('space');
+        if (Math.abs(turn) < 12 && nearestDistance > 2.5) keys.push('up arrow');
+    }
+    holdKeys(keys);
+}
+
+const TAP_DOWN_FRAMES = 2, TAP_UP_FRAMES = 2, DEFAULT_TIMEOUT = 900;   // 900 frames = 30 seconds
+const describe = step => step.log || step.note || `frame ${frame}`;
+function fail(message) { failures.push(message); console.log('FAIL', message); }
+
+// "until": keep playing frames (holding the step's keys) until the conditions are true.
+async function runUntil(step) {
+    const timeout = step.timeout || DEFAULT_TIMEOUT;
+    for (let waited = 0; !allMatch(step.until); waited++) {
+        if (waited >= timeout) { fail(`${describe(step)}: still waiting for ${JSON.stringify(step.until)} after ${timeout} frames`); return; }
+        await runFrame(step, waited);
+    }
+}
+
+// "tap" + "while": press and let go of a key, again and again, while the conditions are true.
+async function runTaps(step) {
+    const timeout = step.timeout || DEFAULT_TIMEOUT;
+    let waited = 0;
+    while (allMatch(step.while)) {
+        if (waited >= timeout) { fail(`${describe(step)}: still tapping ${step.tap} after ${timeout} frames`); break; }
+        holdKeys([...(step.keys || []), step.tap]);
+        for (let count = 0; count < TAP_DOWN_FRAMES; count++, waited++) await runFrame(step, waited);
+        holdKeys(step.keys || []);
+        for (let count = 0; count < TAP_UP_FRAMES; count++, waited++) await runFrame(step, waited);
+    }
+}
+
+// ---- setting things up before a step's frames ----
+function applySetup(step) {
+    if (step.setList) {
+        for (const [name, items] of Object.entries(step.setList)) {
+            const list = stageVariable(name); list.value = items.slice(); list._monitorUpToDate = false;
+        }
+    }
+    if (step.setMonsterType) {
+        for (const clone of monsterClones()) {
+            if (+localVariable(clone, 'monster type').value !== step.setMonsterType.type) continue;
+            for (const [name, value] of Object.entries(step.setMonsterType.vars)) localVariable(clone, name).value = value;
+        }
+    }
+    if (step.hit) {     // pretend the player shot the first live monster of this type
+        const target = monsterClones().find(clone => +localVariable(clone, 'monster type').value === step.hit.type &&
+                                                     +localVariable(clone, 'is alive').value === 1);
+        if (target) {
+            stageVariable('shot fired this frame').value = 1;
+            stageVariable('shot target id').value = +localVariable(target, 'monster id').value;
+            stageVariable('hit damage').value = step.hit.damage;
+        } else console.log('  no monster of type', step.hit.type);
+    }
+    if (step.mouse) {
+        vm.runtime.ioDevices.mouse.postData({x: step.mouse.x + 240, y: 180 - step.mouse.y, canvasWidth: 480,
+                                             canvasHeight: 360, isDown: !!step.mouse.down});
+    }
+    if (step.toBossKey) {
+        stageVariable('player x').value = +stageVariable('boss death x').value;
+        stageVariable('player y').value = +stageVariable('boss death y').value;
+    }
+    if (step.set) {
+        for (const variable of Object.values(stage().variables)) {
+            for (const [name, value] of Object.entries(step.set)) if (variable.name === name || variable.name === ALIAS[name]) variable.value = value;
+        }
+    }
+}
+
+// ---- after a step's frames: logs and checks ----
+const LOGGED = ['px', 'py', 'ang', 'HEALTH', 'KILLS', 'level', 'state', 'overlay', 'hasRed', 'hasBlue', 'levelKills',
+                'levelMonsters', 'levelGot', 'levelItems', 'toast', 'toastT', 'stamina', 'is exhausted', 'speed boost',
+                'stamina rest timer'];
+function logStep(step) {
+    const values = stageValues();
+    const shown = {};
+    for (const name of LOGGED) shown[name] = typeof values[name] === 'number' ? Math.round(values[name] * 100) / 100 : values[name];
+    const cloneCounts = {};
+    for (const target of vm.runtime.targets) if (!target.isOriginal) cloneCounts[target.sprite.name] = (cloneCounts[target.sprite.name] || 0) + 1;
+    if (step.dumpMonsters) {
+        for (const clone of monsterClones()) {
+            const monster = localValues(clone, true);
+            if (step.dumpMonsters !== true && +monster['monster type'] !== step.dumpMonsters) continue;
+            console.log('   M', monster['monster id'], monster['monster name'], 'hp', monster['monster health'], 'alive',
+                        monster['is alive'], 'pos', monster['monster x'], monster['monster y'], 'charge', monster['charge state'],
+                        'chase', monster['is chasing'], 'vis', clone.visible, 'ghost', clone.effects.ghost, 'bright',
+                        Math.round(clone.effects.brightness));
+        }
+    }
+    if (step.dumpSprite) {
+        for (const target of vm.runtime.targets.filter(target => target.sprite.name === step.dumpSprite)) {
+            console.log('  ', target.isOriginal ? 'ORIG' : 'clone', JSON.stringify(localValues(target, true)));
+        }
+    }
+    shown.ammo = valueOf('list:ammo counts'); shown.owned = valueOf('list:weapons owned');
+    shown.weapon = values['current weapon']; shown.skull = values['has skull key'];
+    shown.bossDead = values['boss is dead']; shown.boss = values['boss health'];
+    console.log(step.log, JSON.stringify(shown), JSON.stringify(cloneCounts));
+}
+
+function checkExpectations(step) {
+    if (step.expect) {
+        for (const [name, want] of Object.entries(step.expect)) {
+            const got = valueOf(name);
+            if (!matches(got, want)) fail(`${describe(step)}: ${name} = ${JSON.stringify(got)}, expected ${JSON.stringify(want)}`);
+        }
+    }
+    if (step.expectMonsters) {      // {"type": 1, "monster health": 2}: every clone of that type must match
+        const {type, ...want} = step.expectMonsters;
+        const clones = monsterClones().filter(clone => +localVariable(clone, 'monster type').value === type);
+        if (!clones.length) failures.push(`${describe(step)}: no monsters of type ${type}`);
+        for (const clone of clones) for (const [name, value] of Object.entries(want)) {
+            const got = (localVariable(clone, name) || {}).value;
+            if (String(got) !== String(value)) { fail(`${describe(step)}: monster type ${type} ${name} = ${JSON.stringify(got)}, expected ${JSON.stringify(value)}`); break; }
+        }
+    }
+}
+
+function printDumps(step) {
+    if (step.dumpList) {
+        const list = stageVariable(step.dumpList);
+        console.log('LIST', step.dumpList, JSON.stringify(list.value, null, 1));
+        const monitor = vm.runtime._monitorState.find((state, id) => id === list.id);
+        console.log('monitor visible:', monitor ? monitor.get('visible') : 'none');
+    }
+    if (step.row !== undefined) console.log('  map row', step.row, stageVariable('current map').value[step.row]);
+}
+
+// ---- the run ----
+(async () => {
+    await vm.loadProject(fs.readFileSync(projectPath));
+    fs.writeFileSync(`${outputFolder}/skins.json`, JSON.stringify(skins));
+    vm.setTurboMode(false);
+    vm.runtime.currentStepTime = FRAME_MS;
+    vm.greenFlag();
+    for (const step of plan) {
+        holdKeys(step.keys || []);
+        applySetup(step);
+        for (let frameInStep = 0; frameInStep < (step.frames || 0); frameInStep++) await runFrame(step, frameInStep);
+        if (step.until) await runUntil(step);
+        if (step.tap) await runTaps(step);
+        if (step.snap) snapshot(step.snap);
+        if (step.log) logStep(step);
+        checkExpectations(step);
+        printDumps(step);
+    }
+    stepTimes.sort((first, second) => first - second);
     console.log('frames', frame, 'median step ms', stepTimes[stepTimes.length >> 1], 'p90', stepTimes[Math.floor(stepTimes.length * 0.9)]);
-    const mons = vm.runtime.targets.filter(t => t.sprite.name === 'Monster' && !t.isOriginal);
-    console.log('monster clones', mons.length, mons.map(m => {
-        const v = {}; for (const x of Object.values(m.variables)) v[x.name] = x.value; for (const [a, n] of Object.entries(MON)) v[a] = v[n];
-        return `#${v.myId} alive=${v.alive} hp=${v.hp} pos=${(+v.ex).toFixed(2)},${(+v.ey).toFixed(2)} vis=${m.visible}`;
+    console.log('monster clones', monsterClones().length, monsterClones().map(clone => {
+        const monster = localValues(clone);
+        return `#${monster['monster id']} alive=${monster['is alive']} hp=${monster['monster health']} ` +
+               `pos=${(+monster['monster x']).toFixed(2)},${(+monster['monster y']).toFixed(2)} vis=${clone.visible}`;
     }).join('\n'));
-    const realErrors = errors.filter(e => !/audio|Audio|Translation/.test(e));
+    const realErrors = engineErrors.filter(error => !/audio|Audio|Translation/.test(error));
     console.log('threads', vm.runtime.threads.length, 'errors', realErrors.slice(0, 10));
-    for (const e of realErrors) failures.push('VM error: ' + e);
+    for (const error of realErrors) failures.push('VM error: ' + error);
     console.log(failures.length ? `RESULT FAIL (${failures.length})` : 'RESULT PASS');
     process.exit(failures.length ? 1 : 0);
 })();

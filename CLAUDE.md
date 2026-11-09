@@ -132,11 +132,18 @@ A boss automatically carries the skull key (item type 5).
 
 ## Tests
 
-`tests/harness.js` loads the `.sb3` into scratch-vm with a fake renderer and a fake clock, and
-steps it frame by frame. A plan is a JSON list of steps:
+`tests/harness.js` loads the `.sb3` into scratch-vm with a fake renderer, a fake clock and **seeded
+random numbers** (every run of a plan is identical; `TEST_SEED=<n>` picks another repeatable run),
+and steps it frame by frame. A plan is a JSON list of steps:
 
 | key | meaning |
 |---|---|
+| `startGame` | named step: from the title screen into level play |
+| `continueToNextLevel` | named step: from reaching the exit, through the tally, into the next level |
+| `retryLevel` | named step: from dying back into the same level |
+| `until` | play frames until conditions hold, e.g. `{"game state": "playing"}` (same rules as `expect`); fails after `timeout` frames (default 900) |
+| `tap` + `while` | tap a key (2 frames down, 2 up) while conditions hold, e.g. `{"tap": "space", "while": {"screen showing": "died"}}` |
+| `note` | a description, used in failure messages |
 | `frames` | how many frames to run this step |
 | `keys` | keys held down: `"space"`, `"up arrow"`, `"w"`, `"1"` ... |
 | `set` | set stage variables first (aliases: `px`, `py`, `ang`, `HEALTH`, `state`, ...) |
@@ -150,5 +157,8 @@ steps it frame by frame. A plan is a JSON list of steps:
 | `expectMonsters` | `{"type": 1, "monster health": 2}`: every clone of that monster type must have these local values |
 | `expect` | assertions: `{"current weapon": 3, "list:ammo counts": [48,7,0], "health": {"lt": 100}}` |
 
-The harness exits non-zero if any `expect` fails or the VM logs an error. Add a plan (or
-steps with `expect`) for every new feature.
+The harness exits non-zero if any `expect` fails, an `until` times out, or the VM logs an error.
+Add a plan (or steps with `expect`) for every new feature. **Prefer the named steps and `until` to
+fixed frame counts** for anything that waits on the game (cards, melts, the tally): then changing
+how long a screen lasts doesn't break unrelated plans. Count frames only when timing is the thing
+being tested (e.g. SPACE skipping the tally's count-up).
