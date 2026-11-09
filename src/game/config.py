@@ -47,16 +47,11 @@ WEAPON_TYPES = [
     ["rocket launcher", 3, 30, 0, 0, 0,   1],
 ]
 AMMO = [("bullets", START_BULLETS, 200), ("shells", 0, 99), ("rockets", 0, 50)]   # name, new-game amount, most you can carry
-# Per level: how far rays travel (bigger maps need a limit so the game stays fast), how quickly
-# walls fade to black with distance, and how much monsters darken with distance.
-LEVEL_MAX_RAY_STEPS = [64, 64, 64, 34, 26, 36]
-LEVEL_LIGHT_FALLOFF = [4.5, 4.5, 4.5, 4.5, 6.5, 4.2]
-LEVEL_SPRITE_DARKNESS = [0, 0, 0, 2, 5, 2]
-LEVEL_SELECT_BEST_WEAPON = [2, 3, 4, 4, 5, 5]   # starting at level N from the options menu gives weapons 1..this
-# PAR TIME: seconds a good player needs for each level, shown on the tally screen. Each one is about
-# 3 times as long as simply walking the shortest route to the exit (keys and boss included), which
-# leaves time for fighting, rounded to the nearest 15 seconds.
-LEVEL_PAR_SECONDS = [60, 90, 135, 165, 180, 240]
+# Everything about each level (map, colors, draw distance, par time, card...) is in its record in
+# LEVELS, in src/levels.py. The one thing worked out here: where episode 1 ends, for the music
+# (one track per episode) and the "EPISODE 1 COMPLETE" screen.
+LAST_LEVEL_OF_EPISODE_1 = max(level_number for level_number, level in enumerate(LEVELS, start=1)
+                              if level["episode"] == 1)
 
 # DIFFICULTY: one row per setting. Both numbers are percentages of the normal amount.
 #   damage to you    how much each hit on the player hurts (50 = half as much)

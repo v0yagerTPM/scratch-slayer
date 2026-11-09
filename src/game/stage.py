@@ -55,13 +55,13 @@ stage.lst("level ceiling saturations", [level["ceil"][1] for level in LEVELS])
 stage.lst("level floor hues", [level["floor"][0] for level in LEVELS])
 stage.lst("level floor saturations", [level["floor"][1] for level in LEVELS])
 stage.lst("level secret wall looks", [level["secret_look"] for level in LEVELS])
-stage.lst("level max ray steps", LEVEL_MAX_RAY_STEPS)
-stage.lst("level light falloffs", LEVEL_LIGHT_FALLOFF)
-stage.lst("level sprite darkness", LEVEL_SPRITE_DARKNESS)
-stage.lst("level select best weapon", LEVEL_SELECT_BEST_WEAPON)
-stage.lst("level par times", LEVEL_PAR_SECONDS)
-stage.lst("level intro monster", [1, 2, 3, 5, 6, 7])   # monster type shown walking onto each level's card
-stage.lst("level intro boss", [0, 0, 4, 0, 0, 0])      # a boss shown in the background of the card (0 = none)
+stage.lst("level max ray steps", [level["max_ray_steps"] for level in LEVELS])
+stage.lst("level light falloffs", [level["light_falloff"] for level in LEVELS])
+stage.lst("level sprite darkness", [level["sprite_darkness"] for level in LEVELS])
+stage.lst("level select best weapon", [level["best_weapon"] for level in LEVELS])
+stage.lst("level par times", [level["par_seconds"] for level in LEVELS])
+stage.lst("level intro monster", [level["card_monster"] for level in LEVELS])   # walks onto the level card
+stage.lst("level intro boss", [level["card_boss"] for level in LEVELS])         # waits in the card's background
 stage.lst("melt offsets", [0] * 24)
 for column_number, column in enumerate(MONSTER_COLUMNS):
     stage.lst(f"monster {column}", [row[column_number] for row in MONSTER_TYPES])

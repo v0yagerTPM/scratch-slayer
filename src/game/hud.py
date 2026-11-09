@@ -110,7 +110,7 @@ screens.script(recv(DRAW_HUD),
          ifelse(eq(V("screen showing"), COMPLETE),
                 [note("Level 3 ends episode 1, so it gets its own heading. Then add\n"
                       "' under par' to the costume name if you beat the par time.",
-                      ifelse(eq(V("current level"), 3), [setv("screen costume name", "screen episode complete")],
+                      ifelse(eq(V("current level"), LAST_LEVEL_OF_EPISODE_1), [setv("screen costume name", "screen episode complete")],
                              [setv("screen costume name", "screen level complete")])),
                  ifelse(eq(V("par was beaten"), 1), [setv("under par ending", " under par")],
                         [setv("under par ending", "")]),

@@ -1,25 +1,13 @@
 """The level intro cards and their LEVEL N headings."""
 from pictures.drawing import FIRE_STOPS, gradient, svg
 from pictures.lettering import block_text, text_width
+from levels import LEVELS
 
 CARD_COLOR = "#120304"
 
-CARDS = [
-    dict(tint="#5a2a10", name="THE OUTPOST", goal="Find the exit switch", enemy="IMP",
-         lines=["Fast and vicious up close.", "Keep your distance and blast it."], boss=None),
-    dict(tint="#1f5a14", name="THE PROCESSING PLANT", goal="Find the red key, then the exit", enemy="SPITTER",
-         lines=["Spits acid from far away. Strafe", "with A and D to dodge it."], boss=None),
-    dict(tint="#5a0f2a", name="THE FORTRESS", goal="Two keys, then slay the Warden", enemy="GOLEM",
-         lines=["Slow, tough, and hits like a truck.", "Lure it next to a barrel."],
-         boss="BOSS: THE WARDEN carries the SKULL KEY to the exit"),
-    dict(tint="#6a2a08", name="THE FOUNDRY", goal="Find the red key, then the exit", enemy="CHARGER",
-         lines=["Lowers its head, then charges.", "Sidestep it and it slams into a wall."], boss=None),
-    dict(tint="#0f3a4a", name="THE SUNKEN VAULTS", goal="Two keys, deep in the dark", enemy="WRAITH",
-         lines=["Almost invisible from far away,", "and it blinks sideways. Stay sharp."], boss=None),
-    dict(tint="#4a0a3a", name="THE CORE", goal="Destroy the Colossus, take its key", enemy="THE COLOSSUS",
-         lines=["Huge, armored, and it gets angrier.", "At half health it calls for help."],
-         boss="FINAL BOSS: the exit is sealed until it falls"),
-]
+# Each level's card, from the card settings in its record in src/levels.py. The card's title is the
+# level's name in capitals.
+CARDS = [dict(level["card"], name=level["name"].upper()) for level in LEVELS]
 
 def card(info):
     picture = (f'<defs><radialGradient id="glow" cx="0.7" cy="0.7" r="0.7"><stop offset="0" stop-color="{info["tint"]}"/>'
