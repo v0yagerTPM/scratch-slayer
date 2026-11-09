@@ -22,7 +22,7 @@ column number at the bottom, which helps find a square.
 
 HOW A MAP IS USED
 =================
-load_map() reads a file into a Python list of strings, one string per row. build.py copies
+load_map() reads a file into a Python list of strings, one string per row. game/stage.py copies
 that list straight into the Scratch list "level N map" (one string = one list item), and the
 Engine's 'load level' block reads it back letter by letter. So the file IS the level.
 
@@ -34,7 +34,7 @@ The game uses the same numbers ("player x" 3.5 = the middle of column 3, "player
 Scratch lists and text editors count from 1 instead: row 0, column 0 is line 1, letter 1.
 
 At the bottom, validate() plays detective: it checks every map can really be finished.
-build.py runs validate() on every level each time it builds, so a broken map stops the build
+The build runs validate() on every level each time (game/config.py), so a broken map stops the build
 with a message saying what is wrong and where. Run this file on its own
 (python3 src/levels.py) to check the maps and print what is in each one.
 
@@ -107,7 +107,7 @@ def load_map(level_number):
 
 
 # =================================================================================================
-# THE LEVEL LIST: each level's map plus a few settings. build.py reads this.
+# THE LEVEL LIST: each level's map plus a few settings. The build reads this (game/stage.py).
 # =================================================================================================
 # For each level:
 #   name         used in this file's messages (the level cards' names are drawn in assets6.py)
@@ -121,8 +121,8 @@ def load_map(level_number):
 #                -> "level ceiling hues" / "level ceiling saturations" / "level floor ..."
 #   secret_look  which wall digit the secret walls (S) look like on this level, so they blend in
 #                -> "level secret wall looks"
-# Other per-level settings (how far rays travel, darkness, par times...) are tables at the top
-# of build.py, and the level cards are in assets6.py.
+# Other per-level settings (how far rays travel, darkness, par times...) are tables in
+# game/config.py, and the level cards are in assets6.py.
 #
 # Above each level: a plan of its map, so you can find your way around the text file.
 # Positions are (column, row), counting from 0 like the rest of this file.
@@ -252,7 +252,7 @@ def validate(level):
     WITHOUT opening secret walls or blowing up barrels; pickups may hide behind secrets.
 
     If a check fails, it stops with a LevelError whose message names the level, says what is
-    wrong, and gives the square. build.py calls this for every level, so a broken map stops
+    wrong, and gives the square. The build calls this for every level, so a broken map stops
     the build. If everything passes, it returns a count of each letter.
     """
     name, map_rows = level["name"], level["rows"]
@@ -371,7 +371,7 @@ def validate(level):
 
 
 # Running this file directly (python3 src/levels.py) checks every level and prints its contents.
-# (When build.py imports this file instead, this part is skipped.)
+# (When the build imports this file instead, this part is skipped.)
 if __name__ == "__main__":
     import sys
     try:
