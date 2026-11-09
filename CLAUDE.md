@@ -10,6 +10,7 @@ the blocks must stay readable.
   Scratch editor are lost on the next build; if the teacher made some, port them into `src/`.
 - **Descriptive variable names, always.** Never single letters, in Python or in Scratch
   (`monster x`, `wall stripe height`, not `x`, `h`). This applies to loop variables too.
+  The one deliberate exception is the `V("variable name")` reporter helper, used over 1,000 times.
 - **Comment generously.** Use `note("text", block)` to attach a comment to a block and
   `comment="..."` on `script(...)` for a script header. Write for a 12-year-old: what it does
   and why. Doom/Wolfenstein history is welcome where it explains a technique.
@@ -40,17 +41,20 @@ npm run compare                                 # is the built project identical
 
 ## Architecture
 
-- `sb3lib.py`: `Project`, `Target` (sprite or stage), `script(hat, *blocks, comment=)`,
-  `Def(name, warp=True)` for custom blocks, `call(name)`, and expression helpers (`add`, `mul`,
+- `sb3lib.py`: `Project`, `Target` (sprite or stage), `script(hat, *blocks, comment=, canvas_x=)`,
+  `Def(name, warp=True)` for custom blocks, `call(name, warp=True)` (warp must match the `Def`), and expression helpers (`add`, `mul`,
   `eq`, `and_`, `ifelse`, `until`, `repeat`, `setv`, `chg`, `V("var")`, `item(n, "list")`,
-  `join`, `costume(default, plug)`, pen blocks). `note()` attaches block comments. Layout of
-  blocks on the canvas is estimated automatically.
+  `join`, `costume(default, plug)`, pen blocks such as `pen_down()`/`pen_up()`). `note()` attaches block
+  comments. Layout of blocks on the canvas is estimated automatically. The file header explains
+  how nested Python calls become project.json blocks.
 - `sb3extra.py`: extra helpers (mouse_x/y/down, tan_, set_volume, play_named, etc.).
 - `build.py`: top-level config tables (`MONSTER_TYPES`, `WEAPON_TYPES`, `WALLS`, `AMMO`, `DIFFICULTIES`,
   per-level lists incl. `LEVEL_PAR_SECONDS`), stage variables and lists, then each sprite: Engine (main loop,
   raycaster, input, options menu, level loader), Monster, Pickup, Barrel, Projectile, Weapon,
   Crosshair, HUD, Arms Panel, Boss Bar, Message, Screens, Digits, the title/card/death/victory
-  sprites, Options Panel, Options Widgets, Music. Ends with sanity checks (unique names, etc.).
+  sprites, Options Panel, Options Widgets, Music. Each sprite's Python handle is its name in
+  snake_case (`engine`, `options_widgets`); give a sprite a sound with `add_sound(sprite, name,
+  assets_function)`. Ends with sanity checks (unique names, etc.).
 - `maps/level N map.txt`: the six maps, one row per line, nothing else. Same format and file name as
   Scratch's list export/import (right-click the list "level N map"), so a student's exported map can
   be dropped in as-is. Never add comments or a ruler to these files: Scratch would import them as rows.

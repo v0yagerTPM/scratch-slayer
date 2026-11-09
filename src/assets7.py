@@ -43,10 +43,10 @@ def _percent_sign(baseline):
 def _colon(baseline):
     """Two pixel squares, styled like the digits (with a black shadow)."""
     center = baseline - 6
-    x = 240 + MINUTES_X + 5      # between the minutes and the tens digit of the seconds
-    return "".join(f'<rect x="{x + 1}" y="{y + 1}" width="5" height="5" fill="#000"/>'
-                   f'<rect x="{x}" y="{y}" width="5" height="5" fill="{DIGIT_RED}"/>'
-                   for y in (center - 8, center + 3))
+    square_x = 240 + MINUTES_X + 5      # between the minutes and the tens digit of the seconds
+    return "".join(f'<rect x="{square_x + 1}" y="{square_y + 1}" width="5" height="5" fill="#000"/>'
+                   f'<rect x="{square_x}" y="{square_y}" width="5" height="5" fill="{DIGIT_RED}"/>'
+                   for square_y in (center - 8, center + 3))
 
 def tally_screen(title, subtitle=None, under_par=False):
     body = ""
@@ -83,15 +83,15 @@ def tally_tick():
     """A short metallic click while the numbers count up."""
     sample_count = int(RATE * 0.025)
     noise = random.Random(71)
-    return _wav([(math.sin(2 * math.pi * 2200 * (i / RATE)) * 0.5 + noise.uniform(-0.3, 0.3))
-                 * math.exp(-(i / RATE) * 180) for i in range(sample_count)])
+    return _wav([(math.sin(2 * math.pi * 2200 * (sample_number / RATE)) * 0.5 + noise.uniform(-0.3, 0.3))
+                 * math.exp(-(sample_number / RATE) * 180) for sample_number in range(sample_count)])
 
 def tally_done():
     """A low thump when the counting finishes."""
     sample_count = int(RATE * 0.25)
     out = []
-    for i in range(sample_count):
-        seconds = i / RATE
+    for sample_number in range(sample_count):
+        seconds = sample_number / RATE
         pitch = 140 - 260 * seconds
         out.append(math.sin(2 * math.pi * pitch * seconds) * 0.9 * math.exp(-seconds * 14))
     return _wav(out)
