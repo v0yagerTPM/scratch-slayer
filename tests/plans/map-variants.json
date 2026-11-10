@@ -237,19 +237,37 @@
  },
  {
   "continueToNextLevel": true,
-  "log": "level 2 has only map A, so MAP: B can't apply there: it plays map A",
+  "log": "level 2 follows the MAP setting too: map B (Acid Vats)",
   "expect": {
    "level": 2,
-   "map name": "level 2 map A",
-   "level map count": 1
+   "map name": "level 2 map B",
+   "level map count": 3,
+   "px": 5.5,
+   "py": 29.5
   },
   "expectCostume": {
-   "Card Background": "card 2 A",
-   "Card Heading": "heading 2 A"
+   "Card Background": "card 2 B",
+   "Card Heading": "heading 2 B"
   }
  },
  {
-  "note": "die on level 2",
+  "finishLevel": true
+ },
+ {
+  "continueToNextLevel": true,
+  "log": "level 3 has only map A, so MAP: B can't apply there: it plays map A",
+  "expect": {
+   "level": 3,
+   "map name": "level 3 map A",
+   "level map count": 1
+  },
+  "expectCostume": {
+   "Card Background": "card 3 A",
+   "Card Heading": "heading 3 A"
+  }
+ },
+ {
+  "note": "die on level 3",
   "set": {
    "HEALTH": 0
   },
@@ -280,7 +298,7 @@
  {
   "retryLevel": true,
   "expect": {
-   "map name": "level 2 map A",
+   "map name": "level 3 map A",
    "game state": "playing"
   }
  }

@@ -29,11 +29,23 @@ normal / hard: the difficulty changes monster health, how many supplies appear a
 
 ## Level 2: The Processing Plant (episode 1)
 
-### Map A: The Red Door
+### Map A: Pump Station
 
-24 x 24 squares · 13 monsters · par 90 s · ammo ratio 8.08 / 3.59 / 1.54, health 190 / 125 / 125 (easy / normal / hard)
+32 x 30 squares · 25 monsters · par 105 s · ammo ratio 4.2 / 1.87 / 1.2, health 190 / 125 / 75 (easy / normal / hard)
 
 ![The Processing Plant, map A](level%202%20map%20A.svg)
+
+### Map B: Acid Vats
+
+32 x 32 squares · 25 monsters · par 105 s · ammo ratio 4.2 / 1.87 / 1.2, health 190 / 125 / 75 (easy / normal / hard)
+
+![The Processing Plant, map B](level%202%20map%20B.svg)
+
+### Map C: Filter Halls
+
+22 x 24 squares · 25 monsters · par 120 s · ammo ratio 4.2 / 1.87 / 1.2, health 190 / 125 / 75 (easy / normal / hard)
+
+![The Processing Plant, map C](level%202%20map%20C.svg)
 
 ## Level 3: The Fortress (episode 1)
 

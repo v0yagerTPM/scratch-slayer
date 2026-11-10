@@ -306,10 +306,11 @@
  {
   "frames": 1,
   "set": {
-   "px": 12.5,
-   "py": 9.6,
+   "px": 18.5,
+   "py": 26.5,
    "ang": 90
-  }
+  },
+  "note": "Pump Station: walk onto the chaingun in the boiler room (18, 27)"
  },
  {
   "frames": 8,

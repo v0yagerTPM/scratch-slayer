@@ -229,19 +229,47 @@ LEVELS = [
     dict(name="The Processing Plant", episode=1, best_weapon=3,
          card=dict(enemy="SPITTER", lines=["Spits acid from far away. Strafe", "with A and D to dodge it."], boss=None),
          card_monster=2, card_boss=0, maps=[
-        # LEVEL 2, MAP A: THE RED DOOR (24 x 24). Monsters: spitters. One key: red.
-        #   rows 1-7    north rooms, split by a wall of 7s at column 15. The RED door R (15, 4) leads
-        #               to the north-east room, which has the exit X in its top wall (19, 0).
-        #               Top left: a secret wall S (3, 1) hides a closet.
-        #   row 8       a wall with one door (column 12)
-        #   rows 9-16   a west room with the red key K (2, 10) and its door at (8, 12), and a big
-        #               east hall with the chaingun Q (12, 10)
-        #   row 17      a wall with one door (column 16)
-        #   rows 18-22  the bottom: the player starts in the west room (P at 2, 20)
-        #   Route: bottom -> middle -> red key -> north -> red door -> exit.
-        dict(name="The Red Door", rows=load_map(2, "A"), goal="Find the red key, then the exit", tint="#1f5a14",
-             angle=0, ceil=(50, 30), floor=(35, 30), secret_look="7",
-             max_ray_steps=64, light_falloff=4.5, sprite_darkness=0, par_seconds=90),
+        # LEVEL 2, MAP A: PUMP STATION (32 x 30). 14 spitters, 11 imps. Key: red. Route: about 77.
+        #   rows 21-28  the intake room, where the player starts (P at 5, 26), and the boiler room
+        #               to the east (door 11, 25) with the chaingun Q (18, 27)
+        #   row 20      a wall with one door (5, 20) up into the pump hall
+        #   rows 8-19   the pump hall: eight pumps (5), 2 x 2, in two rows. East wall (column 23)
+        #               with three doors into the pipe gallery, which a long pipe (6) splits into two
+        #               lanes, with one gap (27, 18).
+        #   row 7       the north wall: a door (5, 7) to the storage room, the RED door (16, 7) to the
+        #               control room, and a door (27, 7) from the gallery to the tank room
+        #   rows 1-6    storage (a secret wall S at 4, 1 hides health and shells) | the control room
+        #               with the exit X (16, 0) | the tank room with the red key K (26, 4)
+        #   Route: intake -> pump hall -> gallery -> tank room (key) -> back -> red door -> exit.
+        dict(name="Pump Station", rows=load_map(2, "A"), goal="Find the red key, then the exit", tint="#1f5a14",
+             angle=270, ceil=(50, 30), floor=(35, 30), secret_look="7",
+             max_ray_steps=40, light_falloff=4.5, sprite_darkness=0, par_seconds=105),
+        # LEVEL 2, MAP B: ACID VATS (32 x 32). 15 spitters, 10 imps. Key: red. Route: about 74.
+        #   A ring corridor two squares wide runs round the outside. Inside it, the vat hall
+        #   (columns 4-27, rows 4-27): acid vats (6), some joined into long tanks, with catwalks
+        #   between them. Spitters stand on the far catwalks. The red key K (14, 14) is in the
+        #   middle. Doors into the hall: west (3, 10), south (15, 28), east (28, 20).
+        #   The player starts in the south-west of the ring (P at 5, 29). The ring's north part
+        #   (row 1-2, columns 9-22) is sealed: a RED door (8, 1) on its west end, wall on its east.
+        #   It has the exit X (16, 0). The chaingun Q (30, 24) is out east, through the east door.
+        #   A secret wall S (25, 26) in the hall's south-east corner hides shells and health.
+        dict(name="Acid Vats", rows=load_map(2, "B"), goal="Cross the vats for the red key", tint="#3a5a0a",
+             angle=0, ceil=(33, 25), floor=(25, 35), secret_look="9",
+             max_ray_steps=40, light_falloff=4.8, sprite_darkness=1, par_seconds=105),
+        # LEVEL 2, MAP C: FILTER HALLS (22 x 24). 13 spitters, 12 imps. Key: red. Route: about 86.
+        #   Four long halls stacked on top of each other: go along one, through the door at its
+        #   end, and back along the next one.
+        #   rows 19-22  hall 1, with filter columns (3). The player starts at its west end
+        #               (P at 2, 21); the door up is at the east end (19, 18).
+        #   rows 13-17  hall 2, with filter tanks (6). Two doors up: the key room (10, 12) and hall 3
+        #               at the west end (2, 12). A secret wall S (17, 14) hides shells and health.
+        #   rows 7-11   hall 3. The key room (red key K at 10, 10) sits in the middle of it, so hall 3
+        #               is joined over the top by a corridor one square wide (row 7). The chaingun Q
+        #               (20, 11) is at its east end, next to the RED door (19, 6).
+        #   rows 1-5    hall 4, with the exit X (13, 0).
+        dict(name="Filter Halls", rows=load_map(2, "C"), goal="Zig-zag up to the red door", tint="#14504a",
+             angle=0, ceil=(45, 20), floor=(50, 25), secret_look="7",
+             max_ray_steps=30, light_falloff=5.0, sprite_darkness=1, par_seconds=120),
     ]),
 
     dict(name="The Fortress", episode=1, best_weapon=4,
