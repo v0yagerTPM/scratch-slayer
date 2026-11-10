@@ -181,8 +181,10 @@ Don't use P M V G W C F T H A I U N Q L K J E ? or 0 for walls: those
 already mean something.
 
 SECRET WALLS (S) copy the look of one wall per map: "map secret wall
-looks" = which wall digit S looks like on that map. Secret walls have
-no dark seams: sharp-eyed players can spot them.""",
+looks" = which wall digit S looks like on that map. Sharp-eyed players
+can spot them: they have no dark seams, and they are a little lighter
+and more colorful. 'secret wall hint' says how much (0 = no hint,
+try 30 to make them easy to find).""",
 
 """MONSTER TYPES  (all the numbers live in lists you can edit)
 
@@ -374,6 +376,34 @@ These are NOT reset by the green flag, so settings stick while the
 project is open. The menu is drawn by the Options Panel and Options
 Widgets sprites; the Engine's 'handle options input' block reads the
 keys and the mouse.""",
+
+"""DEVELOPER CONSOLE  (for testing levels quickly)
+
+TURN IT ON: on the title screen, hold D + E + V together. The list of
+commands appears. (Do it again to turn it off. The green flag doesn't
+reset it, like the options.) The options menu's level select then
+offers every level, not just the ones you have reached.
+
+USE IT: during a game, press C. The game pauses and Scratch asks for a
+command. Type one and press Enter:
+  level 3     go to level 3 (a random map)
+  level 3 b   go to level 3, map B (you get that level's weapons)
+  map c       this level again, on map C
+  exit        finish this level now (the tally comes up)
+  kill        every monster dies
+  god         nothing can hurt you (type it again to turn it off)
+  guns        every weapon and full ammo
+  keys        the red, blue and skull keys
+  heal        health back to 100
+  (nothing)   back to the game
+
+HOW IT WORKS: 'ask and wait' pauses the Engine's script until you
+press Enter, and 'answer' is what you typed. 'split the answer into
+words' cuts it at the spaces into "console words", and the 'developer
+console' block checks the first word. 'god' works because EVERY hit on
+the player checks 'god mode' first. Add your own command: copy one of
+the 'if console command = ...' blocks and add a line to the list
+"developer console".""",
 
 """DIFFICULTY  (easy, normal, hard)
 

@@ -57,6 +57,10 @@ whole new level, save its map as `src/maps/level 7 map A.txt` and add a level re
 The build does the rest, level cards included. `python3 src/levels.py` also prints a balance
 report: how much ammo and health each map gives compared with its monsters' health.
 
+To TEST levels quickly, use the developer console: hold D + E + V together on the title screen, then
+press C during a game and type a command such as `level 3 b`, `god`, `guns` or `exit` (the Stage guide
+lists them all).
+
 To SEE the maps without playing, open [`docs/maps`](docs/maps/README.md): a top-down picture of
 every map, with its numbers. After changing a map, redraw them with `python3 src/map_preview.py`
 (`npm test` reminds you if you forget).

@@ -36,7 +36,10 @@ ENGINE_VARS = [
     "screen before options", "up key was held", "down key was held",
     "change direction", "change repeat timer", "mouse row", "mouse was down", "slider fraction", "last options row",
     # level clock + tally
-    "time at last frame", "tally progress", "time shown in seconds", "difficulty when loaded"]
+    "time at last frame", "tally progress", "time shown in seconds", "difficulty when loaded",
+    # developer console
+    "console word", "console letter position", "console command", "console number", "console map letter",
+    "console jump gives weapons"]
 for name in ENGINE_VARS:
     engine.var(name)
 

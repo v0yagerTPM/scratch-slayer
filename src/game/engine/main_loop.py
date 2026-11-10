@@ -8,6 +8,8 @@ facing_a_door = or_(or_(or_(eq(V("facing letter"), "D"), eq(V("facing letter"), 
                         or_(eq(V("facing letter"), "B"), eq(V("facing letter"), "X"))),
                     eq(V("facing letter"), "Z"))  # S stays secret: no hint
 frame = [
+    note("The developer console's 'kill' lasts one frame.",
+         setv("console kill", 0)),
     note("LEVEL CLOCK: add the time since the last frame to 'level time' (in\n"
          "seconds). Using Scratch's timer, not counting frames, keeps the clock\n"
          "right even when a big level makes the game slower than 30 frames a second.",
@@ -103,6 +105,9 @@ frame = [
              call("fire current weapon"))),
     note("PAUSE (P): open the options menu on top of the frozen game.",
          if_(key("p"), call("options menu", warp=False))),
+    note("DEVELOPER CONSOLE (C, only in developer mode): type commands to test\n"
+         "levels quickly. See the 'developer console' block.",
+         if_(and_(key("c"), eq(V("developer mode"), 1)), call("developer console", warp=False))),
     note("MUSIC (N): switch the music on or off, once per key press.",
          ifelse(key("n"), [if_(eq(V("N key was held"), 0), call("switch music"), setv("N key was held", 1))],
                 [setv("N key was held", 0)])),
@@ -128,17 +133,20 @@ engine.script(
          setv("health", 100)), replace("weapons owned", 3, 0), replace("weapons owned", 4, 0),
     replace("weapons owned", 5, 0), setv("current weapon", 2), setv("weapon switch timer", 0),
     *[replace("ammo counts", ammo_slot, ammo[1]) for ammo_slot, ammo in enumerate(AMMO, start=1)], call("remember ammo at level start"),
-    setv("total kills", 0), setv("total secrets found", 0), setv("total secret count", 0), setv("current level", 1), setv("map is showing", 0), setv("M key was held", 0),
+    setv("total kills", 0), setv("total secrets found", 0), setv("total secret count", 0), setv("god mode", 0), setv("current level", 1), setv("map is showing", 0), setv("M key was held", 0),
     setv("E key was held", 0), setv("shot cooldown", 0), setv("shot fired this frame", 0),
     setv("target hit id", 0), setv("gun bob angle", 0), setv("player is moving", 0),
-    hide_list("map problems"), stop_sounds(), pen_clear(),
+    hide_list("map problems"), hide_list("developer console"), stop_sounds(), pen_clear(),
     note("TITLE SCREEN: pick one of level 1's maps and load it (ready for\n"
          "later), then tell the title sprites to start their animations, and\n"
          "wait for SPACE. O opens the options menu.",
          setv("game state", TITLE)), setv("screen showing", TITLE), setv("show intro", 1), setv("card is up", 0),
     call("pick map"), call("start level", warp=False),
     bcast(SHOW_TITLE), wait_until(not_(key("space"))),
-    until(key("space"), if_(key("o"), call("options menu", warp=False))),
+    until(key("space"), if_(key("o"), call("options menu", warp=False)),
+          note("Hold D + E + V together to switch developer mode on or off.",
+               if_(and_(and_(key("d"), key("e")), key("v")), call("toggle developer mode", warp=False)))),
+    hide_list("developer console"),
     wait_until(not_(key("space"))),
     note("Leaving the title: changing 'game state' ends every title animation\n"
          "loop, and the music stops.",
@@ -169,7 +177,8 @@ engine.script(
              if_(gt(V("current level"), V("highest level reached")), setv("highest level reached", V("current level"))),
              note("PLAY: repeat one frame at a time until you reach the exit or die.\n"
                   "Everything that happens in a frame is inside this loop.",
-                  until(or_(eq(V("game state"), EXIT_REACHED), eq(V("game state"), DEAD)), *frame)),
+                  until(or_(or_(eq(V("game state"), EXIT_REACHED), eq(V("game state"), DEAD)),
+                            eq(V("game state"), LEVEL_JUMP)), *frame)),
              note("AFTER THE LEVEL:\n"
                   "Died -> show 'YOU DIED', take back this level's kills, refill health,\n"
                   f"give back the ammo you started the level with (at least {START_BULLETS}\n"
@@ -177,7 +186,14 @@ engine.script(
                   "Exit -> count up the stats (the tally), go to the next level and pick\n"
                   "one of its maps. After the last level (the number of items in\n"
                   "'level names') show the win screen.",
-                  ifelse(eq(V("game state"), DEAD),
+                  ifelse(eq(V("game state"), LEVEL_JUMP),
+                  [note("DEVELOPER CONSOLE JUMP ('level' or 'map' command): a 'level' jump\n"
+                        "gives that level's weapons (like level select). Pick a map (the one\n"
+                        "typed, if the level has it), then start with the level card.",
+                        if_(eq(V("console jump gives weapons"), 1), call("give level select weapons"))),
+                   call("pick map"), call("use console map letter"), setv("health", 100),
+                   call("remember ammo at level start"), setv("show intro", 1), call("start level", warp=False)],
+                  [ifelse(eq(V("game state"), DEAD),
                          [setv("screen showing", DIED), call("draw still frame", warp=False),
                           note("Who did it? 'killer type' was set by whatever hurt you last:\n"
                                "a monster type number, 0 for a barrel, -1 for your own rocket.",
@@ -211,7 +227,7 @@ engine.script(
                               setv("screen showing", WIN), bcastw(DRAW_HUD), stop_sounds(), bcast(SHOW_WIN), wait(1.6),
                               call("copy numbers to HUD"), bcastw(DRAW_NUMBERS), stop_script()),
                           call("remember ammo at level start"), setv("show intro", 1),
-                          call("pick map"), call("start level", warp=False)])),
+                          call("pick map"), call("start level", warp=False)])])),
          )),
     comment="MAIN GAME SCRIPT  (read the comments down the left side)\n"
             "Title screen -> then for each level: play frames until you\n"

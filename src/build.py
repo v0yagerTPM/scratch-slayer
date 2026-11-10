@@ -23,6 +23,7 @@ import game.engine.sprite
 import game.engine.main_loop
 import game.engine.weapons
 import game.engine.options_input
+import game.engine.console
 import game.engine.level_loader
 import game.engine.movement
 import game.engine.raycaster

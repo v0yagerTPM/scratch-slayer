@@ -147,7 +147,7 @@ console.error = (...parts) => { engineErrors.push(parts.join(' ')); };
 
 // ---- reading and changing the game ----
 const ALL_KEYS = ['space', 'up arrow', 'down arrow', 'left arrow', 'right arrow', 'w', 'a', 's', 'd', 'm', 'e', 'z', 'q',
-                  '1', '2', '3', '4', '5', 'o', 'p', 'n', 'r'];
+                  '1', '2', '3', '4', '5', 'o', 'p', 'n', 'r', 'c', 'v'];
 function scratchKeyName(key) {
     if (key === 'space') return ' ';
     if (key.includes('arrow')) { const direction = key.split(' ')[0]; return 'Arrow' + direction[0].toUpperCase() + direction.slice(1); }
@@ -266,6 +266,22 @@ async function runTaps(step) {
         holdKeys(step.keys || []);
         for (let count = 0; count < TAP_UP_FRAMES; count++, waited++) await runFrame(step, waited);
     }
+}
+
+// "console": press C, wait for the developer console's question, type the answer and press Enter.
+let questionIsOpen = false;
+vm.runtime.on('QUESTION', question => { questionIsOpen = question !== null; });
+async function runConsole(step) {
+    holdKeys([...(step.keys || []), 'c']);
+    for (let count = 0; count < TAP_DOWN_FRAMES; count++) await runFrame(step, count);
+    holdKeys(step.keys || []);
+    for (let waited = 0; !questionIsOpen; waited++) {
+        if (waited >= 60) { fail(`${describe(step)}: the developer console didn't open (is developer mode on?)`); return; }
+        await runFrame(step, waited);
+    }
+    vm.runtime.emit('ANSWER', step.console);
+    questionIsOpen = false;
+    for (let count = 0; count < 3; count++) await runFrame(step, count);
 }
 
 // ---- setting things up before a step's frames ----
@@ -430,6 +446,7 @@ function printDumps(step) {
         for (let frameInStep = 0; frameInStep < (step.frames || 0); frameInStep++) await runFrame(step, frameInStep);
         if (step.until) await runUntil(step);
         if (step.tap) await runTaps(step);
+        if (step.console !== undefined) await runConsole(step);
         if (step.snap) snapshot(step.snap);
         if (step.log) logStep(step);
         checkExpectations(step);

@@ -288,6 +288,8 @@ monster.script(recv(UPDATE), if_(eq(V("is clone"), 1),
          "3 farther out.",
          setv("damage taken", 0)),
     if_(and_(eq(V("target hit id"), V("monster id")), eq(V("is alive"), 1)), chg("damage taken", V("hit damage"))),
+    note("The developer console's 'kill' command: a hit nothing survives.",
+         if_(eq(V("console kill"), 1), chg("damage taken", 9999))),
     call("add up explosion damage"),
     note("Take the damage. At 0 health I die and count as a kill. If I was the\n"
          "boss, the boss health bar goes away.",
