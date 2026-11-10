@@ -674,9 +674,10 @@
   "frames": 4,
   "log": "colossus enraged",
   "expect": {
-   "level monster count": 23,
+   "level monster count": 39,
    "message name": "boss enraged colossus"
-  }
+  },
+  "note": "The Ring has 37 monsters; the colossus calls 2 chargers at half health"
  },
  {
   "frames": 20,

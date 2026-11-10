@@ -133,7 +133,7 @@ difficulties, using the game's own rounding (`scratch_round()`).
   (`build.py` checks this). Shared state goes on the Stage.
 - **Don't put boolean (hexagon) blocks in number slots.** Set a variable with an `if` instead.
 - Switching to a costume name that doesn't exist silently does nothing, so check names.
-- Scratch's clone limit is 300. The game currently uses about 105.
+- Scratch's clone limit is 300. The game currently uses up to about 130 (the episode 2 maps have up to 39 monsters).
 - Front/back layering is "last `go to front` wins". Sprites that must stay on top (options
   menu, digits) call `front()` every frame after the others.
 - **Clones run in layer order, so clones that all `go to front` in one broadcast swap places

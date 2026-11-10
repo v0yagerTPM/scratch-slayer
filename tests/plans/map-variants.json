@@ -305,11 +305,32 @@
   }
  },
  {
-  "finishLevel": true
+  "finishLevel": true,
+  "setList": {
+   "map list names": [
+    "level 1 map A",
+    "level 1 map B",
+    "level 1 map C",
+    "level 2 map A",
+    "level 2 map B",
+    "level 2 map C",
+    "level 3 map A",
+    "level 3 map B",
+    "level 3 map C",
+    "level 4 map A",
+    "level 4 map B",
+    "level 4 map C",
+    "level 5 map A",
+    "level 5 map B",
+    "level 5 map C",
+    "level 6 map A"
+   ]
+  },
+  "note": "every level has three maps now, so to test a level with ONE map, take level 6's maps B and C out of 'map list names' (the game counts a level's maps by looking their names up there)"
  },
  {
   "continueToNextLevel": true,
-  "log": "level 6 has only map A, so MAP: B can't apply there: it plays map A",
+  "log": "level 6 now has only map A, so MAP: B can't apply there: it plays map A",
   "expect": {
    "level": 6,
    "map name": "level 6 map A",

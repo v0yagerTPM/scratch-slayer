@@ -419,7 +419,8 @@ LEVELS = [
          card=dict(enemy="THE COLOSSUS", lines=["Huge, armored, and it gets angrier.", "At half health it calls for help."],
                    boss="FINAL BOSS: the exit is sealed until it falls"),
          card_monster=7, card_boss=0, maps=[
-        # LEVEL 6, MAP A: THE RING (40 x 40). Everything, and the COLOSSUS (boss). Keys: red, blue.
+        # LEVEL 6, MAP A: THE RING (40 x 40). 37 monsters of every kind and the COLOSSUS (boss).
+        # Keys: red, blue, skull. Route: about 173 squares.
         #   A ring corridor 4 squares wide runs all the way round the outside. Inside it: two north
         #   rooms, a west wing, an east wing, a south wing, and the arena in the middle.
         #   Route: start at the bottom of the ring (P at 20, 37) -> red key K (7, 20) in the west wing
@@ -430,6 +431,32 @@ LEVELS = [
         dict(name="The Ring", rows=load_map(6, "A"), goal="Destroy the Colossus, take its key", tint="#4a0a3a",
              angle=270, ceil=(98, 60), floor=(0, 50), secret_look="9",
              max_ray_steps=36, light_falloff=4.2, sprite_darkness=2, par_seconds=240),
+        # LEVEL 6, MAP B: REACTOR (40 x 40). 37 monsters and the COLOSSUS. Keys: red, blue, skull.
+        # Route: about 143 squares.
+        #   rows 30-38  the turbine hall, with four turbines (5). The player starts in the middle
+        #               (P at 19, 37). A secret wall S (35, 37) hides supplies.
+        #   row 29      three doors up: the west wing (5, 29), the RED door (34, 29) to the east wing,
+        #               and the BLUE door (19, 29) to the reactor chamber
+        #   rows 8-28   west wing (cooling pumps; the red key K at 3, 27) | the reactor chamber, with
+        #               the core (4) in the middle and the colossus T (19, 23) | east wing (coolant
+        #               tanks, 7; the blue key J at 33, 16)
+        #   rows 1-7    the north hall, reached from both wings (doors 5, 7 and 34, 7), and in its
+        #               middle the control room, only through the SKULL door (19, 8) from the
+        #               chamber. The exit X (19, 0).
+        dict(name="Reactor", rows=load_map(6, "B"), goal="Shut the reactor down", tint="#5a0a0a",
+             angle=270, ceil=(0, 55), floor=(95, 40), secret_look="9",
+             max_ray_steps=36, light_falloff=4.5, sprite_darkness=2, par_seconds=210),
+        # LEVEL 6, MAP C: THE SPIRE (30 x 30). 30 monsters and the COLOSSUS. Keys: red, blue, skull.
+        # Route: about 103 squares.
+        #   Rings inside rings. The outer path runs round the outside; the player starts at its
+        #   bottom (P at 15, 27). The red key K (1, 12) is on the west side; the RED door (15, 4) at
+        #   the top leads in to the inner path. The blue key J (23, 20) is on the inner path's east
+        #   side; the BLUE door (15, 21) at its bottom opens the centre, where the colossus T (15, 16)
+        #   waits. The SKULL door (15, 11) at the top of the centre opens a small sanctum with the
+        #   exit X (13, 10). A secret wall S (2, 2) in the north-west corner hides health.
+        dict(name="The Spire", rows=load_map(6, "C"), goal="Spiral in to the Colossus", tint="#3a0a4a",
+             angle=270, ceil=(85, 50), floor=(90, 35), secret_look="8",
+             max_ray_steps=32, light_falloff=4.4, sprite_darkness=2, par_seconds=150),
     ]),
 ]
 

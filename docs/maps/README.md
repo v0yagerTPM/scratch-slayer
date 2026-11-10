@@ -111,6 +111,18 @@ normal / hard: the difficulty changes monster health, how many supplies appear a
 
 ### Map A: The Ring
 
-40 x 40 squares · 21 monsters · par 240 s · ammo ratio 3.03 / 1.53 / 0.76, health 266 / 175 / 150 (easy / normal / hard)
+40 x 40 squares · 37 monsters · par 240 s · ammo ratio 2.57 / 1.3 / 0.88, health 266 / 175 / 75 (easy / normal / hard)
 
 ![The Core, map A](level%206%20map%20A.svg)
+
+### Map B: Reactor
+
+40 x 40 squares · 37 monsters · par 210 s · ammo ratio 2.68 / 1.34 / 0.81, health 228 / 150 / 75 (easy / normal / hard)
+
+![The Core, map B](level%206%20map%20B.svg)
+
+### Map C: The Spire
+
+30 x 30 squares · 30 monsters · par 150 s · ammo ratio 2.59 / 1.3 / 0.83, health 228 / 150 / 75 (easy / normal / hard)
+
+![The Core, map C](level%206%20map%20C.svg)
