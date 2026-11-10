@@ -117,10 +117,8 @@ waking needs sight within 'wake distance' (or a shot within 11 squares), and out
 the Stage list `monster on square` (built in `load level`, one item per square, row by row) holds the
 id standing there; every move goes through `take a step` / `square_is_free()` / `claim_my_square()`.
 
-**Developer console** (`game/engine/console.py`): only for the Scratch usernames in
-`DEVELOPER_USERNAMES` (config.py; Scratch's `username` block): for anyone else the green flag sets
-`developer mode` to 0 and D+E+V does nothing. Hold D+E+V on the title screen to toggle
-`developer mode` (otherwise not reset by the green flag); then C during a game asks for a command with
+**Developer console** (`game/engine/console.py`): hold D+E+V on the title screen to toggle
+`developer mode` (not reset by the green flag); then C during a game asks for a command with
 `ask and wait` (`level N [letter]`, `map X`, `exit`, `kill`, `god`, `guns`, `keys`, `heal`; the help
 text is `CONSOLE_HELP` in config.py). `level`/`map` set game state `LEVEL_JUMP`, which the main loop
 handles like a new level. `god mode` is checked inside `hurt_player()`. In tests, the `console` step
@@ -189,7 +187,6 @@ and steps it frame by frame. A plan is a JSON list of steps:
 | `setMonsterType` | set local variables on every clone of a monster type (`"first": n` = only the first n) |
 | `toBossKey` | move the player onto the boss's skull key |
 | `console` | `"level 3 b"`: press C, answer the developer console, press Enter (needs `developer mode` 1) |
-| `username` | `"allenwatsonBMS"`: the Scratch username the game sees as signed in (default: nobody) |
 | `mouse` | `{"x":..,"y":..,"down":true}` in stage coordinates |
 | `log` / `snap` | print state / save a snapshot (render with `tests/render.js`) |
 | `dumpMonsters` | print every monster (or one type) |

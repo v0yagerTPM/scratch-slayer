@@ -103,7 +103,6 @@ stage.lst("wall saturations", [wall[2] for wall in WALLS]); stage.lst("wall brig
 stage.lst("wall styles", [wall[4] for wall in WALLS])
 stage.lst("console words")
 stage.lst("developer console", CONSOLE_HELP)   # the developer console's list of commands
-stage.lst("developer usernames", DEVELOPER_USERNAMES)   # who may switch developer mode on
 stage.lst("rows to load"); stage.lst("monster on square"); stage.lst("current map"); stage.lst("wall distance per column", [0] * RAY_COUNT)
 for name in ["monster start x", "monster start y", "monster start type", "item start x", "item start y",
              "item start type", "barrel start x", "barrel start y",

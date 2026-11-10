@@ -310,9 +310,6 @@ function applySetup(step) {
         vm.runtime.ioDevices.mouse.postData({x: step.mouse.x + 240, y: 180 - step.mouse.y, canvasWidth: 480,
                                              canvasHeight: 360, isDown: !!step.mouse.down});
     }
-    if (step.username !== undefined) {   // who Scratch's 'username' block says is signed in
-        vm.postIOData('userData', {username: step.username});
-    }
     if (step.goToExit) {    // stand on the floor next to the exit switch X, facing it
         const rows = stageVariable('current map').value.map(String);
         const exitRow = rows.findIndex(row => row.toUpperCase().includes('X'));
