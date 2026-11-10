@@ -188,6 +188,21 @@ def test_every_map_has_its_file():
         assert os.path.exists(path), path
 
 
+def test_map_previews_are_up_to_date():
+    """docs/maps has a picture of every map (made by src/map_preview.py). If a map changed and
+    the pictures didn't, this fails, so the pictures on GitHub always match the game."""
+    import map_preview
+    previews = map_preview.all_previews()
+    stale = []
+    for file_name, contents in previews.items():
+        path = os.path.join(map_preview.PREVIEW_FOLDER, file_name)
+        if not os.path.exists(path) or open(path, encoding="utf-8").read() != contents:
+            stale.append(file_name)
+    extra = sorted(set(os.listdir(map_preview.PREVIEW_FOLDER)) - set(previews))
+    assert not stale and not extra, (f"map previews are out of date ({', '.join(stale + extra)}). "
+                                     "Run: python3 src/map_preview.py")
+
+
 if __name__ == "__main__":
     tests = [(name, test) for name, test in sorted(globals().items()) if name.startswith("test_")]
     failed = 0

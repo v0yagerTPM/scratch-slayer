@@ -57,6 +57,10 @@ whole new level, save its map as `src/maps/level 7 map A.txt` and add a level re
 The build does the rest, level cards included. `python3 src/levels.py` also prints a balance
 report: how much ammo and health each map gives compared with its monsters' health.
 
+To SEE the maps without playing, open [`docs/maps`](docs/maps/README.md): a top-down picture of
+every map, with its numbers. After changing a map, redraw them with `python3 src/map_preview.py`
+(`npm test` reminds you if you forget).
+
 To go the other way, right-click the list in Scratch, choose **import** and pick a file from
 `src/maps/`. Edit maps in a plain text editor with a monospace font. Don't add notes to the
 files: Scratch would import every line, notes included, as a row of the map.
@@ -78,5 +82,7 @@ files: Scratch would import every line, notes included, as a row of the map.
 | `tests/plans/*.json` | Test scripts: which keys to press for how many frames, and what should be true afterwards. |
 | `tests/build_map_variant_copy.py` | Builds a test-only copy of the game where levels 1 and 2 have three maps, to test map picking. |
 | `tests/render.js` | Turns test snapshots into PNG screenshots. |
+| `src/map_preview.py` | Draws every map as a top-down picture in `docs/maps/`. |
+| `docs/maps/` | The map pictures (generated: run `python3 src/map_preview.py`, don't edit). |
 | `docs/project-page.md` | The Instructions and Notes & Credits text for the Scratch project page. |
 | `dist/` | Build output (ignored by git). |
