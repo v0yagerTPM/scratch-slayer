@@ -15,12 +15,18 @@ def copy_rows_if_picked(name):
 def thing(letter_code, *blocks):
     return if_(eq(V("map letter"), letter_code), *blocks, setv("map letter", 0))
 
-def supply(letter_code, type_number):
+def supply(letter_code, type_number, before_placing=()):
     """A health pack or ammo box: it only appears if the difficulty's sharing-out count says so."""
     return if_(eq(V("map letter"), letter_code),
                chg("supply share", item(V("difficulty"), "difficulty supplies kept")),
-               if_(not_(lt(V("supply share"), 100)), chg("supply share", -100), *item_start(type_number)),
+               if_(not_(lt(V("supply share"), 100)), chg("supply share", -100), *before_placing, *item_start(type_number)),
                setv("map letter", 0))
+
+pick_mystery_item = [
+    note("MYSTERY ITEM: pick one of the 'mystery item types' at random. Rockets\n"
+         "are no use without the rocket launcher (weapon 5), so then bullets.",
+         setv("mystery item type", item(rnd(1, length("mystery item types")), "mystery item types"))),
+    if_(and_(eq(V("mystery item type"), 7), eq(item(5, "weapons owned"), 0)), setv("mystery item type", 6))]
 
 def item_start(type_number):
     return [addto("item start x", V("map column")), addto("item start y", V("map row")),
@@ -106,6 +112,7 @@ engine.script(
                        supply("A", 2),
                        thing("K", *item_start(3)), thing("J", *item_start(4)),
                        supply("I", 6), supply("U", 7),
+                       supply("?", V("mystery item type"), pick_mystery_item),
                        *[thing(item_letter, *item_start(item_type)) for item_letter, item_type in (("N", 8), ("Q", 9), ("L", 10))],
                        note("BARRELS (E) keep their letter, so they block like a wall until they\n"
                             "explode. SECRET WALLS (S) are counted for the results screen.",
@@ -141,6 +148,11 @@ engine.script(
          setv("level item count", length("item start x"))),
     setv("map width", V("first row length")), setv("map height", length("current map")),
     setv("minimap square size", floor_(div(112, V("map width")))),
+    note("ONE MONSTER PER SQUARE: 'monster on square' has an item for every square\n"
+         "of the map (row by row), holding the id of the monster standing there,\n"
+         "or 0. Monsters check it before stepping, so they can't pile up.",
+         clear_list("monster on square")),
+    repeat(mul(V("map width"), V("map height")), addto("monster on square", 0)),
     setv("player angle", item(V("map item number"), "map start angles")),
     setv("ceiling hue", item(V("map item number"), "map ceiling hues")),
     setv("ceiling saturation", item(V("map item number"), "map ceiling saturations")),

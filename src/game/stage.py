@@ -76,6 +76,8 @@ stage.lst("map sprite darkness", [game_map["sprite_darkness"] for game_map in AL
 stage.lst("map par times", [game_map["par_seconds"] for game_map in ALL_MAPS])
 # One item per LEVEL. The game counts the items in "level names" to know how many levels there are.
 stage.lst("level names", [level["name"] for level in LEVELS])
+# MYSTERY ITEMS (?): the item types a ? can turn into (1 health, 2 shells, 6 bullets, 7 rockets).
+stage.lst("mystery item types", [ITEM_TYPES[letter] for letter in MYSTERY_ITEMS])
 stage.lst("level select best weapon", [level["best_weapon"] for level in LEVELS])
 stage.lst("level intro monster", [level["card_monster"] for level in LEVELS])   # walks onto the level card
 stage.lst("level intro boss", [level["card_boss"] for level in LEVELS])         # waits in the card's background
@@ -96,7 +98,7 @@ stage.lst("monster x positions"); stage.lst("monster y positions"); stage.lst("m
 stage.lst("wall letters", [wall[0] for wall in WALLS]); stage.lst("wall hues", [wall[1] for wall in WALLS])
 stage.lst("wall saturations", [wall[2] for wall in WALLS]); stage.lst("wall brightnesses", [wall[3] for wall in WALLS])
 stage.lst("wall styles", [wall[4] for wall in WALLS])
-stage.lst("rows to load"); stage.lst("current map"); stage.lst("wall distance per column", [0] * RAY_COUNT)
+stage.lst("rows to load"); stage.lst("monster on square"); stage.lst("current map"); stage.lst("wall distance per column", [0] * RAY_COUNT)
 for name in ["monster start x", "monster start y", "monster start type", "item start x", "item start y",
              "item start type", "barrel start x", "barrel start y",
              "new shot x", "new shot y", "new shot speed x", "new shot speed y", "new shot damage", "new shot look",

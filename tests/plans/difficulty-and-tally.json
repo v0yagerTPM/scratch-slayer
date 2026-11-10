@@ -230,11 +230,11 @@
    "px": 25.5,
    "py": 7.5
   },
-  "log": "easy: a box of 8 shells gives 12 (pickup amount 150)",
+  "log": "easy: a box of 10 shells gives 15 (pickup amount 150)",
   "expect": {
    "list:ammo counts": [
     50,
-    12,
+    15,
     0
    ]
   }
@@ -358,11 +358,11 @@
    "px": 25.5,
    "py": 7.5
   },
-  "log": "hard: a box of shells gives the normal 8",
+  "log": "hard: a box of shells gives the normal 10",
   "expect": {
    "list:ammo counts": [
     50,
-    8,
+    10,
     0
    ]
   }

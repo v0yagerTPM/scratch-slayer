@@ -24,7 +24,7 @@ ENGINE_VARS = [
     "facing square x", "facing square y", "facing letter",
     # level loading + map editing
     "map row", "map column", "map letter", "row text", "new row text", "row count", "letter position",
-    "first row length", "player starts found", "exits found", "row to copy", "other map", "map name when loaded", "supply share",
+    "first row length", "player starts found", "exits found", "row to copy", "other map", "map name when loaded", "supply share", "mystery item type",
     "square to change x", "square to change y", "new letter", "queue position",
     # level intro + melt
     "show intro", "intro start time", "melt column", "column offset", "curtain top", "melt done",

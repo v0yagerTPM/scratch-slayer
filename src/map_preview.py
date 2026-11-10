@@ -49,7 +49,7 @@ THINGS = {"P": ("#40c057", "player start"),
           "H": ("#2f9e44", "health"), "A": ("#f2c200", "shells"), "I": ("#f2c200", "bullets"),
           "U": ("#f2c200", "rockets"), "N": ("#fd7e14", "shotgun"), "Q": ("#fd7e14", "chaingun"),
           "L": ("#fd7e14", "rocket launcher"), "K": ("#ff5a5a", "red key"), "J": ("#4a8bff", "blue key"),
-          "E": ("#6b7a2a", "barrel")}
+          "E": ("#6b7a2a", "barrel"), "?": ("#be4bdb", "mystery item")}
 # Special squares in the walls: letter -> name in the legend
 SPECIAL_WALLS = {"D": "door", "R": "red door", "B": "blue door", "Z": "skull door", "X": "exit switch",
                  "S": "secret wall"}

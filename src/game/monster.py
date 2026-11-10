@@ -31,25 +31,48 @@ for name in ["monster id", "is clone", "monster type", "monster name", "monster 
              "spread angle", "sideways in view", "depth in view", "screen x", "screen column index",
              # special moves
              "speed multiplier", "charge state", "charge timer", "charge cooldown", "charge direction x",
-             "charge direction y", "blink timer", "blink side", "has called for help", "helper x", "helper y"]:
+             "charge direction y", "blink timer", "blink side", "has called for help", "helper x", "helper y",
+             # moving: one monster per square, and chasing what I can see
+             "my square", "square to try", "step x", "step y", "target offset x", "target offset y", "target distance",
+             "can see player", "sight timer", "knows where player is", "last seen x", "last seen y"]:
     monster.var(name)
 
 def stat(column):
     """item (monster type) of the 'monster <column>' list — this monster's number for that stat."""
     return item(V("monster type"), f"monster {column}")
 
-def step_monster(direction):
-    """direction -1 = toward the player, +1 = away. X and Y are tried separately so it slides on walls."""
-    return [
-        setv("next monster x", add(V("monster x"), mul(div(V("offset x from player"), V("distance to player")),
-                                                       mul(mul(stat("speed"), V("speed multiplier")), direction)))),
-        if_(eq(map_letter_at(floor_(V("next monster x")), floor_(V("monster y"))), 0),
-            setv("monster x", V("next monster x"))),
-        setv("next monster y", add(V("monster y"), mul(div(V("offset y from player"), V("distance to player")),
-                                                       mul(mul(stat("speed"), V("speed multiplier")), direction)))),
-        if_(eq(map_letter_at(floor_(V("monster x")), floor_(V("next monster y"))), 0),
-            setv("monster y", V("next monster y"))),
-        setv("moved this frame", 1)]
+def square_number(x_value, y_value):
+    """Which item of 'monster on square' belongs to the map square at (x, y): squares are
+    numbered row by row, so square number = row x map width + column + 1."""
+    return add(add(mul(floor_(y_value), V("map width")), floor_(x_value)), 1)
+
+def square_is_free(x_value, y_value):
+    """Floor (letter 0), and no OTHER monster standing there ('square to try' must already
+    hold this square's number)."""
+    return and_(eq(map_letter_at(floor_(x_value), floor_(y_value)), 0),
+                or_(eq(item(V("square to try"), "monster on square"), 0),
+                    eq(item(V("square to try"), "monster on square"), V("monster id"))))
+
+def claim_my_square():
+    """After moving: if I'm on a new square, give the old one back (0) and put my id on the new one."""
+    return [setv("square to try", square_number(V("monster x"), V("monster y"))),
+            if_(not_(eq(V("square to try"), V("my square"))),
+                replace("monster on square", V("my square"), 0),
+                replace("monster on square", V("square to try"), V("monster id")),
+                setv("my square", V("square to try")))]
+
+def step_toward(target_x, target_y, direction):
+    """Walk one step toward (direction -1) or away from (+1) a point, at my speed."""
+    return [setv("target offset x", sub(V("monster x"), target_x)),
+            setv("target offset y", sub(V("monster y"), target_y)),
+            setv("target distance", sqrt_(add(mul(V("target offset x"), V("target offset x")),
+                                              mul(V("target offset y"), V("target offset y"))))),
+            if_(gt(V("target distance"), 0.05),
+                setv("step x", mul(div(V("target offset x"), V("target distance")),
+                                   mul(mul(stat("speed"), V("speed multiplier")), direction))),
+                setv("step y", mul(div(V("target offset y"), V("target distance")),
+                                   mul(mul(stat("speed"), V("speed multiplier")), direction))),
+                call("take a step"))]
 
 monster.script(flag(), hide(), setv("is clone", 0),
          comment="The original Monster sprite never appears. It only makes clones.")
@@ -91,11 +114,49 @@ monster.script(as_clone(), setv("is clone", 1),
          setv("is alive", 1), setv("attack cooldown", 0), setv("volley cooldown", 30), setv("pain flash timer", 0),
          setv("attack pose timer", 0), setv("is chasing", 0),
          setv("speed multiplier", 1), setv("charge state", 0), setv("charge cooldown", 30), setv("blink timer", 60),
-         setv("has called for help", 0),
+         setv("has called for help", 0), setv("can see player", 0), setv("knows where player is", 0),
+         note("Check my line of sight every 4 frames, not every frame (it takes a lot\n"
+              "of blocks). Monsters start at different points of the 4, so they take\n"
+              "turns.",
+              setv("sight timer", mod(V("monster id"), 4))),
+         note("Stand on my square, so no other monster walks into it.",
+              setv("my square", square_number(V("monster x"), V("monster y")))),
+         replace("monster on square", V("my square"), V("monster id")),
          note("Bigger monsters get deeper voices: the same sounds, pitched down.",
               set_sound_effect("PITCH", stat("voice pitch"))),
          costume("imp walk 1", join(V("monster name"), " walk 1")), cleareffects(), hide(),
          comment="NEW CLONE: set myself up from the monster type lists.")
+
+monster.script(Def("take a step"),
+         note("Try the x part of the step, then the y part, so I slide along walls.\n"
+              "A square counts as free only if it's floor AND no other monster is\n"
+              "standing on it ('monster on square'), so monsters queue up instead of\n"
+              "piling on top of each other. Wolfenstein 3D kept one thing per square too.",
+              setv("next monster x", add(V("monster x"), V("step x")))),
+         setv("square to try", square_number(V("next monster x"), V("monster y"))),
+         if_(square_is_free(V("next monster x"), V("monster y")), setv("monster x", V("next monster x"))),
+         setv("next monster y", add(V("monster y"), V("step y"))),
+         setv("square to try", square_number(V("monster x"), V("next monster y"))),
+         if_(square_is_free(V("monster x"), V("next monster y")), setv("monster y", V("next monster y"))),
+         *claim_my_square(), setv("moved this frame", 1),
+         comment="TAKE A STEP: move by 'step x' and 'step y' if the squares are free.")
+
+monster.script(Def("chase"),
+         note("Where do I go? If I can SEE you, toward you (and remember where I saw\n"
+              "you). If I can't, to the spot where I last saw you: usually the door\n"
+              "or corner you went round, so I follow you instead of pushing against a\n"
+              "wall. Once there, if you're gone, I wait.",
+              ifelse(eq(V("can see player"), 1),
+                     [setv("knows where player is", 1), setv("last seen x", V("player x")), setv("last seen y", V("player y")),
+                      note("Come closer until I'm at my 'keep distance'. Spitters keep about 4\n"
+                           "squares away, and back off if you rush them.",
+                           if_(gt(V("distance to player"), stat("keep distance")), *step_toward(V("player x"), V("player y"), -1))),
+                      if_(lt(V("distance to player"), sub(stat("keep distance"), 1.5)),
+                          *step_toward(V("player x"), V("player y"), 1))],
+                     [if_(eq(V("knows where player is"), 1),
+                          *step_toward(V("last seen x"), V("last seen y"), -1),
+                          if_(lt(V("target distance"), 0.3), setv("knows where player is", 0)))])),
+         comment="CHASE: follow the player by sight, like the monsters in Wolfenstein 3D\nand Doom (they had no maps of the level either).")
 
 monster.script(Def("check line of sight"),
          setv("sight is clear", 1), setv("sight x", V("monster x")), setv("sight y", V("monster y")),
@@ -148,7 +209,7 @@ monster.script(Def("charge at the player"),
          "slamming into a wall.",
          if_(gt(V("charge cooldown"), 0), chg("charge cooldown", -1))),
     if_(eq(V("charge state"), 0),
-        if_(and_(eq(V("is chasing"), 1), gt(V("distance to player"), stat("keep distance"))), *step_monster(-1)),
+        if_(eq(V("is chasing"), 1), call("chase")),
         note("Start a charge if you're 2.5 to 9 squares away and in plain sight.",
              if_(and_(and_(eq(V("is chasing"), 1), lt(V("charge cooldown"), 1)),
                       and_(gt(V("distance to player"), 2.5), lt(V("distance to player"), 9))),
@@ -165,12 +226,14 @@ monster.script(Def("charge at the player"),
                      setv("charge direction y", div(mul(-1, V("offset y from player")), V("distance to player")))))],
            [ifelse(eq(V("charge state"), 2),
                    [note("CHARGING: 0.17 squares a frame (about 7 times walking speed).\n"
-                         "Hit a wall -> stunned. Reach you -> a big hit, and the charge ends.",
+                         "Hit a wall (or another monster) -> stunned. Reach you -> a big hit,\n"
+                         "and the charge ends.",
                          setv("next monster x", add(V("monster x"), mul(V("charge direction x"), 0.17)))),
                     setv("next monster y", add(V("monster y"), mul(V("charge direction y"), 0.17))),
-                    ifelse(eq(map_letter_at(floor_(V("next monster x")), floor_(V("next monster y"))), 0),
+                    setv("square to try", square_number(V("next monster x"), V("next monster y"))),
+                    ifelse(square_is_free(V("next monster x"), V("next monster y")),
                            [setv("monster x", V("next monster x")), setv("monster y", V("next monster y")),
-                            setv("moved this frame", 1)],
+                            *claim_my_square(), setv("moved this frame", 1)],
                            [setv("charge state", 3), setv("charge timer", 45), play("slam")]),
                     setv("offset x from player", sub(V("monster x"), V("player x"))),
                     *offset_from_player("monster x", "monster y")[1:],
@@ -197,8 +260,10 @@ monster.script(Def("blink sideways"),
                                                             mul(1.6, V("blink side"))))),
              setv("next monster y", sub(V("monster y"), mul(div(V("offset x from player"), V("distance to player")),
                                                             mul(1.6, V("blink side"))))),
-             if_(eq(map_letter_at(floor_(V("next monster x")), floor_(V("next monster y"))), 0),
-                 setv("monster x", V("next monster x")), setv("monster y", V("next monster y")), play("blink")),
+             setv("square to try", square_number(V("next monster x"), V("next monster y"))),
+             if_(square_is_free(V("next monster x"), V("next monster y")),
+                 setv("monster x", V("next monster x")), setv("monster y", V("next monster y")),
+                 *claim_my_square(), play("blink")),
              setv("blink timer", rnd(60, 120)))),
     comment="BLINK SIDEWAYS: the wraith's special move ('monster special move' = blink).")
 
@@ -228,8 +293,12 @@ monster.script(recv(UPDATE), if_(eq(V("is clone"), 1),
          "boss, the boss health bar goes away.",
          if_(and_(gt(V("damage taken"), 0), eq(V("is alive"), 1)),
              chg("monster health", mul(-1, V("damage taken"))), setv("pain flash timer", 4), setv("is chasing", 1),
+             note("Hurt: now I know where you are.",
+                  setv("knows where player is", 1)), setv("last seen x", V("player x")), setv("last seen y", V("player y")),
              ifelse(lt(V("monster health"), 1),
                     [setv("is alive", 0), costume("imp dead", join(V("monster name"), " dead")), cleareffects(),
+                     note("A body doesn't block the way: give my square back.",
+                          replace("monster on square", V("my square"), 0)),
                      chg("total kills", 1), chg("level kills", 1), play("death"),
                      note("A dead BOSS drops the skull key where it fell.",
                           if_(eq(stat("is boss"), 1), setv("boss health", 0), setv("boss is awake", 0),
@@ -241,17 +310,24 @@ monster.script(recv(UPDATE), if_(eq(V("is clone"), 1),
     *offset_from_player("monster x", "monster y")[1:],
     note("THINK (only while alive and the game is being played).",
          if_(and_(eq(V("is alive"), 1), eq(V("game state"), PLAYING)),
-             note("WAKE UP if the player comes within my 'wake distance', or fires a\nshot within 11 squares.",
-                  if_(lt(V("distance to player"), stat("wake distance")), setv("is chasing", 1))),
-             if_(and_(eq(V("shot fired this frame"), 1), lt(V("distance to player"), 11)), setv("is chasing", 1)),
-             note("MOVE: come closer until I'm at my 'keep distance'. Spitters keep\n"
-                  "about 4 squares away, and back off if you rush them. Chargers use\n"
-                  "their own 'charge at the player' block instead.",
+             note("LOOK: every 4 frames, can I see you? (Only within 20 squares: farther\n"
+                  "away doesn't matter.)",
+                  chg("sight timer", -1)),
+             if_(lt(V("sight timer"), 1), setv("sight timer", 4),
+                 ifelse(lt(V("distance to player"), 20), [call("check line of sight"), setv("can see player", V("sight is clear"))],
+                        [setv("can see player", 0)])),
+             note("WAKE UP if I can SEE you within my 'wake distance', or you fire a shot\n"
+                  "within 11 squares (I hear it through walls). Not in the first 1.5\n"
+                  "seconds of a level, so you always get a moment to look around.",
+                  if_(gt(V("level time"), 1.5),
+                      if_(and_(eq(V("can see player"), 1), lt(V("distance to player"), stat("wake distance"))),
+                          setv("is chasing", 1)),
+                      if_(and_(eq(V("shot fired this frame"), 1), lt(V("distance to player"), 11)), setv("is chasing", 1)))),
+             note("MOVE: chase you ('chase' block). Chargers use their own 'charge at the\n"
+                  "player' block, which chases too.",
                   setv("moved this frame", 0)),
              ifelse(eq(stat("special move"), "charge"), [call("charge at the player")],
-                    [if_(eq(V("is chasing"), 1),
-                         if_(gt(V("distance to player"), stat("keep distance")), *step_monster(-1)),
-                         if_(lt(V("distance to player"), sub(stat("keep distance"), 1.5)), *step_monster(1)))]),
+                    [if_(eq(V("is chasing"), 1), call("chase"))]),
              note("SPECIAL MOVES for wraiths (blink) and the colossus (rage).",
                   if_(eq(stat("special move"), "blink"), call("blink sideways"))),
              if_(and_(eq(stat("special move"), "rage"),

@@ -53,6 +53,8 @@ LEGEND (one character per grid cell)
   C  charger  F  wraith       T  colossus (boss)
   H      health pack     A  box of shells   I  bullets   U  rockets
   N      shotgun         Q  chaingun        L  rocket launcher
+  ?      mystery item: a random health pack or box of ammo, picked when the map loads
+         (secret closets use these, so their loot is different each time)
   K      red key         J  blue key
   E      exploding barrel
 """
@@ -491,7 +493,7 @@ def check_level_list():
 WALL_LETTERS = set("123456789DRBXSZ")     # anything you can't simply walk through (doors included)
 MONSTER_LETTERS = set("MVGWCFT")
 BOSS_LETTERS = set("WT")                  # the warden and the colossus
-PICKUP_LETTERS = set("HAIUNQL")           # health, ammo and weapons
+PICKUP_LETTERS = set("HAIUNQL?")          # health, ammo, weapons and mystery items
 KEY_LETTERS = set("KJ")                   # red key, blue key
 FLOOR_LETTERS = set("0P") | KEY_LETTERS | PICKUP_LETTERS | MONSTER_LETTERS   # things stand on floor
 EDGE_LETTERS = set("123456789X")          # what the outside edge may be made of
@@ -500,6 +502,9 @@ EDGE_LETTERS = set("123456789X")          # what the outside edge may be made of
 
 # One step right, left, down and up, as (column change, row change).
 NEIGHBOR_STEPS = ((1, 0), (-1, 0), (0, 1), (0, -1))
+
+# No monster may start closer to the player than this, counting squares walked (doors open).
+SAFE_START_DISTANCE = 6
 
 
 def reachable_squares(map_rows, start, walkable_letters):
@@ -529,6 +534,23 @@ def reachable_squares(map_rows, start, walkable_letters):
                 painted.add(neighbor)
                 to_do.append(neighbor)
     return painted
+
+
+def walking_distances(map_rows, start, walkable_letters):
+    """Like reachable_squares(), but also counts the steps: {square: squares walked from start}."""
+    map_height, map_width = len(map_rows), len(map_rows[0])
+    steps, to_do = {start: 0}, deque([start])
+    while to_do:
+        column, row = to_do.popleft()
+        for column_step, row_step in NEIGHBOR_STEPS:
+            neighbor_column, neighbor_row = column + column_step, row + row_step
+            neighbor = (neighbor_column, neighbor_row)
+            if (0 <= neighbor_column < map_width and 0 <= neighbor_row < map_height
+                    and neighbor not in steps
+                    and map_rows[neighbor_row][neighbor_column] in walkable_letters):
+                steps[neighbor] = steps[(column, row)] + 1
+                to_do.append(neighbor)
+    return steps
 
 
 def next_to(column, row, squares):
@@ -674,6 +696,16 @@ def validate(level):
                   f"{name}: the exit can be reached without going through a {color} door ({door_letter}), so "
                   f"the {color} key ({key_letter}) isn't needed. Close the other way round, or remove the key.")
 
+    # CHECK 10: no monster starts right next to the player. Count the squares walked from the
+    # start (every door open): a monster closer than SAFE_START_DISTANCE would attack before the
+    # player has had a chance to look around.
+    steps_from_start = walking_distances(map_rows, start, FLOOR_LETTERS | set("DRBZ"))
+    for column, row, letter in every_square:
+        if letter in MONSTER_LETTERS and (column, row) in steps_from_start:
+            check(steps_from_start[(column, row)] >= SAFE_START_DISTANCE,
+                  f"{name}: the '{letter}' at {where(column, row)} is only {steps_from_start[(column, row)]} squares' walk "
+                  f"from the player start. Monsters must start at least {SAFE_START_DISTANCE} squares away.")
+
     # Everything passed: report the map's size and how many of each letter it has.
     return dict(size=f"{map_width}x{map_height}",
                 **{letter: whole_map_text.count(letter) for letter in "MVGWCFTHAIUNQLKJESZ"})
@@ -695,6 +727,7 @@ def balance(map_rows, config, difficulty_name="normal"):
                       everything (you also bring ammo from the last level). The bigger it
                       is, the easier the map.
       health          what the health packs that appear give, added up
+    A mystery item (?) counts as the average of what it can turn into.
     Rounding is done the way the game does it, so these are the game's own numbers. Barrels and
     your fists aren't counted, so the real fight is a bit easier than the numbers."""
     difficulty = next(row for row in config.DIFFICULTIES if row[0] == difficulty_name)
@@ -716,10 +749,18 @@ def balance(map_rows, config, difficulty_name="normal"):
     kept = config.supplies_kept(map_rows, supplies_percent)
     pickups_on_map = ([letter for column, row, letter in kept]                          # supplies that appear
                       + [letter for letter in whole_map_text if letter in "NQL"])       # weapons always do
-    ammo_damage = sum(damage_per_ammo[config.AMMO_PICKUPS[letter][0]]
-                      * config.scratch_round(config.AMMO_PICKUPS[letter][1] * pickup_percent / 100)
-                      for letter in pickups_on_map if letter in config.AMMO_PICKUPS)
-    health = pickups_on_map.count("H") * config.scratch_round(config.HEALTH_PACK * pickup_percent / 100)
+
+    def ammo_damage_of(letter):
+        if letter == "?":    # a mystery item: on average, the average of what it can turn into
+            return sum(ammo_damage_of(choice) for choice in config.MYSTERY_ITEMS) / len(config.MYSTERY_ITEMS)
+        if letter not in config.AMMO_PICKUPS:
+            return 0
+        ammo_name, amount = config.AMMO_PICKUPS[letter]
+        return damage_per_ammo[ammo_name] * config.scratch_round(amount * pickup_percent / 100)
+    health_pack = config.scratch_round(config.HEALTH_PACK * pickup_percent / 100)
+    ammo_damage = sum(ammo_damage_of(letter) for letter in pickups_on_map)
+    health = round(health_pack * (pickups_on_map.count("H") + pickups_on_map.count("?")
+                                  * config.MYSTERY_ITEMS.count("H") / len(config.MYSTERY_ITEMS)))
     return dict(monsters=sum(whole_map_text.count(letter) for letter in monster_letters),
                 monster_health=total_health, ammo_damage=round(ammo_damage),
                 ammo_ratio=round(ammo_damage / total_health, 2) if total_health else None,
