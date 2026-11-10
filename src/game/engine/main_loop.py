@@ -132,11 +132,11 @@ engine.script(
     setv("E key was held", 0), setv("shot cooldown", 0), setv("shot fired this frame", 0),
     setv("target hit id", 0), setv("gun bob angle", 0), setv("player is moving", 0),
     hide_list("map problems"), stop_sounds(), pen_clear(),
-    note("TITLE SCREEN: load level 1 (ready for later), then tell the title\n"
-         "sprites to start their animations, and wait for SPACE. O opens the\n"
-         "options menu.",
+    note("TITLE SCREEN: pick one of level 1's maps and load it (ready for\n"
+         "later), then tell the title sprites to start their animations, and\n"
+         "wait for SPACE. O opens the options menu.",
          setv("game state", TITLE)), setv("screen showing", TITLE), setv("show intro", 1), setv("card is up", 0),
-    call("start level", warp=False),
+    call("pick map"), call("start level", warp=False),
     bcast(SHOW_TITLE), wait_until(not_(key("space"))),
     until(key("space"), if_(key("o"), call("options menu", warp=False))),
     wait_until(not_(key("space"))),
@@ -147,10 +147,14 @@ engine.script(
          "with the weapons and ammo a player would have found by then.",
          if_(gt(V("start level choice"), 1),
              setv("current level", V("start level choice")), call("give level select weapons"))),
-    note("Load the level again if you picked a later level, or changed the\n"
+    note("PICK THE MAP again if you picked a later level, or a MAP setting other\n"
+         "than RANDOM (the map loaded behind the title was picked before you\n"
+         "could change it).",
+         if_(or_(gt(V("start level choice"), 1), gt(V("map choice"), 0)), call("pick map"))),
+    note("Load the level again if that changed the map, or if you changed the\n"
          "DIFFICULTY after level 1 was loaded behind the title screen (its\n"
          "monsters need the new health).",
-         if_(or_(gt(V("start level choice"), 1), not_(eq(V("difficulty"), V("difficulty when loaded")))),
+         if_(or_(not_(eq(V("map name"), V("map name when loaded"))), not_(eq(V("difficulty"), V("difficulty when loaded")))),
              call("start level", warp=False))),
     note("LEVEL LOOP: each pass of 'forever' plays one level (or one retry).",
          forever(
@@ -169,9 +173,10 @@ engine.script(
              note("AFTER THE LEVEL:\n"
                   "Died -> show 'YOU DIED', take back this level's kills, refill health,\n"
                   f"give back the ammo you started the level with (at least {START_BULLETS}\n"
-                  "bullets), and reload the SAME level.\n"
-                  "Exit -> count up the stats (the tally), go to the next level. After the last level\n"
-                  "(the number of items in 'level start angles') show the win screen.",
+                  "bullets), and reload the SAME level: the same map, or (R) another one.\n"
+                  "Exit -> count up the stats (the tally), go to the next level and pick\n"
+                  "one of its maps. After the last level (the number of items in\n"
+                  "'level names') show the win screen.",
                   ifelse(eq(V("game state"), DEAD),
                          [setv("screen showing", DIED), call("draw still frame", warp=False),
                           note("Who did it? 'killer type' was set by whatever hurt you last:\n"
@@ -179,10 +184,18 @@ engine.script(
                                ifelse(eq(V("killer type"), 0), [setv("killer name", "barrel")],
                                       [ifelse(eq(V("killer type"), -1), [setv("killer name", "rocket")],
                                               [setv("killer name", item(V("killer type"), "monster names"))])])),
-                          stop_sounds(), bcast(SHOW_DEATH), *wait_for_space(), stop_sounds(),
+                          stop_sounds(), bcast(SHOW_DEATH), wait(0.5),
+                          wait_until(not_(or_(key("space"), key("r")))),
+                          note("SPACE = try the same map again: it just melts back in.\n"
+                               "R = a different map, with its own level card. R only works when\n"
+                               "the level has more than one map ('level map count').",
+                               wait_until(or_(key("space"), and_(key("r"), gt(V("level map count"), 1))))),
+                          ifelse(key("space"), [setv("show intro", 0)],
+                                 [call("pick a different map"), setv("show intro", 1)]),
+                          wait_until(not_(or_(key("space"), key("r")))), stop_sounds(),
                           chg("total kills", mul(-1, V("level kills"))), setv("health", 100),
                           call("restore ammo at level start"),
-                          setv("show intro", 0), call("start level", warp=False)],
+                          call("start level", warp=False)],
                          [note("THE TALLY: work out the level's stats, show the screen, count\n"
                                "them up, then wait for SPACE.",
                                call("work out level stats")),
@@ -191,14 +204,14 @@ engine.script(
                           chg("total secrets found", V("level secrets found")),
                           chg("total secret count", V("level secret count")),
                           chg("current level", 1),
-                          if_(gt(V("current level"), length("level start angles")),
+                          if_(gt(V("current level"), length("level names")),
                               note("VICTORY: clear away the level, then let the victory sprites take\n"
                                    "over. The stats appear once their panel has faded in.",
                                    setv("screen showing", INTRO)), bcastw(DRAW_NUMBERS), bcastw(CLEAR), pen_clear(),
                               setv("screen showing", WIN), bcastw(DRAW_HUD), stop_sounds(), bcast(SHOW_WIN), wait(1.6),
                               call("copy numbers to HUD"), bcastw(DRAW_NUMBERS), stop_script()),
                           call("remember ammo at level start"), setv("show intro", 1),
-                          call("start level", warp=False)])),
+                          call("pick map"), call("start level", warp=False)])),
          )),
     comment="MAIN GAME SCRIPT  (read the comments down the left side)\n"
             "Title screen -> then for each level: play frames until you\n"
@@ -291,10 +304,12 @@ engine.script(Def("draw melt curtain"),
          comment="DRAW MELT CURTAIN: one frame of the melt. Sets 'melt done' to 1\nwhen every column has slid off the bottom.")
 
 engine.script(Def("start level", warp=False),
-         bcastw(CLEAR), call("load level"), setv("difficulty when loaded", V("difficulty")), bcastw(SPAWN),
+         bcastw(CLEAR), call("load level"), setv("difficulty when loaded", V("difficulty")),
+         setv("map name when loaded", V("map name")), bcastw(SPAWN),
          call("update camera"),
          comment="START LEVEL: delete the old monster and item clones, read the\n"
-                 "map with 'load level', make new clones, then aim the camera.")
+                 "map with 'load level' (the map 'pick map' chose), make new clones,\n"
+                 "then aim the camera.")
 
 engine.script(Def("draw still frame", warp=False),
          setv("target hit id", 0), setv("shot fired this frame", 0),
@@ -335,7 +350,7 @@ engine.script(Def("work out level stats"),
     percent_of("level items collected", "level item count", "items percent"),
     percent_of("level secrets found", "level secret count", "secrets percent"),
     setv("level seconds", round_(V("level time"))),
-    setv("par seconds", item(V("current level"), "level par times")),
+    setv("par seconds", item(V("map item number"), "map par times")),
     note("PAR TIME is shown straight away. A clock shows minutes:seconds:\n"
          "minutes = seconds / 60 rounded DOWN, and the seconds left over are\n"
          "seconds MOD 60 (the remainder). 135 seconds = 2:15.",

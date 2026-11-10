@@ -90,10 +90,10 @@ ray = [
          setv("wall type number", itemnum(V("letter hit"), "wall letters"))),
     setv("wall style", item(V("wall type number"), "wall styles")),
     note("SECRET WALLS (style 4) borrow the colors of the wall digit named in\n"
-         "'level secret wall looks' for this level. Their style stays 4, so\n"
+         "'map secret wall looks' for this map. Their style stays 4, so\n"
          "they get no seams: that's the clue for sharp-eyed players.",
          if_(eq(V("wall style"), 4),
-             setv("wall type number", itemnum(item(V("current level"), "level secret wall looks"), "wall letters")))),
+             setv("wall type number", itemnum(item(V("map item number"), "map secret wall looks"), "wall letters")))),
     pen_color("#ff0000"),
     pen_param("color", item(V("wall type number"), "wall hues")),
     pen_param("saturation", item(V("wall type number"), "wall saturations")),
@@ -149,7 +149,7 @@ minimap = [
                       setv("wall type number", itemnum(V("minimap letter"), "wall letters")),
                       if_(eq(V("minimap letter"), "S"),
                           setv("wall type number",
-                               itemnum(item(V("current level"), "level secret wall looks"), "wall letters"))),
+                               itemnum(item(V("map item number"), "map secret wall looks"), "wall letters"))),
                       pen_color("#ff0000"), pen_param("color", item(V("wall type number"), "wall hues")),
                       pen_param("saturation", item(V("wall type number"), "wall saturations")),
                       pen_param("brightness", 78),

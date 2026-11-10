@@ -23,7 +23,7 @@
   "frames": 1,
   "mouse": {
    "x": 120,
-   "y": 80,
+   "y": 92,
    "down": true
   }
  },
@@ -38,7 +38,7 @@
   "frames": 1,
   "mouse": {
    "x": 0,
-   "y": 80,
+   "y": 92,
    "down": true
   }
  },
@@ -64,7 +64,7 @@
   "frames": 1,
   "mouse": {
    "x": 40,
-   "y": 50,
+   "y": 67,
    "down": true
   }
  },
@@ -79,7 +79,7 @@
   "frames": 1,
   "mouse": {
    "x": 40,
-   "y": 50,
+   "y": 67,
    "down": false
   }
  },
@@ -90,7 +90,7 @@
   "frames": 1,
   "mouse": {
    "x": 80,
-   "y": -70,
+   "y": -58,
    "down": true
   }
  },
@@ -101,7 +101,7 @@
   "frames": 1,
   "mouse": {
    "x": 80,
-   "y": -70,
+   "y": -58,
    "down": false
   }
  },
@@ -112,7 +112,7 @@
   "frames": 1,
   "mouse": {
    "x": 80,
-   "y": -70,
+   "y": -58,
    "down": true
   }
  },
@@ -123,7 +123,7 @@
   "frames": 1,
   "mouse": {
    "x": 80,
-   "y": -70,
+   "y": -58,
    "down": false
   }
  },
@@ -134,7 +134,7 @@
   "frames": 1,
   "mouse": {
    "x": 80,
-   "y": -70,
+   "y": -58,
    "down": true
   }
  },

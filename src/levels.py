@@ -2,19 +2,21 @@
 
 WHERE THE MAPS ARE
 ==================
-Each level's map is a plain text file in the src/maps folder:
-    src/maps/level 1 map.txt   ...   src/maps/level 6 map.txt
+Each level has one or more MAPS to choose from (map A, map B, map C ...). When a level starts,
+the game picks one of them at random, so the game plays differently each time. Each map is a
+plain text file in the src/maps folder:
+    src/maps/level 1 map A.txt   src/maps/level 1 map B.txt   ...   src/maps/level 6 map A.txt
 One line of the file = one ROW of the map, top row first. Each letter is one SQUARE.
 
-These are EXACTLY the files Scratch makes when you right-click the list "level 1 map" on the
+These are EXACTLY the files Scratch makes when you right-click the list "level 1 map A" on the
 stage and choose "export", and the files it reads with "import". (Scratch names an exported
 list after the list, which is where the file names come from.) So a map can travel both ways:
   - from Scratch into this project: export the list, put the file in src/maps (replacing the
     old one, same name), then run npm test. The build checks the map and puts it in the game.
   - from this project into Scratch: import the file into the list in the Scratch editor.
 That's why the files hold nothing but map rows: no comments or notes, because Scratch would
-import every line, notes included, as a row of the map. The notes about each level's layout
-are in this file instead, next to the level's settings further down.
+import every line, notes included, as a row of the map. The notes about each map's layout
+are in this file instead, next to the map's settings further down.
 
 Edit a map in any plain text editor (Notepad, TextEdit in plain text mode, VS Code). Use a
 monospace font such as Consolas or Courier so the columns line up; most code editors show the
@@ -23,8 +25,8 @@ column number at the bottom, which helps find a square.
 HOW A MAP IS USED
 =================
 load_map() reads a file into a Python list of strings, one string per row. game/stage.py copies
-that list straight into the Scratch list "level N map" (one string = one list item), and the
-Engine's 'load level' block reads it back letter by letter. So the file IS the level.
+that list straight into the Scratch list "level N map A" (one string = one list item), and the
+Engine's 'load level' block reads it back letter by letter. So the file IS the map.
 
 COORDINATES: a square is (column, row), both counting from 0.
   column = how far along the row (0 = the first letter of the line)
@@ -81,13 +83,21 @@ def check(condition, message):
 # The maps folder, found from where this file is, so it works whichever folder you run from.
 MAPS_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "maps")
 
-
-def map_file_path(level_number):
-    """src/maps/level 1 map.txt, src/maps/level 2 map.txt ..."""
-    return os.path.join(MAPS_FOLDER, f"level {level_number} map.txt")
+# A level's maps are lettered in order: its first map is map A, the second map B, and so on.
+MAP_LETTERS = "ABCDEFGHI"
 
 
-def load_map(level_number):
+def map_list_name(level_number, map_letter):
+    """The name of a map's Scratch list (and of its file): "level 1 map A"."""
+    return f"level {level_number} map {map_letter}"
+
+
+def map_file_path(level_number, map_letter):
+    """src/maps/level 1 map A.txt, src/maps/level 1 map B.txt ..."""
+    return os.path.join(MAPS_FOLDER, map_list_name(level_number, map_letter) + ".txt")
+
+
+def load_map(level_number, map_letter):
     """Read one map file and return its rows: a list of strings, top row first.
 
     Line endings: Windows ends each line with two characters (carriage return + new line),
@@ -96,158 +106,203 @@ def load_map(level_number):
     lines at the very end are ignored. Everything else is kept exactly as it is, so a stray
     space or tab becomes an 'unknown letter' that validate() points out.
     """
-    path = map_file_path(level_number)
-    check(os.path.exists(path), f"level {level_number}: the map file is missing. Expected {path}")
+    name = map_list_name(level_number, map_letter)
+    path = map_file_path(level_number, map_letter)
+    check(os.path.exists(path), f"{name}: the map file is missing. Expected {path}")
     with open(path, encoding="utf-8-sig") as map_file:   # utf-8-sig also skips the invisible
         map_rows = map_file.read().splitlines()          # marker some Windows editors add
     while map_rows and map_rows[-1].strip() == "":       # drop blank lines at the end
         map_rows.pop()
-    check(map_rows, f"level {level_number}: the map file {path} is empty.")
+    check(map_rows, f"{name}: the map file {path} is empty.")
     return map_rows
 
 
 # =================================================================================================
-# THE LEVEL LIST: everything about each level, in one record per level. The build reads this:
-# game/stage.py turns the settings into Scratch lists, and pictures/level_cards.py draws the cards.
+# THE LEVEL LIST: everything about each level and its maps, in one record per level. The build
+# reads this: game/stage.py turns the settings into Scratch lists, and pictures/level_cards.py
+# draws the cards.
 # =================================================================================================
-# For each level:
+# For each LEVEL (the same whichever map you get):
 #   name         the level's name. The level card shows it in capitals.
-#   rows         the map, read from its file (becomes the Scratch list "level N map")
 #   episode      1 or 2. Each episode has its own music. Finishing the last level of episode 1
 #                shows "EPISODE 1 COMPLETE" instead of "LEVEL COMPLETE".
-#   angle        the direction the player faces at the start, in degrees:
-#                0 = right (along the row), 90 = down, 180 = left, 270 = up (toward row 0)
-#                -> the Scratch list "level start angles"
-#   ceil, floor  (hue, saturation) on Scratch's pen color scale (0-100):
-#                0 red, 8 orange, 15 yellow, 33 green, 50 cyan, 63 blue, 75 purple, 90 pink.
-#                Saturation 0 = grey, 100 = full color.
-#                -> "level ceiling hues" / "level ceiling saturations" / "level floor ..."
-#   secret_look  which wall digit the secret walls (S) look like on this level, so they blend in
-#                -> "level secret wall looks"
-#   max_ray_steps    how many squares a ray may travel before giving up. Big maps need a limit
-#                    so the game stays fast; walls that far away are black anyway.
-#                    -> "level max ray steps"
-#   light_falloff    how quickly walls fade to black with distance (bigger = darker level)
-#                    -> "level light falloffs"
-#   sprite_darkness  how much monsters and items darken with distance (0 = not at all)
-#                    -> "level sprite darkness"
-#   best_weapon      starting at this level from the options menu's level select gives you
-#                    weapons 1 to this one, with some ammo -> "level select best weapon"
-#   par_seconds      the par time on the tally screen: about 3 times as long as simply walking
-#                    the shortest route to the exit (keys and boss included), which leaves time
-#                    for fighting, rounded to the nearest 15 seconds -> "level par times"
-#   card         the level intro card: tint (background glow color), goal, enemy (the big
+#   best_weapon  starting at this level from the options menu's level select gives you
+#                weapons 1 to this one, with some ammo -> "level select best weapon"
+#   card         the level intro card's words about the level's new enemy: enemy (the big
 #                word), lines (two lines about the enemy), boss (a warning line, or None)
 #   card_monster the monster type (1-7, see "monster names") that walks onto the card
 #                -> "level intro monster"
 #   card_boss    a boss type shown in the card's background, or 0 for none -> "level intro boss"
+#   maps         the level's maps: map A first, then B, C ... One is picked when the level starts.
 #
-# ADDING A LEVEL here (in the Python source): save its map as src/maps/level 7 map.txt, add a
-# record at the end of this list, and run npm test. The build makes everything else from these
-# records: the Scratch lists, the level loader's blocks, the level card and its heading.
-# (To add a level inside Scratch instead, see "HOW TO ADD A 7TH LEVEL" in the Stage guide.)
+# For each MAP of a level:
+#   name         the map's own name ("Furnace Hall"). A level with more than one map shows it on
+#                the level card, under the level's name, and the heading says LEVEL 1-B.
+#   rows         the map, read from its file (becomes the Scratch list "level N map A")
+#   goal         the card's goal line ("Find the red key, then the exit"). Each map has its own,
+#                because the maps of a level can use different keys.
+#   tint         the card's background glow color
+#   angle        the direction the player faces at the start, in degrees:
+#                0 = right (along the row), 90 = down, 180 = left, 270 = up (toward row 0)
+#                -> the Scratch list "map start angles"
+#   ceil, floor  (hue, saturation) on Scratch's pen color scale (0-100):
+#                0 red, 8 orange, 15 yellow, 33 green, 50 cyan, 63 blue, 75 purple, 90 pink.
+#                Saturation 0 = grey, 100 = full color.
+#                -> "map ceiling hues" / "map ceiling saturations" / "map floor ..."
+#   secret_look  which wall digit the secret walls (S) look like on this map, so they blend in
+#                -> "map secret wall looks"
+#   max_ray_steps    how many squares a ray may travel before giving up. Big maps need a limit
+#                    so the game stays fast; walls that far away are black anyway.
+#                    -> "map max ray steps"
+#   light_falloff    how quickly walls fade to black with distance (bigger = darker map)
+#                    -> "map light falloffs"
+#   sprite_darkness  how much monsters and items darken with distance (0 = not at all)
+#                    -> "map sprite darkness"
+#   par_seconds      the par time on the tally screen: about 3 times as long as simply walking
+#                    the shortest route to the exit (keys and boss included), which leaves time
+#                    for fighting, rounded to the nearest 15 seconds -> "map par times"
+# Colors, darkness and draw distance belong to the map, so one map of a level can be a night
+# version of the place, or a flooded one.
 #
-# Above each level: a plan of its map, so you can find your way around the text file.
+# ADDING A MAP to a level (in the Python source): save it as src/maps/level 2 map B.txt (the
+# next letter), add a record for it at the end of that level's maps, and run npm test.
+# ADDING A LEVEL: save its map as src/maps/level 7 map A.txt, add a record at the end of this
+# list, and run npm test. Either way the build makes everything else from these records: the
+# Scratch lists, the level loader's blocks, the level cards and their headings.
+# (To add a map or a level inside Scratch instead, see the Stage guide.)
+#
+# Above each map: a plan of it, so you can find your way around the text file.
 # Positions are (column, row), counting from 0 like the rest of this file.
 LEVELS = [
-    # LEVEL 1: THE OUTPOST (20 x 20). Monsters: imps.
-    #   rows 1-5    the start room (P at 1, 2, the shotgun N just below), then a door (D at 5, 2)
-    #               into the north hall
-    #   row 6       a wall of 2s with one door (column 12)
-    #   rows 7-11   the middle hall: the imp pack, two barrels (E), crates (3 and 4)
-    #   row 12      a wall with one door (column 15)
-    #   rows 13-18  the bottom room. The exit X is in the LEFT wall (0, 16). Bottom right: a
-    #               secret wall S (15, 18) hides a closet with shells (A) and health (H).
-    dict(name="The Outpost", rows=load_map(1), episode=1,
-         angle=0, ceil=(0, 10), floor=(7, 45), secret_look="2",
-         max_ray_steps=64, light_falloff=4.5, sprite_darkness=0, best_weapon=2, par_seconds=60,
-         card=dict(tint="#5a2a10", goal="Find the exit switch", enemy="IMP",
-                   lines=["Fast and vicious up close.", "Keep your distance and blast it."], boss=None),
-         card_monster=1, card_boss=0),
+    dict(name="The Outpost", episode=1, best_weapon=2,
+         card=dict(enemy="IMP", lines=["Fast and vicious up close.", "Keep your distance and blast it."], boss=None),
+         card_monster=1, card_boss=0, maps=[
+        # LEVEL 1, MAP A: THREE HALLS (20 x 20). Monsters: imps.
+        #   rows 1-5    the start room (P at 1, 2, the shotgun N just below), then a door (D at 5, 2)
+        #               into the north hall
+        #   row 6       a wall of 2s with one door (column 12)
+        #   rows 7-11   the middle hall: the imp pack, two barrels (E), crates (3 and 4)
+        #   row 12      a wall with one door (column 15)
+        #   rows 13-18  the bottom room. The exit X is in the LEFT wall (0, 16). Bottom right: a
+        #               secret wall S (15, 18) hides a closet with shells (A) and health (H).
+        dict(name="Three Halls", rows=load_map(1, "A"), goal="Find the exit switch", tint="#5a2a10",
+             angle=0, ceil=(0, 10), floor=(7, 45), secret_look="2",
+             max_ray_steps=64, light_falloff=4.5, sprite_darkness=0, par_seconds=60),
+    ]),
 
-    # LEVEL 2: THE PROCESSING PLANT (24 x 24). Monsters: spitters. One key: red.
-    #   rows 1-7    north rooms, split by a wall of 7s at column 15. The RED door R (15, 4) leads
-    #               to the north-east room, which has the exit X in its top wall (19, 0).
-    #               Top left: a secret wall S (3, 1) hides a closet.
-    #   row 8       a wall with one door (column 12)
-    #   rows 9-16   a west room with the red key K (2, 10) and its door at (8, 12), and a big
-    #               east hall with the chaingun Q (12, 10)
-    #   row 17      a wall with one door (column 16)
-    #   rows 18-22  the bottom: the player starts in the west room (P at 2, 20)
-    #   Route: bottom -> middle -> red key -> north -> red door -> exit.
-    dict(name="The Processing Plant", rows=load_map(2), episode=1,
-         angle=0, ceil=(50, 30), floor=(35, 30), secret_look="7",
-         max_ray_steps=64, light_falloff=4.5, sprite_darkness=0, best_weapon=3, par_seconds=90,
-         card=dict(tint="#1f5a14", goal="Find the red key, then the exit", enemy="SPITTER",
-                   lines=["Spits acid from far away. Strafe", "with A and D to dodge it."], boss=None),
-         card_monster=2, card_boss=0),
+    dict(name="The Processing Plant", episode=1, best_weapon=3,
+         card=dict(enemy="SPITTER", lines=["Spits acid from far away. Strafe", "with A and D to dodge it."], boss=None),
+         card_monster=2, card_boss=0, maps=[
+        # LEVEL 2, MAP A: THE RED DOOR (24 x 24). Monsters: spitters. One key: red.
+        #   rows 1-7    north rooms, split by a wall of 7s at column 15. The RED door R (15, 4) leads
+        #               to the north-east room, which has the exit X in its top wall (19, 0).
+        #               Top left: a secret wall S (3, 1) hides a closet.
+        #   row 8       a wall with one door (column 12)
+        #   rows 9-16   a west room with the red key K (2, 10) and its door at (8, 12), and a big
+        #               east hall with the chaingun Q (12, 10)
+        #   row 17      a wall with one door (column 16)
+        #   rows 18-22  the bottom: the player starts in the west room (P at 2, 20)
+        #   Route: bottom -> middle -> red key -> north -> red door -> exit.
+        dict(name="The Red Door", rows=load_map(2, "A"), goal="Find the red key, then the exit", tint="#1f5a14",
+             angle=0, ceil=(50, 30), floor=(35, 30), secret_look="7",
+             max_ray_steps=64, light_falloff=4.5, sprite_darkness=0, par_seconds=90),
+    ]),
 
-    # LEVEL 3: THE FORTRESS (28 x 28). Monsters: golems, and the WARDEN (boss). Keys: red, blue.
-    #   rows 1-11   three wings side by side, split by walls at columns 9 and 18:
-    #               west wing (red key K) | inner keep (blue key J) | east wing (the warden W)
-    #   row 12      a wall with three doors: plain D into the west wing, RED R into the keep,
-    #               BLUE B into the east wing
-    #   rows 13-20  the courtyard, with pillars (4) and a central block (9)
-    #   row 21      a wall with three doors into the side rooms
-    #   rows 22-26  the side rooms; the player starts in the middle one (P at 13, 25)
-    #   The exit X (27, 3) is in a closet sealed by a SKULL DOOR Z (25, 3): only the warden's
-    #   skull key opens it. A secret wall S (15, 1) in the keep hides shells and health.
-    dict(name="The Fortress", rows=load_map(3), episode=1,
-         angle=270, ceil=(95, 45), floor=(2, 40), secret_look="9",
-         max_ray_steps=64, light_falloff=4.5, sprite_darkness=0, best_weapon=4, par_seconds=135,
-         card=dict(tint="#5a0f2a", goal="Two keys, then slay the Warden", enemy="GOLEM",
-                   lines=["Slow, tough, and hits like a truck.", "Lure it next to a barrel."],
+    dict(name="The Fortress", episode=1, best_weapon=4,
+         card=dict(enemy="GOLEM", lines=["Slow, tough, and hits like a truck.", "Lure it next to a barrel."],
                    boss="BOSS: THE WARDEN carries the SKULL KEY to the exit"),
-         card_monster=3, card_boss=4),
+         card_monster=3, card_boss=4, maps=[
+        # LEVEL 3, MAP A: THREE WINGS (28 x 28). Golems and the WARDEN (boss). Keys: red, blue.
+        #   rows 1-11   three wings side by side, split by walls at columns 9 and 18:
+        #               west wing (red key K) | inner keep (blue key J) | east wing (the warden W)
+        #   row 12      a wall with three doors: plain D into the west wing, RED R into the keep,
+        #               BLUE B into the east wing
+        #   rows 13-20  the courtyard, with pillars (4) and a central block (9)
+        #   row 21      a wall with three doors into the side rooms
+        #   rows 22-26  the side rooms; the player starts in the middle one (P at 13, 25)
+        #   The exit X (27, 3) is in a closet sealed by a SKULL DOOR Z (25, 3): only the warden's
+        #   skull key opens it. A secret wall S (15, 1) in the keep hides shells and health.
+        dict(name="Three Wings", rows=load_map(3, "A"), goal="Two keys, then slay the Warden", tint="#5a0f2a",
+             angle=270, ceil=(95, 45), floor=(2, 40), secret_look="9",
+             max_ray_steps=64, light_falloff=4.5, sprite_darkness=0, par_seconds=135),
+    ]),
 
-    # LEVEL 4: THE FOUNDRY (36 x 36). Chargers, plus imps, spitters and golems. One key: red.
-    #   rows 1-7    three north rooms (walls at columns 11 and 24); the red key K (2, 2) and the
-    #               rocket launcher L (17, 2) are up here
-    #   row 8       a wall with two plain doors and the RED door (32, 8)
-    #   rows 9-26   west corridor | the furnace hall with 2 x 2 pillars | east corridor
-    #               (walls at columns 6 and 29). The middle pillar is hollow: a secret wall S
-    #               (17, 16) hides rockets inside it.
-    #   row 27      a wall with two doors
-    #   rows 28-34  the loading bay, where the player starts (P at 18, 33)
-    #   The exit X (30, 0) is in the top wall of the north-east room, behind the red door.
-    dict(name="The Foundry", rows=load_map(4), episode=2,
-         angle=270, ceil=(5, 40), floor=(8, 35), secret_look="4",
-         max_ray_steps=34, light_falloff=4.5, sprite_darkness=2, best_weapon=4, par_seconds=165,
-         card=dict(tint="#6a2a08", goal="Find the red key, then the exit", enemy="CHARGER",
-                   lines=["Lowers its head, then charges.", "Sidestep it and it slams into a wall."], boss=None),
-         card_monster=5, card_boss=0),
+    dict(name="The Foundry", episode=2, best_weapon=4,
+         card=dict(enemy="CHARGER", lines=["Lowers its head, then charges.", "Sidestep it and it slams into a wall."],
+                   boss=None),
+         card_monster=5, card_boss=0, maps=[
+        # LEVEL 4, MAP A: FURNACE HALL (36 x 36). Chargers, plus imps, spitters and golems. Key: red.
+        #   rows 1-7    three north rooms (walls at columns 11 and 24); the red key K (2, 2) and the
+        #               rocket launcher L (17, 2) are up here
+        #   row 8       a wall with two plain doors and the RED door (32, 8)
+        #   rows 9-26   west corridor | the furnace hall with 2 x 2 pillars | east corridor
+        #               (walls at columns 6 and 29). The middle pillar is hollow: a secret wall S
+        #               (17, 16) hides rockets inside it.
+        #   row 27      a wall with two doors
+        #   rows 28-34  the loading bay, where the player starts (P at 18, 33)
+        #   The exit X (30, 0) is in the top wall of the north-east room, behind the red door.
+        dict(name="Furnace Hall", rows=load_map(4, "A"), goal="Find the red key, then the exit", tint="#6a2a08",
+             angle=270, ceil=(5, 40), floor=(8, 35), secret_look="4",
+             max_ray_steps=34, light_falloff=4.5, sprite_darkness=2, par_seconds=165),
+    ]),
 
-    # LEVEL 5: THE SUNKEN VAULTS (38 x 38). Wraiths, plus the others. Keys: red, blue. Dark!
-    #   Solid rock (7) with caves dug out of it, joined by tunnels one square wide. Cave corners
-    #   are rounded off with wall 3.
-    #   The player starts in the south-west cave (P at 5, 33). The red key K (3, 3) is in the
-    #   north-west cave; the RED door (21, 9) blocks the tunnel to the north cave with the blue
-    #   key J (25, 3); the BLUE door (28, 14) blocks the tunnel from the middle vault to the east
-    #   cave, which has the exit X (36, 5) in its east wall.
-    #   A secret wall S (32, 23) above the south-east cave hides a health pack.
-    dict(name="The Sunken Vaults", rows=load_map(5), episode=2,
-         angle=270, ceil=(55, 20), floor=(50, 25), secret_look="7",
-         max_ray_steps=26, light_falloff=6.5, sprite_darkness=5, best_weapon=5, par_seconds=180,
-         card=dict(tint="#0f3a4a", goal="Two keys, deep in the dark", enemy="WRAITH",
-                   lines=["Almost invisible from far away,", "and it blinks sideways. Stay sharp."], boss=None),
-         card_monster=6, card_boss=0),
+    dict(name="The Sunken Vaults", episode=2, best_weapon=5,
+         card=dict(enemy="WRAITH", lines=["Almost invisible from far away,", "and it blinks sideways. Stay sharp."],
+                   boss=None),
+         card_monster=6, card_boss=0, maps=[
+        # LEVEL 5, MAP A: FLOODED CAVES (38 x 38). Wraiths, plus the others. Keys: red, blue. Dark!
+        #   Solid rock (7) with caves dug out of it, joined by tunnels one square wide. Cave corners
+        #   are rounded off with wall 3.
+        #   The player starts in the south-west cave (P at 5, 33). The red key K (3, 3) is in the
+        #   north-west cave; the RED door (21, 9) blocks the tunnel to the north cave with the blue
+        #   key J (25, 3); the BLUE door (28, 14) blocks the tunnel from the middle vault to the east
+        #   cave, which has the exit X (36, 5) in its east wall.
+        #   A secret wall S (32, 23) above the south-east cave hides a health pack.
+        dict(name="Flooded Caves", rows=load_map(5, "A"), goal="Two keys, deep in the dark", tint="#0f3a4a",
+             angle=270, ceil=(55, 20), floor=(50, 25), secret_look="7",
+             max_ray_steps=26, light_falloff=6.5, sprite_darkness=5, par_seconds=180),
+    ]),
 
-    # LEVEL 6: THE CORE (40 x 40). Everything, and the COLOSSUS (boss). Keys: red, blue.
-    #   A ring corridor 4 squares wide runs all the way round the outside. Inside it: two north
-    #   rooms, a west wing, an east wing, a south wing, and the arena in the middle.
-    #   Route: start at the bottom of the ring (P at 20, 37) -> red key K (7, 20) in the west wing
-    #   -> RED door (34, 20) into the east wing -> blue key J (32, 26) -> BLUE door (20, 28) from
-    #   the south wing into the arena -> beat the colossus T (20, 18) for the skull key ->
-    #   SKULL door Z (20, 12) in the arena's north wall -> the exit X (20, 10).
-    #   A secret wall S (5, 31) off the ring hides a health pack.
-    dict(name="The Core", rows=load_map(6), episode=2,
-         angle=270, ceil=(98, 60), floor=(0, 50), secret_look="9",
-         max_ray_steps=36, light_falloff=4.2, sprite_darkness=2, best_weapon=5, par_seconds=240,
-         card=dict(tint="#4a0a3a", goal="Destroy the Colossus, take its key", enemy="THE COLOSSUS",
-                   lines=["Huge, armored, and it gets angrier.", "At half health it calls for help."],
+    dict(name="The Core", episode=2, best_weapon=5,
+         card=dict(enemy="THE COLOSSUS", lines=["Huge, armored, and it gets angrier.", "At half health it calls for help."],
                    boss="FINAL BOSS: the exit is sealed until it falls"),
-         card_monster=7, card_boss=0),
+         card_monster=7, card_boss=0, maps=[
+        # LEVEL 6, MAP A: THE RING (40 x 40). Everything, and the COLOSSUS (boss). Keys: red, blue.
+        #   A ring corridor 4 squares wide runs all the way round the outside. Inside it: two north
+        #   rooms, a west wing, an east wing, a south wing, and the arena in the middle.
+        #   Route: start at the bottom of the ring (P at 20, 37) -> red key K (7, 20) in the west wing
+        #   -> RED door (34, 20) into the east wing -> blue key J (32, 26) -> BLUE door (20, 28) from
+        #   the south wing into the arena -> beat the colossus T (20, 18) for the skull key ->
+        #   SKULL door Z (20, 12) in the arena's north wall -> the exit X (20, 10).
+        #   A secret wall S (5, 31) off the ring hides a health pack.
+        dict(name="The Ring", rows=load_map(6, "A"), goal="Destroy the Colossus, take its key", tint="#4a0a3a",
+             angle=270, ceil=(98, 60), floor=(0, 50), secret_look="9",
+             max_ray_steps=36, light_falloff=4.2, sprite_darkness=2, par_seconds=240),
+    ]),
 ]
+
+
+def every_map():
+    """Every map of every level, in order: (level number, map letter, level record, map record).
+    Level 1's maps come first (A, B, C ...), then level 2's, and so on. This order is the order of
+    the Scratch lists 'map list names', 'map start angles' and the other 'map ...' lists."""
+    for level_number, level in enumerate(LEVELS, start=1):
+        for map_letter, game_map in zip(MAP_LETTERS, level["maps"]):
+            yield level_number, map_letter, level, game_map
+
+
+def map_title(level_number, map_letter, level, game_map):
+    """How messages and the balance report name a map: 'The Outpost, map A (Three Halls)'."""
+    return f"{level['name']}, map {map_letter} ({game_map['name']})"
+
+
+def check_level_list():
+    """Every level needs at least one map, and no more maps than there are letters for."""
+    for level_number, level in enumerate(LEVELS, start=1):
+        check(level["maps"], f"level {level_number} ({level['name']}) has no maps.")
+        check(len(level["maps"]) <= len(MAP_LETTERS),
+              f"level {level_number} ({level['name']}) has {len(level['maps'])} maps, but there are only "
+              f"{len(MAP_LETTERS)} map letters ({MAP_LETTERS}).")
 
 
 # =================================================================================================
@@ -303,12 +358,14 @@ def next_to(column, row, squares):
 
 
 def validate(level):
-    """Checks a map the way a careful player would: everything that matters must be reachable
+    """Checks one map the way a careful player would: everything that matters must be reachable
     WITHOUT opening secret walls or blowing up barrels; pickups may hide behind secrets.
+    'level' is a dict with the map's 'rows' and a 'name' for the messages, such as
+    "The Outpost, map A (Three Halls)".
 
-    If a check fails, it stops with a LevelError whose message names the level, says what is
-    wrong, and gives the square. The build calls this for every level, so a broken map stops
-    the build. If everything passes, it returns a count of each letter.
+    If a check fails, it stops with a LevelError whose message names the map, says what is
+    wrong, and gives the square. The build calls this for every map of every level, so a broken
+    map stops the build. If everything passes, it returns a count of each letter.
     """
     name, map_rows = level["name"], level["rows"]
     map_height, map_width = len(map_rows), len(map_rows[0])
@@ -425,13 +482,56 @@ def validate(level):
                 **{letter: whole_map_text.count(letter) for letter in "MVGWCFTHAIUNQLKJESZ"})
 
 
-# Running this file directly (python3 src/levels.py) checks every level and prints its contents.
-# (When the build imports this file instead, this part is skipped.)
+# =================================================================================================
+# BALANCE REPORT: is there enough ammo and health on a map for its monsters?
+# =================================================================================================
+def balance(map_rows, config):
+    """Adds up what a map gives you and what it throws at you, using the game's own tables in
+    game/config.py (passed in as 'config'), at normal difficulty:
+      monster health  every monster's hit points added up (a colossus also calls 2 chargers)
+      ammo damage     how much damage all the ammo lying on the map can do: a bullet does 1, a
+                      shell about 2.5 (the shotgun does 2 or 3), a rocket up to 6 to everything
+                      near the blast. Weapons count for the ammo they come with.
+      ammo ratio      ammo damage / monster health. Below 1, the map's ammo can't kill
+                      everything (you also bring ammo from the last level). The bigger it
+                      is, the easier the map.
+      health          the health packs on the map, at 25 each
+    Barrels and your fists aren't counted, so the real fight is a bit easier than the numbers."""
+    whole_map_text = "".join(map_rows)
+    monster_health = {row[0]: row[2] for row in config.MONSTER_TYPES}
+    total_health = sum(monster_health[letter] * whole_map_text.count(letter) for letter in monster_health)
+    if "T" in whole_map_text:
+        total_health += 2 * config.MONSTER_TYPES[config.CHARGER_TYPE - 1][2]
+    shotgun = config.WEAPON_TYPES[2]
+    damage_per_ammo = {"bullets": 1, "shells": (shotgun[3] + shotgun[4]) / 2,
+                       "rockets": config.EXPLOSION_DAMAGE_UP_CLOSE}
+    ammo_damage = sum(damage_per_ammo[ammo_name] * amount * whole_map_text.count(letter)
+                      for letter, (ammo_name, amount) in config.AMMO_PICKUPS.items())
+    return dict(monsters=sum(whole_map_text.count(letter) for letter in monster_health),
+                monster_health=total_health, ammo_damage=round(ammo_damage),
+                ammo_ratio=round(ammo_damage / total_health, 2) if total_health else None,
+                health=25 * whole_map_text.count("H"))
+
+
+# Running this file directly (python3 src/levels.py) checks every map, prints what is in it,
+# then prints the balance report. (When the build imports this file instead, this part is skipped.)
 if __name__ == "__main__":
     import sys
     try:
-        for level in LEVELS:
-            print(level["name"], validate(level))
+        check_level_list()
+        for level_number, map_letter, level, game_map in every_map():
+            title = map_title(level_number, map_letter, level, game_map)
+            print(title, validate(dict(name=title, rows=game_map["rows"])))
     except LevelError as problem:
         print("MAP PROBLEM:", problem)
         sys.exit(1)
+    import game.config   # the monster, weapon and pickup tables (imported here, not at the top,
+                         # because game/config.py itself imports this file)
+    print()
+    print("BALANCE REPORT (normal difficulty; see balance() above)")
+    print(f"{'map':<52}{'monsters':>9}{'monster health':>16}{'ammo damage':>13}{'ammo ratio':>12}{'health':>8}")
+    for level_number, map_letter, level, game_map in every_map():
+        numbers = balance(game_map["rows"], game.config)
+        print(f"{map_title(level_number, map_letter, level, game_map):<52}{numbers['monsters']:>9}"
+              f"{numbers['monster_health']:>16}{numbers['ammo_damage']:>13}{str(numbers['ammo_ratio']):>12}"
+              f"{numbers['health']:>8}")

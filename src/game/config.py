@@ -2,7 +2,7 @@
 of broadcasts and game states, and a few block helpers every part of the game uses."""
 from sb3extra import *
 import sounds.synth
-from levels import LEVELS, validate
+from levels import LEVELS, MAP_LETTERS, check_level_list, every_map, map_title, validate
 
 RAY_COUNT, STRIPE_WIDTH = 80, 6      # 80 rays, each drawn as a 6-px-wide vertical stripe
 WALK_SPEED, MONSTER_SPEED, TURN_SPEED = 0.07, 0.025, 4   # per frame, at 30 frames per second
@@ -47,6 +47,12 @@ WEAPON_TYPES = [
     ["rocket launcher", 3, 30, 0, 0, 0,   1],
 ]
 AMMO = [("bullets", START_BULLETS, 200), ("shells", 0, 99), ("rockets", 0, 50)]   # name, new-game amount, most you can carry
+# What each ammo or weapon pickup gives you: map letter -> (ammo name, how much).
+AMMO_PICKUPS = {"I": ("bullets", 20), "A": ("shells", 8), "U": ("rockets", 4),
+                "N": ("shells", 8), "Q": ("bullets", 40), "L": ("rockets", 4)}
+# An explosion (barrel or rocket) does this much damage to a monster close to it, half as much
+# further away.
+EXPLOSION_DAMAGE_UP_CLOSE = 6
 # Everything about each level (map, colors, draw distance, par time, card...) is in its record in
 # LEVELS, in src/levels.py. The one thing worked out here: where episode 1 ends, for the music
 # (one track per episode) and the "EPISODE 1 COMPLETE" screen.
@@ -64,8 +70,12 @@ DIFFICULTIES = [
 ]
 NORMAL_DIFFICULTY = 2
 
-for level in LEVELS:
-    validate(level)
+# Check every map of every level (see validate() in levels.py). A broken map stops the build here.
+check_level_list()
+for level_number, map_letter, level, game_map in every_map():
+    validate(dict(name=map_title(level_number, map_letter, level, game_map), rows=game_map["rows"]))
+# The most maps any level has. The options menu's MAP setting goes up to this many letters.
+MOST_MAPS_IN_A_LEVEL = max(len(level["maps"]) for level in LEVELS)
 
 # ---------------- names used in Scratch ----------------
 # broadcasts

@@ -9,13 +9,14 @@ card_up = eq(V("card is up"), 1)
 
 card_background = Target(project, "Card Background", layer=14, visible=False)
 card_background.costume("card next level", pictures.level_cards.CARD_NEXT, 240, 180)
-for level_number, art in enumerate(pictures.level_cards.CARD_ART, start=1):
-    card_background.costume(f"card {level_number}", art, 240, 180)
+for (level_number, map_letter), art in pictures.level_cards.CARD_ART.items():
+    card_background.costume(f"card {level_number} {map_letter}", art, 240, 180)
 card_background.script(flag(), hide())
 card_background.script(recv(SHOW_CARD),
-          note("Pick 'card N' for this level. If there isn't one (a level you\n"
-               "added), Scratch keeps 'card next level'.",
-               costume("card next level")), costume("card next level", join("card ", V("current level"))),
+          note("Pick this map's card: 'card 1 B' is level 1, map B. If there isn't\n"
+               "one (a map you added), Scratch keeps 'card next level'.",
+               costume("card next level")),
+          costume("card next level", joins("card ", V("current level"), " ", V("map variant letter"))),
           gotoxy(0, 0), seteffect("GHOST", 100), show(), go_back(),
           note("Fade in, wait until the Engine takes the card down, fade out.",
                repeat(10, change_effect("GHOST", -10))),
@@ -24,18 +25,29 @@ card_background.script(recv(SHOW_CARD),
 
 card_heading = Target(project, "Card Heading", layer=15, visible=False)
 card_heading.costume("heading next level", pictures.level_cards.HEADING_NEXT, pictures.lettering.text_width("NEXT LEVEL", 8) // 2 + 6, 35)
-for level_number, art in enumerate(pictures.level_cards.HEADINGS, start=1):
-    card_heading.costume(f"heading {level_number}", art, pictures.lettering.text_width(f"LEVEL {level_number}", 8) // 2 + 6, 35)
+for (level_number, map_letter), art in pictures.level_cards.HEADINGS.items():
+    heading_width = pictures.lettering.text_width(pictures.level_cards.heading_text(level_number, map_letter), 8)
+    card_heading.costume(f"heading {level_number} {map_letter}", art, heading_width // 2 + 6, 35)
 add_sound(card_heading, "thud", sounds.screens.thud)
+card_heading.var("slam step")
+HEADING_SIZE = 52   # the heading's size once it has landed (percent)
 card_heading.script(flag(), hide())
 card_heading.script(recv(SHOW_CARD),
-          costume("heading next level"), costume("heading next level", join("heading ", V("current level"))),
-          setsize(260), seteffect("GHOST", 100), gotoxy(0, 122), show(), front(), wait(0.25),
-          note("SLAM: shrink from huge to normal while fading in, then thud and\nshake the heading.",
-               repeat(8, change_size(-20), change_effect("GHOST", -12.5), front())),
+          note("'heading 1 B' says LEVEL 1-B (or just LEVEL 1 if level 1 has one map).",
+               costume("heading next level")),
+          costume("heading next level", joins("heading ", V("current level"), " ", V("map variant letter"))),
+          setv("slam step", 8), setsize(add(HEADING_SIZE, mul(V("slam step"), 20))),
+          seteffect("GHOST", 100), gotoxy(0, 122), show(), front(), wait(0.25),
+          note("SLAM: shrink from huge to normal while fading in, then thud and\n"
+               "shake the heading. The size is SET each step (52 + 20 x steps left)\n"
+               "rather than changed: Scratch won't let a sprite get much wider than\n"
+               "the stage, so a wide heading like LEVEL 1-B can't start as big as\n"
+               "asked, and 'change size by -20' would then shrink it to a dot.",
+               repeat(8, chg("slam step", -1), setsize(add(HEADING_SIZE, mul(V("slam step"), 20))),
+                      change_effect("GHOST", -12.5), front())),
           play("thud"), repeat(8, gotoxy(rnd(-6, 6), add(122, rnd(-6, 6)))), gotoxy(0, 122),
           wait_until(not_(card_up)), repeat(6, change_effect("GHOST", 17)), hide(),
-          comment="LEVEL N heading.")
+          comment="LEVEL N heading (LEVEL N-B when the level has several maps).")
 
 card_monster = Target(project, "Card Monster", layer=16, visible=False)
 for monster_name, art in MONSTER_ART.items():

@@ -73,4 +73,9 @@ def prompt(text, color):
 
 PROMPT_RETRY = prompt("PRESS SPACE TO RETRY", "#ffe14d")
 
+# On a level with more than one map: try the same map again, or roll a different one.
+PROMPT_RETRY_OR_NEW_MAP_TEXT = "SPACE = SAME MAP  •  R = NEW MAP"
+PROMPT_RETRY_OR_NEW_MAP = prompt(PROMPT_RETRY_OR_NEW_MAP_TEXT, "#ffe14d")
+PROMPT_RETRY_OR_NEW_MAP_CENTER = ((11 * len(PROMPT_RETRY_OR_NEW_MAP_TEXT) + 40) // 2, 15)
+
 PROMPT_AGAIN = prompt("CLICK THE GREEN FLAG TO PLAY AGAIN", "#ffe14d")

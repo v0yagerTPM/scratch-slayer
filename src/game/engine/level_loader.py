@@ -2,14 +2,15 @@
 and changing map squares (doors, secrets, barrel wreckage)."""
 from sb3extra import *
 from game.config import *
-from levels import LEVELS
-from game.stage import LEVEL_LISTS
+from levels import MAP_LETTERS
+from game.stage import MAP_LISTS
 from game.engine.sprite import engine
 
-def from_current_level_list(index, target_var):
-    """if current level = 1 then set target to (item index of level 1 map) ... one 'if' per level."""
-    return [if_(eq(V("current level"), level_number), setv(target_var, item(index, name)))
-            for level_number, name in enumerate(LEVEL_LISTS, start=1)]
+def copy_rows_if_picked(name):
+    """if map name = "level 1 map A" then copy every row of the list "level 1 map A" into
+    'rows to load'. One of these per map."""
+    return if_(eq(V("map name"), name), setv("row to copy", 1),
+               repeat(length(name), addto("rows to load", item(V("row to copy"), name)), chg("row to copy", 1)))
 
 def thing(letter_code, *blocks):
     return if_(eq(V("map letter"), letter_code), *blocks, setv("map letter", 0))
@@ -46,21 +47,23 @@ engine.script(
     setv("stamina", 100), setv("is exhausted", 0), setv("is sprinting", 0), setv("speed boost", 1),
     setv("stamina rest timer", 0),
     setv("player starts found", 0), setv("exits found", 0),
-    note("2. PICK THE LEVEL LIST. Scratch can't choose a list by number, so there\n"
-         "is one 'if' per level, in THREE places: two here (row count, first row)\n"
-         f"and one inside the loop below. To add level {len(LEVELS) + 1}, duplicate all three.",
-         if_(eq(V("current level"), 1), setv("row count", length(LEVEL_LISTS[0])))),
-    *[if_(eq(V("current level"), level_number), setv("row count", length(name)))
-      for level_number, name in enumerate(LEVEL_LISTS, start=1) if level_number > 1],
-    *from_current_level_list(1, "row text"),
+    note("2. COPY THE PICKED MAP into 'rows to load'. 'map name' says which map\n"
+         "to play (the 'pick map' block chose it). Scratch can't choose a list by\n"
+         "its name, so there is one 'if' per map: the one whose list matches 'map\n"
+         "name' copies its rows. To add a map, duplicate one 'if' and pick your\n"
+         "new list in it (twice: the 'repeat' and the 'item').",
+         clear_list("rows to load")),
+    *[copy_rows_if_picked(name) for name in MAP_LISTS],
+    if_(eq(length("rows to load"), 0),
+        problem("There is no map called \"", V("map name"), "\". Make a list with that name, or check its 'if' in 'load level'.")),
+    setv("row count", length("rows to load")),
+    setv("row text", item(1, "rows to load")),
     setv("first row length", strlen(V("row text"))),
     note("3. READ THE MAP ROW BY ROW. 'map row' counts from 0 (row 0 = item 1).",
          setv("map row", 0)),
     repeat(V("row count"),
-           note("Get this row's text from the level list.",
-                if_(eq(V("current level"), 1), setv("row text", item(add(V("map row"), 1), LEVEL_LISTS[0])))),
-           *[if_(eq(V("current level"), level_number), setv("row text", item(add(V("map row"), 1), name)))
-             for level_number, name in enumerate(LEVEL_LISTS, start=1) if level_number > 1],
+           note("Get this row's text.",
+                setv("row text", item(add(V("map row"), 1), "rows to load"))),
            note("MAP CHECK: every row must be as long as the first one.",
                 if_(not_(eq(strlen(V("row text")), V("first row length"))),
                     problem("Row ", row_number, " has ", strlen(V("row text")), " letters but row 1 has ",
@@ -120,22 +123,67 @@ engine.script(
         problem("Found ", V("player starts found"), " player starts (P). There should be only one.")),
     if_(eq(V("exits found"), 0), problem("No exit switch. Put an X in a wall next to floor.")),
     ifelse(gt(length("map problems"), 0), [show_list("map problems")], [hide_list("map problems")]),
-    note("7. LEVEL SETTINGS: map size (for the minimap), start angle and the\n"
-         "ceiling/floor colors, all read from item 'current level' of each list.",
+    note("7. MAP SETTINGS: map size (for the minimap), start angle and the\n"
+         "ceiling/floor colors, all read from item 'map item number' of each\n"
+         "\"map ...\" list (this map's place in \"map list names\").",
          setv("level item count", length("item start x"))),
     setv("map width", V("first row length")), setv("map height", length("current map")),
     setv("minimap square size", floor_(div(112, V("map width")))),
-    setv("player angle", item(V("current level"), "level start angles")),
-    setv("ceiling hue", item(V("current level"), "level ceiling hues")),
-    setv("ceiling saturation", item(V("current level"), "level ceiling saturations")),
-    setv("floor hue", item(V("current level"), "level floor hues")),
-    setv("floor saturation", item(V("current level"), "level floor saturations")),
-    note("Big levels: rays stop after 'max ray steps' squares (far walls are\n"
+    setv("player angle", item(V("map item number"), "map start angles")),
+    setv("ceiling hue", item(V("map item number"), "map ceiling hues")),
+    setv("ceiling saturation", item(V("map item number"), "map ceiling saturations")),
+    setv("floor hue", item(V("map item number"), "map floor hues")),
+    setv("floor saturation", item(V("map item number"), "map floor saturations")),
+    note("Big maps: rays stop after 'max ray steps' squares (far walls are\n"
          "black anyway), 'light falloff' = how fast walls get darker with\n"
          "distance, 'sprite darkness' = the same for monsters and items.",
-         setv("max ray steps", item(V("current level"), "level max ray steps"))),
-    setv("light falloff", item(V("current level"), "level light falloffs")),
-    setv("sprite darkness", item(V("current level"), "level sprite darkness")),
-    comment="LOAD LEVEL: turns the letters in 'level N map' into a playable level.\n"
+         setv("max ray steps", item(V("map item number"), "map max ray steps"))),
+    setv("light falloff", item(V("map item number"), "map light falloffs")),
+    setv("sprite darkness", item(V("map item number"), "map sprite darkness")),
+    comment="LOAD LEVEL: turns the letters of the picked map ('level N map A')\ninto a playable level.\n"
             "The full step-by-step explanation and how to design your own levels\n"
             "is in the comments on the STAGE (click the Stage, then Code).")
+
+# MAP_LETTERS is "ABCDEFGHI": letter 2 of it is B, so map 2 of a level is map B.
+engine.script(
+    Def("pick map"),
+    note("HOW MANY MAPS does this level have? Try map A, B, C ... and stop at\n"
+         "the first name that isn't in \"map list names\" ('item # of' gives 0\n"
+         "for a name that isn't in the list).",
+         setv("level map count", 0)),
+    until(eq(itemnum(joins("level ", V("current level"), " map ", letter(add(V("level map count"), 1), MAP_LETTERS)),
+                     "map list names"), 0),
+          chg("level map count", 1)),
+    note("PICK ONE: the map the options menu's MAP setting asks for ('map\n"
+         "choice' 1 = A, 2 = B ...) if this level has it. Otherwise (and when\n"
+         "the setting is RANDOM, 0) a random one: 'pick random 1 to 3' gives\n"
+         "1, 2 or 3, each just as likely.",
+         ifelse(and_(gt(V("map choice"), 0), not_(gt(V("map choice"), V("level map count")))),
+                [setv("map variant", V("map choice"))],
+                [setv("map variant", rnd(1, V("level map count")))])),
+    call("use picked map"),
+    comment="PICK MAP: each level can have several maps (map A, map B, map C).\n"
+            "This picks which one to play. 'load level' then reads it.")
+
+engine.script(
+    Def("pick a different map"),
+    note("After you die, R asks for a DIFFERENT map. The trick: pick a random\n"
+         "number from 1 to (number of maps - 1). If it is the current map or\n"
+         "later, add 1. Then every OTHER map is equally likely and the current\n"
+         "one can't come up. (With 3 maps and map B playing: 1 -> A, 2 -> C.)",
+         if_(gt(V("level map count"), 1),
+             setv("other map", rnd(1, sub(V("level map count"), 1))),
+             if_(not_(lt(V("other map"), V("map variant"))), chg("other map", 1)),
+             setv("map variant", V("other map")))),
+    call("use picked map"),
+    comment="PICK A DIFFERENT MAP: any of the level's maps except this one.")
+
+engine.script(
+    Def("use picked map"),
+    note("Work out everything about the picked map: its letter (2 -> B), the\n"
+         "name of its list, and which item of the \"map ...\" lists is its own\n"
+         "(its place in \"map list names\").",
+         setv("map variant letter", letter(V("map variant"), MAP_LETTERS))),
+    setv("map name", joins("level ", V("current level"), " map ", V("map variant letter"))),
+    setv("map item number", itemnum(V("map name"), "map list names")),
+    comment="USE PICKED MAP: 'map variant' -> 'map variant letter', 'map name'\nand 'map item number'.")

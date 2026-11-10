@@ -135,7 +135,8 @@ monster.script(Def("fire volley"),
 monster.script(Def("add up explosion damage"),
          *explosion_scan("monster x", "monster y",
                          if_(lt(V("distance to blast"), 2.6),
-                             ifelse(lt(V("distance to blast"), 1.3), [chg("damage taken", 6)], [chg("damage taken", 3)]))),
+                             ifelse(lt(V("distance to blast"), 1.3), [chg("damage taken", EXPLOSION_DAMAGE_UP_CLOSE)],
+                                    [chg("damage taken", EXPLOSION_DAMAGE_UP_CLOSE // 2)]))),
          comment="ADD UP EXPLOSION DAMAGE: check every explosion this frame.\n"
                  "IMPORTANT: loops live in 'run without screen refresh' custom blocks.\n"
                  "A loop in a broadcast script pauses until the next frame, and the\n"

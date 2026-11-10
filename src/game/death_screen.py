@@ -9,14 +9,16 @@ from game.title_screen import prompt_text
 on_death = eq(V("screen showing"), DIED)
 on_win = eq(V("screen showing"), WIN)
 
-def pulse_prompt(hat, prompt_costume, stage_y, delay, condition):
-    prompt_text.script(recv(hat), costume(prompt_costume), gotoxy(0, stage_y), setv("pulse time", 0), seteffect("GHOST", 100),
+def pulse_prompt(hat, pick_costume, stage_y, delay, condition):
+    prompt_text.script(recv(hat), *pick_costume, gotoxy(0, stage_y), setv("pulse time", 0), seteffect("GHOST", 100),
               show(), front(), wait(delay),
               until(not_(condition), chg("pulse time", 1),
                     seteffect("GHOST", mul(35, add(1, sin_(mul(V("pulse time"), 8))))), front()),
               hide())
-pulse_prompt(SHOW_DEATH, "press space retry", -158, 1.4, on_death)
-pulse_prompt(SHOW_WIN, "green flag again", -157, 2.2, on_win)
+pulse_prompt(SHOW_DEATH, [note("A level with more than one map also offers R for a different map.",
+                              costume("press space retry")),
+                         if_(gt(V("level map count"), 1), costume("space or r"))], -158, 1.4, on_death)
+pulse_prompt(SHOW_WIN, [costume("green flag again")], -157, 2.2, on_win)
 prompt_text.script(recv(SHOW_WIN), set_volume(mul(V("music is on"), 100)), until(not_(on_win), play_until_done("victory theme")),
           comment="VICTORY MUSIC: an original loop that plays until the green flag.")
 

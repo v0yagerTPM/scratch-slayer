@@ -126,6 +126,8 @@ title_embers.script(as_clone(), setv("is clone", 1),
 prompt_text = Target(project, "Prompt Text", layer=13, visible=False)
 prompt_text.costume("press space", pictures.title_screen.PRESS_SPACE, 150, 20)
 prompt_text.costume("press space retry", pictures.title_screen.PROMPT_RETRY, 135, 15)
+prompt_text.costume("space or r", pictures.title_screen.PROMPT_RETRY_OR_NEW_MAP,
+                    *pictures.title_screen.PROMPT_RETRY_OR_NEW_MAP_CENTER)
 prompt_text.costume("green flag again", pictures.title_screen.PROMPT_AGAIN, 213, 15)
 add_sound(prompt_text, "victory theme", sounds.music.victory_theme)
 add_sound(prompt_text, "title theme", sounds.music.title_riff)
