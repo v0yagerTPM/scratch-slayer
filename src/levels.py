@@ -276,19 +276,51 @@ LEVELS = [
          card=dict(enemy="GOLEM", lines=["Slow, tough, and hits like a truck.", "Lure it next to a barrel."],
                    boss="BOSS: THE WARDEN carries the SKULL KEY to the exit"),
          card_monster=3, card_boss=4, maps=[
-        # LEVEL 3, MAP A: THREE WINGS (28 x 28). Golems and the WARDEN (boss). Keys: red, blue.
-        #   rows 1-11   three wings side by side, split by walls at columns 9 and 18:
-        #               west wing (red key K) | inner keep (blue key J) | east wing (the warden W)
-        #   row 12      a wall with three doors: plain D into the west wing, RED R into the keep,
-        #               BLUE B into the east wing
-        #   rows 13-20  the courtyard, with pillars (4) and a central block (9)
-        #   row 21      a wall with three doors into the side rooms
-        #   rows 22-26  the side rooms; the player starts in the middle one (P at 13, 25)
-        #   The exit X (27, 3) is in a closet sealed by a SKULL DOOR Z (25, 3): only the warden's
-        #   skull key opens it. A secret wall S (15, 1) in the keep hides shells and health.
-        dict(name="Three Wings", rows=load_map(3, "A"), goal="Two keys, then slay the Warden", tint="#5a0f2a",
-             angle=270, ceil=(95, 45), floor=(2, 40), secret_look="9",
-             max_ray_steps=64, light_falloff=4.5, sprite_darkness=0, par_seconds=135),
+        # LEVEL 3, MAP A: GATEHOUSE (34 x 32). 9 golems, 10 spitters, 9 imps, the WARDEN. Keys: red,
+        # blue, skull. Route: about 111 squares.
+        #   rows 25-30  the barbican, outside the walls: the player starts at the bottom (P at 17, 29).
+        #               A secret wall S (4, 26) hides shells and health.
+        #   row 24      the outer wall and its gate (17, 24)
+        #   rows 16-23  the gate passage (columns 14-20) between the west and east lower wards (doors
+        #               13, 20 and 21, 18). The red key K (30, 21) is in the east ward.
+        #   row 15      doors up into the middle ward: west (5, 15) and east (28, 15)
+        #   rows 8-14   the middle ward, with pillars (4)
+        #   row 7       the RED door (5, 7) to the west tower, where the blue key J (3, 3) is, and the
+        #               BLUE door (17, 7) to the great hall, where the warden W (17, 3) waits
+        #   rows 1-6    west tower | great hall | east tower. The east tower is only reached through
+        #               the SKULL door (24, 3), and has the exit X (29, 0).
+        dict(name="Gatehouse", rows=load_map(3, "A"), goal="Two keys, then slay the Warden", tint="#5a0f2a",
+             angle=270, ceil=(95, 45), floor=(2, 40), secret_look="8",
+             max_ray_steps=40, light_falloff=4.5, sprite_darkness=0, par_seconds=165),
+        # LEVEL 3, MAP B: THE KEEP (33 x 33). 10 golems, 9 spitters, 8 imps, the WARDEN. Keys: red,
+        # blue, skull. Route: about 101 squares.
+        #   Three squares, one inside the other: the bailey (a ring 4 squares wide round the outside),
+        #   the inner ward (inside the middle wall, columns 6-26), and the keep in the centre.
+        #   The player starts at the bottom of the bailey (P at 16, 30). The red key K (30, 2) is in the
+        #   bailey's north-east corner; the RED door (5, 10) in the middle wall's west side leads into
+        #   the inner ward's west half, which has the blue key J (8, 15). (Walls at column 16 split the
+        #   inner ward in two; the east half, through the door at 27, 22, is a side trip.)
+        #   The BLUE door (11, 16) opens the keep: the warden W (16, 17). Behind the SKULL door (16, 14)
+        #   is a small sanctum with the exit X (16, 11).
+        #   A secret wall S (3, 30) in the bailey's south-west corner hides shells and health.
+        dict(name="The Keep", rows=load_map(3, "B"), goal="Into the keep, through two doors", tint="#4a1020",
+             angle=0, ceil=(5, 30), floor=(8, 30), secret_look="8",
+             max_ray_steps=40, light_falloff=4.8, sprite_darkness=1, par_seconds=150),
+        # LEVEL 3, MAP C: DUNGEONS (32 x 30). Dark! 9 golems, 9 spitters, 9 imps, the WARDEN. Keys:
+        # red, blue, skull. Route: about 95 squares.
+        #   rows 1-5    the guardroom where the player starts (P at 3, 3), then four cells. Each cell
+        #               has a door on the corridor (row 6); the last one has the red key K (25, 3).
+        #   rows 7-8    the upper corridor. Doors down: a plain one (3, 9) into the torture chamber
+        #               (a side trip, with pillars) and the RED door (28, 9) into the flooded hall.
+        #   rows 10-18  the flooded hall: pools of water (7) and the blue key J (18, 15). A door
+        #               (15, 14) joins it to the torture chamber.
+        #   row 19      the BLUE door (22, 19) down into the warden's pit
+        #   rows 20-28  the pit, with the warden W (16, 26). The exit X (0, 27) is in a small room at
+        #               the pit's west end, behind the SKULL door (5, 27). A secret wall S (27, 27)
+        #               hides health and shells.
+        dict(name="Dungeons", rows=load_map(3, "C"), goal="Down to the Warden's pit", tint="#2a0a1a",
+             angle=0, ceil=(75, 10), floor=(8, 25), secret_look="9",
+             max_ray_steps=26, light_falloff=6.5, sprite_darkness=4, par_seconds=135),
     ]),
 
     dict(name="The Foundry", episode=2, best_weapon=4,

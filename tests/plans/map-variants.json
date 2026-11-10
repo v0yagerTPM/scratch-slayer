@@ -255,19 +255,37 @@
  },
  {
   "continueToNextLevel": true,
-  "log": "level 3 has only map A, so MAP: B can't apply there: it plays map A",
+  "log": "level 3 follows the MAP setting: map B (The Keep)",
   "expect": {
    "level": 3,
-   "map name": "level 3 map A",
-   "level map count": 1
+   "map name": "level 3 map B",
+   "level map count": 3,
+   "px": 16.5,
+   "py": 30.5
   },
   "expectCostume": {
-   "Card Background": "card 3 A",
-   "Card Heading": "heading 3 A"
+   "Card Background": "card 3 B",
+   "Card Heading": "heading 3 B"
   }
  },
  {
-  "note": "die on level 3",
+  "finishLevel": true
+ },
+ {
+  "continueToNextLevel": true,
+  "log": "level 4 has only map A, so MAP: B can't apply there: it plays map A",
+  "expect": {
+   "level": 4,
+   "map name": "level 4 map A",
+   "level map count": 1
+  },
+  "expectCostume": {
+   "Card Background": "card 4 A",
+   "Card Heading": "heading 4 A"
+  }
+ },
+ {
+  "note": "die on level 4",
   "set": {
    "HEALTH": 0
   },
@@ -298,7 +316,7 @@
  {
   "retryLevel": true,
   "expect": {
-   "map name": "level 3 map A",
+   "map name": "level 4 map A",
    "game state": "playing"
   }
  }

@@ -49,11 +49,23 @@ normal / hard: the difficulty changes monster health, how many supplies appear a
 
 ## Level 3: The Fortress (episode 1)
 
-### Map A: Three Wings
+### Map A: Gatehouse
 
-28 x 28 squares · 16 monsters · par 135 s · ammo ratio 3.23 / 1.75 / 0.8, health 228 / 150 / 125 (easy / normal / hard)
+34 x 32 squares · 29 monsters · par 165 s · ammo ratio 3.27 / 1.63 / 1.01, health 228 / 150 / 75 (easy / normal / hard)
 
 ![The Fortress, map A](level%203%20map%20A.svg)
+
+### Map B: The Keep
+
+33 x 33 squares · 28 monsters · par 150 s · ammo ratio 3.24 / 1.63 / 1.01, health 228 / 150 / 75 (easy / normal / hard)
+
+![The Fortress, map B](level%203%20map%20B.svg)
+
+### Map C: Dungeons
+
+32 x 30 squares · 28 monsters · par 135 s · ammo ratio 3.33 / 1.67 / 1.03, health 228 / 150 / 75 (easy / normal / hard)
+
+![The Fortress, map C](level%203%20map%20C.svg)
 
 ## Level 4: The Foundry (episode 2)
 

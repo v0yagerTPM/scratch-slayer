@@ -351,11 +351,12 @@
  {
   "frames": 1,
   "set": {
-   "px": 24.5,
+   "px": 23.5,
    "py": 3.5,
    "ang": 0,
    "HEALTH": 100
-  }
+  },
+  "note": "Gatehouse: in the great hall, facing the skull door (24, 3)"
  },
  {
   "frames": 2
@@ -379,11 +380,12 @@
  {
   "frames": 1,
   "set": {
-   "px": 22.5,
-   "py": 9.5,
-   "ang": 0,
+   "px": 17.5,
+   "py": 5.5,
+   "ang": 270,
    "HEALTH": 100
-  }
+  },
+  "note": "Gatehouse: in front of the warden (17, 3)"
  },
  {
   "frames": 3
@@ -408,11 +410,11 @@
  },
  {
   "frames": 1,
+  "toBossKey": true,
   "set": {
-   "px": 25.5,
-   "py": 10.5,
    "HEALTH": 100
-  }
+  },
+  "note": "stand where the warden fell"
  },
  {
   "frames": 6,
@@ -424,10 +426,11 @@
  {
   "frames": 1,
   "set": {
-   "px": 24.5,
+   "px": 23.5,
    "py": 3.5,
    "ang": 0
-  }
+  },
+  "note": "facing the skull door again"
  },
  {
   "frames": 2
@@ -446,10 +449,11 @@
  {
   "frames": 1,
   "set": {
-   "px": 26.5,
-   "py": 3.5,
-   "ang": 0
-  }
+   "px": 29.5,
+   "py": 1.5,
+   "ang": 270
+  },
+  "note": "Gatehouse: the exit (29, 0) in the east tower"
  },
  {
   "frames": 2
