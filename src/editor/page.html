@@ -1,0 +1,113 @@
+<header class="top-bar">
+  <div class="brand">
+    <span class="brand-game">SCRATCH SLAYER</span>
+    <h1>Map Editor</h1>
+  </div>
+  <div class="file-controls">
+    <label class="field">
+      <span class="field-label">Open a game map</span>
+      <select id="game-map-choice"></select>
+    </label>
+    <button type="button" id="new-map-button">New map…</button>
+    <label class="button" for="open-file-input">Open file…</label>
+    <input type="file" id="open-file-input" accept=".txt,text/plain" hidden>
+  </div>
+  <div class="save-controls">
+    <button type="button" id="undo-button" title="Undo (Ctrl+Z)">Undo</button>
+    <button type="button" id="redo-button" title="Redo (Ctrl+Y)">Redo</button>
+    <button type="button" id="copy-button">Copy map text</button>
+    <button type="button" id="download-button" class="primary">Download .txt</button>
+  </div>
+</header>
+
+<form id="new-map-form" class="new-map-form" hidden>
+  <strong>New map</strong>
+  <label class="field"><span class="field-label">Columns</span><input type="number" id="new-map-width" min="5" max="64" value="24"></label>
+  <label class="field"><span class="field-label">Rows</span><input type="number" id="new-map-height" min="5" max="64" value="20"></label>
+  <label class="field"><span class="field-label">Outside wall</span><select id="new-map-wall"></select></label>
+  <button type="submit" class="primary">Make it</button>
+  <button type="button" id="new-map-cancel">Cancel</button>
+  <span class="hint">Starts with a wall all round, the player start P and the exit switch X.</span>
+</form>
+
+<main class="workspace">
+  <aside class="palette-panel" aria-label="Letters and tools">
+    <section>
+      <h2>Tool</h2>
+      <div class="tool-buttons" id="tool-buttons" role="radiogroup" aria-label="Drawing tool"></div>
+      <p class="hint">Right-click paints floor. Hold <kbd>Shift</kbd> and click for a straight line.
+        <kbd>Alt</kbd>-click picks up the letter under the mouse.</p>
+    </section>
+    <section>
+      <h2>Letter <span class="current-letter" id="current-letter-label"></span></h2>
+      <div id="palette"></div>
+      <p class="hint">Or type the letter on the keyboard: <kbd>M</kbd> for an imp, <kbd>3</kbd> for wall 3, <kbd>0</kbd> for floor.</p>
+    </section>
+  </aside>
+
+  <section class="map-area" aria-label="The map">
+    <div class="map-heading">
+      <label class="field file-name-field">
+        <span class="field-label">File name</span>
+        <span class="file-name-row"><input type="text" id="file-name-input" spellcheck="false"><span class="file-extension">.txt</span></span>
+      </label>
+      <div class="map-size" id="map-size"></div>
+      <div class="changes" id="changes-label"></div>
+      <button type="button" id="revert-button">Revert</button>
+    </div>
+    <div class="map-tools">
+      <div class="resize-controls" aria-label="Map size">
+        <span class="field-label">Columns</span>
+        <button type="button" data-resize="columns:-1" title="Remove the column just inside the right wall">−</button>
+        <button type="button" data-resize="columns:1" title="Add a column just inside the right wall">+</button>
+        <span class="field-label">Rows</span>
+        <button type="button" data-resize="rows:-1" title="Remove the row just inside the bottom wall">−</button>
+        <button type="button" data-resize="rows:1" title="Add a row just inside the bottom wall">+</button>
+      </div>
+      <label class="toggle"><input type="checkbox" id="show-reach" checked> Shade what can't be reached</label>
+      <label class="toggle"><input type="checkbox" id="show-safe-zone" checked> Start safety zone</label>
+      <label class="field zoom-field"><span class="field-label">Zoom</span><input type="range" id="zoom-input" min="8" max="36" value="18"></label>
+    </div>
+    <div class="canvas-scroller" id="canvas-scroller">
+      <canvas id="map-canvas" aria-label="Map grid: click or drag to paint the chosen letter"></canvas>
+    </div>
+    <div class="square-info" id="square-info" aria-live="polite">Point at a square to see what it is.</div>
+  </section>
+
+  <aside class="side-panel">
+    <section class="check-panel">
+      <h2>Map check <span class="check-badge" id="check-badge"></span></h2>
+      <p class="hint">The same checks <code>npm test</code> runs. Point at a problem to see its square on the map.</p>
+      <ol class="problem-list" id="problem-list"></ol>
+    </section>
+    <section>
+      <h2>Balance</h2>
+      <div class="table-scroller">
+        <table class="balance-table" id="balance-table"></table>
+      </div>
+      <p class="hint"><strong>Ammo ratio</strong>: damage all the ammo on the map can do ÷ the health of all its monsters.
+        Bigger is easier. <strong>Health</strong>: what the health packs give.</p>
+      <div class="monster-counts" id="monster-counts"></div>
+    </section>
+    <section>
+      <h2>Picture settings</h2>
+      <p class="hint">These live in the map's record in <code>src/levels.py</code>, not in the file. Here they only change the picture.</p>
+      <div class="settings-row">
+        <label class="field"><span class="field-label">Secret walls look like</span><select id="secret-look-choice"></select></label>
+        <label class="field"><span class="field-label">Player faces</span>
+          <select id="start-angle-choice">
+            <option value="270">up (270)</option><option value="0">right (0)</option>
+            <option value="90">down (90)</option><option value="180">left (180)</option>
+          </select>
+        </label>
+      </div>
+    </section>
+    <section>
+      <h2>Map text</h2>
+      <p class="hint">Exactly what goes in the file: one row per line. Type or paste here and the map follows.</p>
+      <textarea id="map-text" spellcheck="false" rows="12" aria-label="The map as text"></textarea>
+      <p class="hint" id="save-hint"></p>
+    </section>
+  </aside>
+</main>
+<div class="toast" id="toast" role="status" hidden></div>

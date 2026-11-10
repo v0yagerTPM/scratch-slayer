@@ -61,6 +61,13 @@ To TEST levels quickly, use the developer console: hold D + E + V together on th
 press C during a game and type a command such as `level 3 b`, `god`, `guns` or `exit` (the Stage guide
 lists them all).
 
+To DRAW or change a map with the mouse, open [`docs/map-editor.html`](docs/map-editor.html) in a
+web browser (download the repository and double-click the file). Pick one of the game's maps or start
+a new one, paint squares with the letters on the left, and the editor checks the map while you draw
+(the same checks as the build) and shows its balance numbers. **Download .txt** saves it with the
+right name for `src/maps/`. After changing the editor's parts in `src/editor/`, or the maps or tables,
+rebuild the page with `python3 src/map_editor.py` (`npm test` reminds you).
+
 To SEE the maps without playing, open [`docs/maps`](docs/maps/README.md): a top-down picture of
 every map, with its numbers. After changing a map, redraw them with `python3 src/map_preview.py`
 (`npm test` reminds you if you forget).
@@ -87,5 +94,7 @@ files: Scratch would import every line, notes included, as a row of the map.
 | `tests/render.js` | Turns test snapshots into PNG screenshots. |
 | `src/map_preview.py` | Draws every map as a top-down picture in `docs/maps/`. |
 | `docs/maps/` | The map pictures (generated: run `python3 src/map_preview.py`, don't edit). |
+| `src/editor/`, `src/map_editor.py` | The map editor's parts (page, look, drawing tools, a JavaScript copy of the map checker) and the script that joins them into one page. |
+| `docs/map-editor.html` | The map editor (generated: run `python3 src/map_editor.py`, don't edit). |
 | `docs/project-page.md` | The Instructions and Notes & Credits text for the Scratch project page. |
 | `dist/` | Build output (ignored by git). |

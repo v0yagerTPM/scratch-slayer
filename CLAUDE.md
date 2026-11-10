@@ -17,8 +17,12 @@ the blocks must stay readable.
 - **Keep the Stage guide comments current.** `GUIDE` in `game/guide.py` (map letters, monster and
   weapon tables, options, how to add a level) is what students read first. Update it with
   every feature.
-- After every change: `npm test` (it builds first). For a map change also run `python3 src/levels.py`
-  and `python3 src/map_preview.py` (npm test fails if the map pictures in `docs/maps` are out of date).
+- After every change: `npm test` (it builds first). For a map change also run `python3 src/levels.py`,
+  `python3 src/map_preview.py` and `python3 src/map_editor.py` (npm test fails if the map pictures in
+  `docs/maps` or the map editor page are out of date).
+- **Change a map check in both places.** `validate()`/`balance()` in `levels.py` have a JavaScript copy in
+  `src/editor/map_checker.js` (the map editor's live checks). `tests/test_levels.py` runs both on every
+  real map and thousands of broken ones and fails if their first message or balance numbers differ.
 - **Refactors must not change the game.** For any change that shouldn't affect what students see
   (renaming, moving code), `npm run compare` must say IDENTICAL. The build is deterministic, so
   any difference it lists is real.
@@ -37,6 +41,7 @@ node tests/harness.js dist/scratch-slayer.sb3 tests/plans/sprint.json tests/out/
 node tests/render.js tests/out/sprint <snap names...>   # snapshots -> PNG (needs sharp)
 python3 src/levels.py                           # validate all maps + balance report
 python3 src/map_preview.py                      # redraw docs/maps (top-down picture of every map)
+python3 src/map_editor.py                       # rebuild docs/map-editor.html (the map editor web page)
 python3 tests/test_levels.py                    # map checker tests (npm test runs them too)
 npm run compare                                 # is the built project identical to main's? (-- <ref> for another)
 ```
@@ -87,6 +92,12 @@ npm run compare                                 # is the built project identical
 - `map_preview.py`: draws every map as a top-down SVG in `docs/maps/` (walls in their game colors,
   tokens for things, edge numbers every 5 squares, a legend, the balance numbers) plus
   `docs/maps/README.md` showing them all. Generated files: never edit them by hand.
+- `map_editor.py`: joins `src/editor/` (`page.html`, `editor.css`, `map_checker.js`, `editor.js`) and
+  `EDITOR_DATA` (letter groups from `levels.py`, tables from `config.py`, colors from `map_preview.py`,
+  every map) into `docs/map-editor.html`, a single page that works offline. Tools: paint, rectangle, room
+  walls, fill, pick; undo; resize; reach and start-safety overlays; download/copy as a map file; a draft
+  kept in localStorage. `--artifact <file>` writes a copy without the outer tags or Download, for a
+  claude.ai Artifact. Generated file: never edit it by hand.
 - `pictures/`: every costume and backdrop as hand-written SVG, **by subject**: `drawing` (svg(),
   `text_label`, `full_screen`, gradients), `lettering` (the block-letter font `LETTERS` and digit
   glyphs; `block_text(..., font=)` takes a variant, e.g. `OPTIONS_LETTERS`), `monsters`, `weapons`,

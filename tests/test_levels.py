@@ -214,6 +214,76 @@ def test_map_previews_are_up_to_date():
                                      "Run: python3 src/map_preview.py")
 
 
+def test_map_editor_is_up_to_date():
+    """docs/map-editor.html (made by src/map_editor.py) holds every map and the game's tables.
+    If they changed and the page didn't, this fails."""
+    import map_editor
+    with open(map_editor.EDITOR_PAGE, encoding="utf-8") as page_file:
+        assert page_file.read() == map_editor.editor_page(), \
+            "the map editor page is out of date. Run: python3 src/map_editor.py"
+
+
+def editor_check_cases():
+    """Maps to try on both map checkers: every real map, a few random changes to each, and the
+    small test map with every square changed to every letter (thousands of broken maps)."""
+    import random
+    chooser = random.Random(7)
+    letters = "0123456789DRBZSXPMVGWCFTHAIUNQLKJE?Y"
+    cases = [game_map["rows"] for _, _, _, game_map in every_map()]
+    for real_rows in list(cases):
+        for _ in range(4):
+            cases.append(change(real_rows, chooser.randrange(len(real_rows[0])), chooser.randrange(len(real_rows)),
+                                chooser.choice(letters)))
+    for row in range(len(GOOD_MAP)):
+        for column in range(len(GOOD_MAP[0])):
+            cases += [change(GOOD_MAP, column, row, letter) for letter in letters if letter != GOOD_MAP[row][column]]
+    cases.append(GOOD_MAP[:2] + ["1000E11"] + GOOD_MAP[3:])
+    return cases
+
+
+def test_map_editor_checker_agrees_with_levels_py():
+    """src/editor/map_checker.js (the editor's checker, in JavaScript) must say the same as
+    validate() and balance() here: the same first problem (or none), and the same balance numbers."""
+    import json
+    import shutil
+    import subprocess
+    import game.config
+    import map_editor
+    node = shutil.which("node")
+    assert node, "this test needs Node.js (npm test has it)"
+    cases = editor_check_cases()
+    difficulty_names = [row[0] for row in game.config.DIFFICULTIES]
+    expected = []
+    for rows in cases:
+        try:
+            validate(dict(name="Test Map", rows=rows))
+            first_problem = None
+        except LevelError as problem:
+            first_problem = str(problem)
+        rectangle = all(len(row) == len(rows[0]) for row in rows)
+        expected.append(dict(problem=first_problem, balance=[levels.balance(rows, game.config, name)
+                                                               for name in difficulty_names] if rectangle else None))
+    checker = os.path.join(os.path.dirname(map_editor.__file__), "editor", "map_checker.js")
+    script = f"""
+        const checker = require({json.dumps(checker)});
+        const input = JSON.parse(require('fs').readFileSync(0, 'utf8'));
+        const game = checker.prepareGame(input.game);
+        const names = {json.dumps(difficulty_names)};
+        console.log(JSON.stringify(input.cases.map(rows => {{
+            const problems = checker.checkMap(game, rows).problems;
+            const rectangle = rows.every(row => row.length === rows[0].length);
+            return {{problem: problems.length ? 'Test Map: ' + problems[0].message : null,
+                     balance: rectangle ? names.map(name => checker.balance(game, rows, name)) : null}};
+        }})));"""
+    finished = subprocess.run([node, "-e", script], capture_output=True, text=True,
+                              input=json.dumps(dict(game=map_editor.editor_data()["game"], cases=cases)))
+    assert finished.returncode == 0, finished.stderr
+    answers = json.loads(finished.stdout)
+    for rows, wanted, answer in zip(cases, expected, answers):
+        assert answer == wanted, f"the two checkers disagree on this map:\n" + "\n".join(rows) + \
+            f"\nlevels.py: {wanted}\nmap_checker.js: {answer}"
+
+
 if __name__ == "__main__":
     tests = [(name, test) for name, test in sorted(globals().items()) if name.startswith("test_")]
     failed = 0
