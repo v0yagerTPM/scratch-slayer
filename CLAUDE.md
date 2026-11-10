@@ -81,7 +81,8 @@ npm run compare                                 # is the built project identical
   Python = one map file + one map record; adding a level = a map file + a level record (tested by
   building a 7-level copy and playing level 7). `validate()` checks one map and raises `LevelError`
   with a message naming the map and square. It checks reachability, keys, and that a skull door
-  (`Z`) really gates the exit behind the boss, and that no key's door can be walked round (check 9). `python3 src/levels.py` also prints a **balance
+  (`Z`) really gates the exit behind the boss, that no key's door can be walked round (check 9), and
+  that no monster starts within `SAFE_START_DISTANCE` (6) squares' walk of the player (check 10). `python3 src/levels.py` also prints a **balance
   report** per map (monster health vs. the damage in the ammo lying around, health packs).
 - `map_preview.py`: draws every map as a top-down SVG in `docs/maps/` (walls in their game colors,
   tokens for things, edge numbers every 5 squares, a legend, the balance numbers) plus
@@ -109,6 +110,19 @@ the options menu's `map choice`); after dying, SPACE keeps the map and R calls `
 per-level ones (`level intro monster`, `level select best weapon`) with `current level`. After the exit, `work out level stats` + `count up level stats` run the
 tally screen. 'level time' adds the timer difference each frame; closing the options menu resets
 'time at last frame' so pauses don't count.
+
+**Monsters** chase by sight: `check line of sight` runs every 4 frames per monster ('sight timer'),
+waking needs sight within 'wake distance' (or a shot within 11 squares), and out of sight they walk to
+'last seen x/y' and wait. Nobody wakes in a level's first 1.5 seconds. One monster per map square:
+the Stage list `monster on square` (built in `load level`, one item per square, row by row) holds the
+id standing there; every move goes through `take a step` / `square_is_free()` / `claim_my_square()`.
+
+**Developer console** (`game/engine/console.py`): hold D+E+V on the title screen to toggle
+`developer mode` (not reset by the green flag); then C during a game asks for a command with
+`ask and wait` (`level N [letter]`, `map X`, `exit`, `kill`, `god`, `guns`, `keys`, `heal`; the help
+text is `CONSOLE_HELP` in config.py). `level`/`map` set game state `LEVEL_JUMP`, which the main loop
+handles like a new level. `god mode` is checked inside `hurt_player()`. In tests, the `console` step
+types a command.
 
 **Difficulty** (stage var `difficulty`, lists `difficulty ...`) scales monster health when a clone
 starts (`full health`) and every hit on the player: always damage the player with `hurt_player()`
@@ -145,7 +159,8 @@ difficulties, using the game's own rounding (`scratch_round()`).
 Walls `1-9`; doors `D`, red `R`, blue `B`, skull `Z`; exit switch `X`; secret wall `S`.
 Things: `P` player, monsters `M` imp, `V` spitter, `G` golem, `W` warden (boss), `C` charger,
 `F` wraith, `T` colossus (boss); pickups `H` health, `A` shells, `I` bullets, `U` rockets,
-`N` shotgun, `Q` chaingun, `L` rocket launcher, `K` red key, `J` blue key; `E` barrel.
+`N` shotgun, `Q` chaingun, `L` rocket launcher, `K` red key, `J` blue key, `?` mystery item (a random
+`MYSTERY_ITEMS` pick when the map loads; every secret closet holds these); `E` barrel.
 A boss automatically carries the skull key (item type 5).
 
 ## Tests
@@ -171,11 +186,15 @@ and steps it frame by frame. A plan is a JSON list of steps:
 | `hit` | `{"type": 7, "damage": 31}`: the first live monster of that type takes a hit |
 | `setMonsterType` | set local variables on every clone of a monster type (`"first": n` = only the first n) |
 | `toBossKey` | move the player onto the boss's skull key |
+| `console` | `"level 3 b"`: press C, answer the developer console, press Enter (needs `developer mode` 1) |
 | `mouse` | `{"x":..,"y":..,"down":true}` in stage coordinates |
 | `log` / `snap` | print state / save a snapshot (render with `tests/render.js`) |
 | `dumpMonsters` | print every monster (or one type) |
+| `expectMonster` | `{"at": [16, 2], "is chasing": 0}`: the one monster that started on that square |
+| `expectMonstersApart` | `true`: no two live monsters on the same map square |
+| `expectPickup` | `{"at": [25, 19], "item type": {"oneOf": [1, 2, 6]}}`: the item on that square |
 | `expectMonsters` | `{"type": 1, "monster health": 2}`: every clone of that monster type must have these local values |
-| `expect` | assertions: `{"current weapon": 3, "list:ammo counts": [48,7,0], "health": {"lt": 100}, "map name": {"not": "level 1 map B"}}` |
+| `expect` | assertions: `{"current weapon": 3, "list:ammo counts": [48,7,0], "health": {"lt": 100}, "map name": {"not": "level 1 map B"}}`; also `{"oneOf": [...]}` |
 | `expectCostume` | `{"Card Background": "card 1 {map variant letter}"}`: a sprite's costume; `{var}` is filled from stage variables |
 
 Plans that walk to exact squares set `"map choice": 1` in their first step, so they always get map A.

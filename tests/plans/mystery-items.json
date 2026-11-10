@@ -1,0 +1,132 @@
+[
+ {
+  "frames": 30,
+  "set": {
+   "map choice": 1
+  },
+  "note": "MAP: always map A (Front Gate), whose secret closet holds two mystery items"
+ },
+ {
+  "startGame": true
+ },
+ {
+  "frames": 1,
+  "log": "level 1: each mystery item is health (1), shells (2) or bullets (6); no rockets without the launcher",
+  "expectPickup": {
+   "at": [
+    25,
+    19
+   ],
+   "item type": {
+    "oneOf": [
+     1,
+     2,
+     6
+    ]
+   }
+  },
+  "dumpSprite": "Pickup"
+ },
+ {
+  "frames": 1,
+  "expectPickup": {
+   "at": [
+    26,
+    19
+   ],
+   "item type": {
+    "oneOf": [
+     1,
+     2,
+     6
+    ]
+   }
+  }
+ },
+ {
+  "set": {
+   "HEALTH": 0
+  },
+  "until": {
+   "screen showing": "died"
+  },
+  "note": "die: retrying loads the map again, and picks again"
+ },
+ {
+  "retryLevel": true,
+  "log": "after a retry",
+  "expectPickup": {
+   "at": [
+    25,
+    19
+   ],
+   "item type": {
+    "oneOf": [
+     1,
+     2,
+     6
+    ]
+   }
+  }
+ },
+ {
+  "set": {
+   "HEALTH": 0
+  },
+  "until": {
+   "screen showing": "died"
+  }
+ },
+ {
+  "retryLevel": true,
+  "log": "after another retry",
+  "expectPickup": {
+   "at": [
+    25,
+    19
+   ],
+   "item type": {
+    "oneOf": [
+     1,
+     2,
+     6
+    ]
+   }
+  }
+ },
+ {
+  "setList": {
+   "weapons owned": [
+    1,
+    1,
+    1,
+    1,
+    1
+   ]
+  },
+  "set": {
+   "HEALTH": 0
+  },
+  "until": {
+   "screen showing": "died"
+  },
+  "note": "with the rocket launcher, a mystery item can be rockets (7) too"
+ },
+ {
+  "retryLevel": true,
+  "expectPickup": {
+   "at": [
+    25,
+    19
+   ],
+   "item type": {
+    "oneOf": [
+     1,
+     2,
+     6,
+     7
+    ]
+   }
+  }
+ }
+]

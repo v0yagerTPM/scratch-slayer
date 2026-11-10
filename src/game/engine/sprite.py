@@ -24,7 +24,7 @@ ENGINE_VARS = [
     "facing square x", "facing square y", "facing letter",
     # level loading + map editing
     "map row", "map column", "map letter", "row text", "new row text", "row count", "letter position",
-    "first row length", "player starts found", "exits found", "row to copy", "other map", "map name when loaded", "supply share",
+    "first row length", "player starts found", "exits found", "row to copy", "other map", "map name when loaded", "supply share", "mystery item type",
     "square to change x", "square to change y", "new letter", "queue position",
     # level intro + melt
     "show intro", "intro start time", "melt column", "column offset", "curtain top", "melt done",
@@ -36,7 +36,10 @@ ENGINE_VARS = [
     "screen before options", "up key was held", "down key was held",
     "change direction", "change repeat timer", "mouse row", "mouse was down", "slider fraction", "last options row",
     # level clock + tally
-    "time at last frame", "tally progress", "time shown in seconds", "difficulty when loaded"]
+    "time at last frame", "tally progress", "time shown in seconds", "difficulty when loaded",
+    # developer console
+    "console word", "console letter position", "console command", "console number", "console map letter",
+    "console jump gives weapons"]
 for name in ENGINE_VARS:
     engine.var(name)
 

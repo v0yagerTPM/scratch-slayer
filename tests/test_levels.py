@@ -20,7 +20,7 @@ GOOD_MAP = [
     "1P0K0SH1",    # row 1   secret wall S at column 5, health pack H in the closet behind it
     "10000E11",    # row 2   barrel E at column 5
     "11R11111",    # row 3   red door R at column 2
-    "10W00001",    # row 4   the boss W
+    "10000W01",    # row 4   the boss W at column 5 (7 squares' walk from the start)
     "111111Z1",    # row 5   skull door Z at column 6
     "1111110X",    # row 6   exit switch X at column 7
     "11111111",    # row 7
@@ -130,13 +130,18 @@ def test_two_bosses():
 
 
 def test_skull_door_without_a_boss():
-    expect_problem(change(GOOD_MAP, 2, 4, "0"), "skull door (Z) needs a boss")
+    expect_problem(change(GOOD_MAP, 5, 4, "0"), "skull door (Z) needs a boss")
 
 
 def test_skull_door_that_can_be_walked_around():
     # Open a second way down to the exit: it no longer needs the boss.
     expect_problem(change(change(GOOD_MAP, 5, 5, "0"), 5, 6, "0"), "without going through the skull door")
 
+
+
+def test_monster_too_close_to_the_start():
+    # An imp three squares from the player start.
+    expect_problem(change(GOOD_MAP, 4, 1, "M"), "only 3 squares' walk from the player start", "at least 6")
 
 
 def test_key_that_isnt_needed():

@@ -48,9 +48,15 @@ WEAPON_TYPES = [
 ]
 AMMO = [("bullets", START_BULLETS, 200), ("shells", 0, 99), ("rockets", 0, 50)]   # name, new-game amount, most you can carry
 # What each ammo or weapon pickup gives you: map letter -> (ammo name, how much).
-AMMO_PICKUPS = {"I": ("bullets", 20), "A": ("shells", 8), "U": ("rockets", 4),
+# (Boxes were 20 / 8 / 4 until playtesting showed ammo ran short.)
+AMMO_PICKUPS = {"I": ("bullets", 25), "A": ("shells", 10), "U": ("rockets", 5),
                 "N": ("shells", 8), "Q": ("bullets", 40), "L": ("rockets", 4)}
 HEALTH_PACK = 25   # health one health pack (H) gives, at normal difficulty
+# MYSTERY ITEM (?): when a map loads, each ? becomes one of these, picked at random (a letter twice
+# is twice as likely). Rockets become bullets if you don't have the rocket launcher yet.
+# Secret closets hold mystery items, so a secret has different loot each time.
+MYSTERY_ITEMS = ["H", "H", "A", "A", "I", "U"]
+ITEM_TYPES = {"H": 1, "A": 2, "K": 3, "J": 4, "I": 6, "U": 7, "N": 8, "Q": 9, "L": 10}   # item type numbers
 # An explosion (barrel or rocket) does this much damage to a monster close to it, half as much
 # further away.
 EXPLOSION_DAMAGE_UP_CLOSE = 6
@@ -73,7 +79,8 @@ DIFFICULTIES = [
     ["normal", 100, 100, 100, 100],
     ["hard",   150, 125, 70,  100],
 ]
-SUPPLY_LETTERS = "HAIU"     # the pickups 'supplies kept' can leave out: health, shells, bullets, rockets
+SUPPLY_LETTERS = "HAIU?"    # the pickups 'supplies kept' can leave out: health, shells, bullets, rockets,
+                            # and mystery items
 SUPPLY_SHARE_START = 50     # where the sharing-out count starts (see 'load level' and supplies_kept())
 NORMAL_DIFFICULTY = 2
 
@@ -96,6 +103,23 @@ OPTIONS = "options"   # 'screen showing' while the options menu is open
 # screens + game states
 NONE, TITLE, DIED, COMPLETE, WIN = "none", "title", "died", "level complete", "you win"
 PLAYING, EXIT_REACHED, DEAD = "playing", "exit reached", "dead"
+LEVEL_JUMP = "level jump"   # the developer console asked for another level or map
+
+# What the console list on the stage says while you type. One line per item.
+CONSOLE_HELP = [
+    "DEVELOPER CONSOLE: type a command, then Enter",
+    "level 3     go to level 3 (a random map)",
+    "level 3 b   go to level 3, map B",
+    "map c       this level, map C",
+    "exit        finish this level now",
+    "kill        every monster dies",
+    "god         nothing can hurt you (again = off)",
+    "guns        every weapon, full ammo",
+    "keys        the red, blue and skull keys",
+    "heal        health back to 100",
+    "(nothing)   back to the game",
+]
+
 INTRO = "intro"   # used for both 'game state' and 'screen showing' while a level card or melt is on screen
 SHOW_TITLE, SHOW_CARD = "show title", "show level card"
 SHOW_DEATH, SHOW_WIN = "show death screen", "show victory screen"
@@ -104,8 +128,10 @@ def V(name): return Var(name)
 
 def hurt_player(amount):
     """change health by -(amount x the difficulty's 'damage to you' percent / 100), rounded.
-    EVERY hit on the player goes through this, so the difficulty setting works everywhere."""
-    return chg("health", mul(-1, round_(mul(amount, div(item(V("difficulty"), "difficulty damage to you"), 100)))))
+    EVERY hit on the player goes through this, so the difficulty setting works everywhere.
+    (The developer console's 'god' command sets 'god mode' to 1: then nothing hurts.)"""
+    return if_(eq(V("god mode"), 0),
+               chg("health", mul(-1, round_(mul(amount, div(item(V("difficulty"), "difficulty damage to you"), 100))))))
 
 def pickup_amount(amount):
     """amount x the difficulty's 'pickup amount' percent / 100, rounded. Every health pack and

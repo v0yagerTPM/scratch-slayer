@@ -1,0 +1,142 @@
+[
+ {
+  "frames": 30,
+  "set": {
+   "map choice": 1
+  },
+  "note": "MAP: always map A (Front Gate)"
+ },
+ {
+  "startGame": true
+ },
+ {
+  "frames": 15,
+  "set": {
+   "px": 7.5,
+   "py": 22.5,
+   "ang": 180,
+   "HEALTH": 100
+  },
+  "note": "two squares from the imp at (5, 23), in plain sight, half a second into the level",
+  "expectMonster": {
+   "at": [
+    5,
+    23
+   ],
+   "is chasing": 0
+  },
+  "log": "start grace: the imp hasn't woken yet"
+ },
+ {
+  "frames": 45,
+  "log": "after 1.5 seconds the imp sees you and wakes",
+  "expectMonster": {
+   "at": [
+    5,
+    23
+   ],
+   "is chasing": 1
+  }
+ },
+ {
+  "frames": 60,
+  "set": {
+   "px": 20.5,
+   "py": 2.5,
+   "ang": 180,
+   "HEALTH": 100
+  },
+  "note": "in the command post's east office; the imp at (16, 2) is 4 squares away, but through a wall",
+  "log": "it can't see you, so it doesn't wake",
+  "expectMonster": {
+   "at": [
+    16,
+    2
+   ],
+   "is chasing": 0,
+   "can see player": 0,
+   "monster x": 16.5
+  }
+ },
+ {
+  "frames": 2,
+  "keys": [
+   "space"
+  ],
+  "set": {
+   "HEALTH": 100
+  },
+  "note": "fire the pistol"
+ },
+ {
+  "frames": 60,
+  "set": {
+   "HEALTH": 100
+  },
+  "log": "it heard the shot, but can't see you: it waits instead of pushing into the wall",
+  "expectMonster": {
+   "at": [
+    16,
+    2
+   ],
+   "is chasing": 1,
+   "knows where player is": 0,
+   "monster x": 16.5
+  }
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 13.5,
+   "py": 7.5,
+   "ang": 90,
+   "HEALTH": 100
+  },
+  "note": "the middle of the courtyard, with its six imps"
+ },
+ {
+  "frames": 30,
+  "set": {
+   "HEALTH": 100
+  },
+  "expectMonstersApart": true,
+  "note": "courtyard fight, second 1: no two monsters on one square"
+ },
+ {
+  "frames": 30,
+  "set": {
+   "HEALTH": 100
+  },
+  "expectMonstersApart": true,
+  "note": "courtyard fight, second 2: no two monsters on one square"
+ },
+ {
+  "frames": 30,
+  "set": {
+   "HEALTH": 100
+  },
+  "expectMonstersApart": true,
+  "note": "courtyard fight, second 3: no two monsters on one square"
+ },
+ {
+  "frames": 30,
+  "set": {
+   "HEALTH": 100
+  },
+  "expectMonstersApart": true,
+  "note": "courtyard fight, second 4: no two monsters on one square"
+ },
+ {
+  "frames": 30,
+  "set": {
+   "HEALTH": 100
+  },
+  "expectMonstersApart": true,
+  "note": "courtyard fight, second 5: no two monsters on one square"
+ },
+ {
+  "frames": 0,
+  "log": "courtyard fight",
+  "dumpMonsters": 1
+ }
+]

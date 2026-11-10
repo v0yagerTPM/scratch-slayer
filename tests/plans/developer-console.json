@@ -1,0 +1,183 @@
+[
+ {
+  "frames": 30,
+  "set": {
+   "map choice": 1,
+   "developer mode": 0
+  },
+  "note": "MAP: always map A"
+ },
+ {
+  "frames": 3,
+  "keys": [
+   "d",
+   "e",
+   "v"
+  ],
+  "note": "hold D + E + V on the title screen"
+ },
+ {
+  "frames": 3,
+  "log": "developer mode on",
+  "expect": {
+   "developer mode": 1
+  }
+ },
+ {
+  "startGame": true
+ },
+ {
+  "frames": 1,
+  "console": "god",
+  "log": "god mode on",
+  "expect": {
+   "god mode": 1
+  }
+ },
+ {
+  "frames": 3,
+  "set": {
+   "HEALTH": 100
+  },
+  "setMonsterType": {
+   "type": 1,
+   "first": 1,
+   "vars": {
+    "monster x": 2.3,
+    "monster y": 2.5,
+    "attack cooldown": 0,
+    "is chasing": 1
+   }
+  },
+  "note": "an imp claws you",
+  "log": "god mode: no damage",
+  "expect": {
+   "health": 100
+  }
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 1.5,
+   "py": 2.5
+  },
+  "console": "GOD",
+  "log": "god mode off again (capitals work too)",
+  "expect": {
+   "god mode": 0
+  }
+ },
+ {
+  "frames": 1,
+  "console": "guns",
+  "log": "every weapon, full ammo",
+  "expect": {
+   "list:weapons owned": [
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "list:ammo counts": [
+    200,
+    99,
+    50
+   ]
+  }
+ },
+ {
+  "frames": 1,
+  "console": "keys",
+  "expect": {
+   "has red key": 1,
+   "has blue key": 1,
+   "has skull key": 1
+  }
+ },
+ {
+  "frames": 1,
+  "set": {
+   "HEALTH": 40
+  },
+  "console": "heal",
+  "expect": {
+   "health": 100
+  }
+ },
+ {
+  "frames": 2,
+  "console": "kill",
+  "log": "every monster dead",
+  "expect": {
+   "level kills": 17,
+   "level monster count": 17
+  }
+ },
+ {
+  "frames": 1,
+  "console": "",
+  "log": "nothing typed: back to the game",
+  "expect": {
+   "game state": "playing",
+   "current level": 1
+  }
+ },
+ {
+  "frames": 1,
+  "console": "level 9",
+  "log": "no level 9: ignored",
+  "expect": {
+   "game state": "playing",
+   "current level": 1
+  }
+ },
+ {
+  "console": "level 3 b",
+  "note": "jump to level 3, map B"
+ },
+ {
+  "until": {
+   "game state": "playing"
+  },
+  "log": "level 3, map B, with level 3's weapons",
+  "expect": {
+   "current level": 3,
+   "map name": "level 3 map B",
+   "list:weapons owned": [
+    1,
+    1,
+    1,
+    1,
+    1
+   ]
+  },
+  "expectCostume": {
+   "Card Background": "card 3 B"
+  }
+ },
+ {
+  "console": "map c",
+  "note": "same level, map C"
+ },
+ {
+  "until": {
+   "game state": "playing"
+  },
+  "log": "level 3, map C",
+  "expect": {
+   "current level": 3,
+   "map name": "level 3 map C"
+  }
+ },
+ {
+  "console": "exit",
+  "note": "finish the level"
+ },
+ {
+  "until": {
+   "screen showing": "level complete"
+  },
+  "log": "the tally"
+ }
+]

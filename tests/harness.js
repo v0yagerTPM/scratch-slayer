@@ -147,7 +147,7 @@ console.error = (...parts) => { engineErrors.push(parts.join(' ')); };
 
 // ---- reading and changing the game ----
 const ALL_KEYS = ['space', 'up arrow', 'down arrow', 'left arrow', 'right arrow', 'w', 'a', 's', 'd', 'm', 'e', 'z', 'q',
-                  '1', '2', '3', '4', '5', 'o', 'p', 'n', 'r'];
+                  '1', '2', '3', '4', '5', 'o', 'p', 'n', 'r', 'c', 'v'];
 function scratchKeyName(key) {
     if (key === 'space') return ' ';
     if (key.includes('arrow')) { const direction = key.split(' ')[0]; return 'Arrow' + direction[0].toUpperCase() + direction.slice(1); }
@@ -183,12 +183,14 @@ function localValues(target, round) {
 
 // Does the game match these conditions? Same rules as "expect":
 // {"name": value} must be equal (compared as text), {"name": {"gt": n, "lt": n}} a range,
-// {"name": {"not": value}} anything else, "list:name" compares a whole list.
+// {"name": {"not": value}} anything else, {"name": {"oneOf": [1, 2]}} one of these,
+// "list:name" compares a whole list.
 function valueOf(name) { return name.startsWith('list:') ? (stageVariable(name.slice(5)) || {}).value : stageValues()[name]; }
 function matches(got, want) {
     if (want && typeof want === 'object' && !Array.isArray(want)) {
         return ('gt' in want ? +got > want.gt : true) && ('lt' in want ? +got < want.lt : true) &&
-               ('not' in want ? String(got) !== String(want.not) : true);
+               ('not' in want ? String(got) !== String(want.not) : true) &&
+               ('oneOf' in want ? want.oneOf.map(String).includes(String(got)) : true);
     }
     if (Array.isArray(want)) return Array.isArray(got) && JSON.stringify(got.map(String)) === JSON.stringify(want.map(String));
     return String(got) === String(want);
@@ -264,6 +266,22 @@ async function runTaps(step) {
         holdKeys(step.keys || []);
         for (let count = 0; count < TAP_UP_FRAMES; count++, waited++) await runFrame(step, waited);
     }
+}
+
+// "console": press C, wait for the developer console's question, type the answer and press Enter.
+let questionIsOpen = false;
+vm.runtime.on('QUESTION', question => { questionIsOpen = question !== null; });
+async function runConsole(step) {
+    holdKeys([...(step.keys || []), 'c']);
+    for (let count = 0; count < TAP_DOWN_FRAMES; count++) await runFrame(step, count);
+    holdKeys(step.keys || []);
+    for (let waited = 0; !questionIsOpen; waited++) {
+        if (waited >= 60) { fail(`${describe(step)}: the developer console didn't open (is developer mode on?)`); return; }
+        await runFrame(step, waited);
+    }
+    vm.runtime.emit('ANSWER', step.console);
+    questionIsOpen = false;
+    for (let count = 0; count < 3; count++) await runFrame(step, count);
 }
 
 // ---- setting things up before a step's frames ----
@@ -362,6 +380,38 @@ function checkExpectations(step) {
             if (got !== want) fail(`${describe(step)}: ${spriteName} costume = ${JSON.stringify(got)}, expected ${JSON.stringify(want)}`);
         }
     }
+    if (step.expectMonster) {       // {"at": [16, 2], "is chasing": 0}: the monster that STARTED on that square
+        const {at, ...want} = step.expectMonster;
+        const startX = stageVariable('monster start x').value, startY = stageVariable('monster start y').value;
+        const id = startX.findIndex((x, index) => +x === at[0] && +startY[index] === at[1]) + 1;
+        const clone = monsterClones().find(clone => +localVariable(clone, 'monster id').value === id);
+        if (!clone) fail(`${describe(step)}: no monster started at ${JSON.stringify(at)}`);
+        else for (const [name, value] of Object.entries(want)) {
+            const got = (localVariable(clone, name) || {}).value;
+            if (!matches(got, value)) fail(`${describe(step)}: monster from ${JSON.stringify(at)}: ${name} = ${JSON.stringify(got)}, expected ${JSON.stringify(value)}`);
+        }
+    }
+    if (step.expectPickup) {        // {"at": [25, 19], "item type": {"oneOf": [1, 2, 6]}}: the item on that square
+        const {at, ...want} = step.expectPickup;
+        const pickups = vm.runtime.targets.filter(target => target.sprite.name === 'Pickup' && !target.isOriginal);
+        const pickup = pickups.find(clone => Math.floor(+localVariable(clone, 'item x').value) === at[0] &&
+                                             Math.floor(+localVariable(clone, 'item y').value) === at[1]);
+        if (!pickup) fail(`${describe(step)}: no item on square ${JSON.stringify(at)}`);
+        else for (const [name, value] of Object.entries(want)) {
+            const got = localVariable(pickup, name).value;
+            if (!matches(got, value)) fail(`${describe(step)}: item on ${JSON.stringify(at)}: ${name} = ${JSON.stringify(got)}, expected ${JSON.stringify(value)}`);
+        }
+    }
+    if (step.expectMonstersApart) { // no two live monsters on the same map square
+        const seen = {};
+        for (const clone of monsterClones()) {
+            const monster = localValues(clone);
+            if (+monster['is alive'] !== 1) continue;
+            const square = `${Math.floor(monster['monster x'])},${Math.floor(monster['monster y'])}`;
+            if (seen[square]) fail(`${describe(step)}: monsters ${seen[square]} and ${monster['monster id']} are both on square ${square}`);
+            seen[square] = monster['monster id'];
+        }
+    }
     if (step.expectMonsters) {      // {"type": 1, "monster health": 2}: every clone of that type must match
         const {type, ...want} = step.expectMonsters;
         const clones = monsterClones().filter(clone => +localVariable(clone, 'monster type').value === type);
@@ -396,6 +446,7 @@ function printDumps(step) {
         for (let frameInStep = 0; frameInStep < (step.frames || 0); frameInStep++) await runFrame(step, frameInStep);
         if (step.until) await runUntil(step);
         if (step.tap) await runTaps(step);
+        if (step.console !== undefined) await runConsole(step);
         if (step.snap) snapshot(step.snap);
         if (step.log) logStep(step);
         checkExpectations(step);

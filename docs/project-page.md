@@ -8,7 +8,7 @@ switch the music on or off, and P to pause. Press O on the title screen for opti
 turn speed, field of view, mouse steering, difficulty (easy, normal or hard), level select and which map to play.
 Levels can have several maps, and the game picks one at random each time: when you die, press SPACE to try
 the same map again or R for a different one. Find the colored keys, blow up
-barrels, hunt for secret walls, and defeat the Warden and the Colossus. Each one drops a skull
+barrels, hunt for secret walls (their loot is a surprise every time), and defeat the Warden and the Colossus. Each one drops a skull
 key that unlocks the way out. After each level, the tally shows your kills, items and secrets, and your time against the par time. Can you finish every level UNDER PAR?
 
 ## Notes and Credits

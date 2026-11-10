@@ -91,7 +91,8 @@ ray = [
     setv("wall style", item(V("wall type number"), "wall styles")),
     note("SECRET WALLS (style 4) borrow the colors of the wall digit named in\n"
          "'map secret wall looks' for this map. Their style stays 4, so\n"
-         "they get no seams: that's the clue for sharp-eyed players.",
+         "they get no seams, and they are a little lighter and more colorful\n"
+         "('secret wall hint'): clues for sharp-eyed players.",
          if_(eq(V("wall style"), 4),
              setv("wall type number", itemnum(item(V("map item number"), "map secret wall looks"), "wall letters")))),
     pen_color("#ff0000"),
@@ -105,6 +106,10 @@ ray = [
     if_(and_(or_(eq(V("wall style"), 1), eq(V("wall style"), 5)),
              or_(lt(V("spot along wall"), 0.1), gt(V("spot along wall"), 0.9))),
         chg("stripe brightness", -28)),
+    note("SECRET WALL HINT: a touch lighter and more colorful than the real wall.",
+         if_(eq(V("wall style"), 4),
+             chg("stripe brightness", V("secret wall hint")),
+             pen_param("saturation", add(item(V("wall type number"), "wall saturations"), V("secret wall hint"))))),
     pen_param("brightness", V("stripe brightness")),
     note("DRAW the stripe: a vertical pen line centered on the horizon.",
          setv("stripe screen x", add(-240 + STRIPE_WIDTH / 2, mul(V("ray column"), STRIPE_WIDTH)))),

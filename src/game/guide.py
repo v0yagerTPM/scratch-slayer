@@ -47,9 +47,12 @@ C      a charger      (winds up, then charges in a straight line, level 4)
 F      a wraith       (fades with distance, blinks sideways, level 5)
 T      the colossus   (BOSS: plasma, gets angry and calls chargers, level 6)
 H      a health pack (+25 health)
-A      a box of shells (+8)      I  a box of bullets (+20)
-U      a box of rockets (+4)
+A      a box of shells (+10)     I  a box of bullets (+25)
+U      a box of rockets (+5)
 N      the shotgun   Q  the chaingun   L  the rocket launcher
+?      a MYSTERY ITEM: when the map loads it becomes a random health
+       pack or box of ammo (see "mystery item types"). Secret closets
+       are full of these, so their loot changes every time.
 K      the red key
 J      the blue key
 E      an exploding barrel. It stays solid until it is shot.
@@ -72,7 +75,8 @@ Upper or lower case both work. Scratch treats "m" and "M" as the same.""",
      P -> remembers "player x" and "player y", turns it into 0
      a monster letter (any letter in "monster letters") -> adds the
           square to "monster start x / y / type", turns it into 0
-     H A K J I U N Q L -> adds it to "item start x / y / type",
+     H A K J I U N Q L ? -> adds it to "item start x / y / type"
+          (a ? first picks its random type),
           turns it into 0 (a boss also gets a hidden skull key, type 5)
      E -> adds it to "barrel start x / y" and KEEPS the E, so the
           barrel blocks you until it explodes
@@ -127,6 +131,8 @@ RULES FOR A MAP THAT WORKS
 - Every row must be the SAME LENGTH.
 - The outside edge must be walls (any digit, or X for the exit).
 - Exactly ONE P and ONE X.
+- No monster within 6 squares' walk of the P, so players get a
+  moment to look around before the first fight.
 - Put the X in a wall that touches floor the player can reach.
 - Put doors (D, R, B, Z) in a one-square gap between walls,
   otherwise players just walk around them.
@@ -137,6 +143,7 @@ RULES FOR A MAP THAT WORKS
 - Keys, monsters and the exit must be reachable WITHOUT opening a
   secret wall or blowing up a barrel. Hide bonus items behind secrets.
 - Put a secret wall S in a wall, with a closed-off closet behind it.
+  Fill the closet with mystery items (?) so the loot is a surprise.
 - Big maps (levels 4-6 are 36 to 40 wide) need a limit on how far rays
   travel: the map's item of "map max ray steps" (about 26-36 for big
   maps). Walls that far away are black anyway, so nobody notices.
@@ -170,12 +177,14 @@ WALL COLORS: the lists "wall letters", "wall hues", "wall saturations",
 Item 2 of each list describes wall letter "2".
 To invent a new wall letter (say W), add W to "wall letters" and add
 a hue, saturation, brightness and style (0) to the other four lists.
-Don't use P M V G W C F T H A I U N Q L K J E or 0 for walls: those
+Don't use P M V G W C F T H A I U N Q L K J E ? or 0 for walls: those
 already mean something.
 
 SECRET WALLS (S) copy the look of one wall per map: "map secret wall
-looks" = which wall digit S looks like on that map. Secret walls have
-no dark seams: sharp-eyed players can spot them.""",
+looks" = which wall digit S looks like on that map. Sharp-eyed players
+can spot them: they have no dark seams, and they are a little lighter
+and more colorful. 'secret wall hint' says how much (0 = no hint,
+try 30 to make them easy to find).""",
 
 """MONSTER TYPES  (all the numbers live in lists you can edit)
 
@@ -191,7 +200,8 @@ monster speed        squares moved per frame (30 frames = 1 second)
 monster claw damage  most health a claw attack takes (half to all of it)
 monster size         percent size on screen (100 = imp size)
 monster keep distance  stops this close to you (spitters stay back)
-monster wake distance  starts chasing when you get this close
+monster wake distance  starts chasing when it can SEE you this close
+                     (a shot within 11 squares wakes it too, through walls)
 monster shots per volley  0 = no ranged attack, 3 = three fireballs
 monster shot delay   frames between volleys
 monster shot speed   squares per frame the projectile flies
@@ -201,6 +211,13 @@ monster voice pitch  makes the pain/death sounds higher or lower
 monster is boss      1 = shows the boss health bar and drops the skull key
 monster special move "none", "charge" (charger), "blink" (wraith) or
                      "rage" (colossus). Give an imp "blink" and see!
+
+HOW MONSTERS MOVE: a monster chases you only while it can SEE you
+(the 'check line of sight' block, every 4 frames). If you get out of
+sight, it walks to the spot where it last saw you and waits there.
+Only ONE monster can stand on a map square ("monster on square"), so
+they line up in corridors instead of piling on top of each other.
+Nobody wakes up in the first 1.5 seconds of a level.
 
 NEW MONSTER: add one item to the end of EVERY "monster ..." list,
 then give the Monster sprite four costumes named
@@ -359,6 +376,34 @@ These are NOT reset by the green flag, so settings stick while the
 project is open. The menu is drawn by the Options Panel and Options
 Widgets sprites; the Engine's 'handle options input' block reads the
 keys and the mouse.""",
+
+"""DEVELOPER CONSOLE  (for testing levels quickly)
+
+TURN IT ON: on the title screen, hold D + E + V together. The list of
+commands appears. (Do it again to turn it off. The green flag doesn't
+reset it, like the options.) The options menu's level select then
+offers every level, not just the ones you have reached.
+
+USE IT: during a game, press C. The game pauses and Scratch asks for a
+command. Type one and press Enter:
+  level 3     go to level 3 (a random map)
+  level 3 b   go to level 3, map B (you get that level's weapons)
+  map c       this level again, on map C
+  exit        finish this level now (the tally comes up)
+  kill        every monster dies
+  god         nothing can hurt you (type it again to turn it off)
+  guns        every weapon and full ammo
+  keys        the red, blue and skull keys
+  heal        health back to 100
+  (nothing)   back to the game
+
+HOW IT WORKS: 'ask and wait' pauses the Engine's script until you
+press Enter, and 'answer' is what you typed. 'split the answer into
+words' cuts it at the spaces into "console words", and the 'developer
+console' block checks the first word. 'god' works because EVERY hit on
+the player checks 'god mode' first. Add your own command: copy one of
+the 'if console command = ...' blocks and add a line to the list
+"developer console".""",
 
 """DIFFICULTY  (easy, normal, hard)
 
