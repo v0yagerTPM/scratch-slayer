@@ -312,8 +312,8 @@ LEVELS = [
         #               has a door on the corridor (row 6); the last one has the red key K (25, 3).
         #   rows 7-8    the upper corridor. Doors down: a plain one (3, 9) into the torture chamber
         #               (a side trip, with pillars) and the RED door (28, 9) into the flooded hall.
-        #   rows 10-18  the flooded hall: pools of water (7) and the blue key J (18, 15). A door
-        #               (15, 14) joins it to the torture chamber.
+        #   rows 10-18  the flooded hall: pools of water (7) and the blue key J (18, 15). (The torture
+        #               chamber next to it has no door into it, so the red door can't be skipped.)
         #   row 19      the BLUE door (22, 19) down into the warden's pit
         #   rows 20-28  the pit, with the warden W (16, 26). The exit X (0, 27) is in a small room at
         #               the pit's west end, behind the SKULL door (5, 27). A secret wall S (27, 27)
@@ -327,7 +327,8 @@ LEVELS = [
          card=dict(enemy="CHARGER", lines=["Lowers its head, then charges.", "Sidestep it and it slams into a wall."],
                    boss=None),
          card_monster=5, card_boss=0, maps=[
-        # LEVEL 4, MAP A: FURNACE HALL (36 x 36). Chargers, plus imps, spitters and golems. Key: red.
+        # LEVEL 4, MAP A: FURNACE HALL (36 x 36). 11 chargers, 10 spitters, 9 imps, 6 golems. Key: red.
+        # Route: about 113 squares.
         #   rows 1-7    three north rooms (walls at columns 11 and 24); the red key K (2, 2) and the
         #               rocket launcher L (17, 2) are up here
         #   row 8       a wall with two plain doors and the RED door (32, 8)
@@ -340,6 +341,34 @@ LEVELS = [
         dict(name="Furnace Hall", rows=load_map(4, "A"), goal="Find the red key, then the exit", tint="#6a2a08",
              angle=270, ceil=(5, 40), floor=(8, 35), secret_look="4",
              max_ray_steps=34, light_falloff=4.5, sprite_darkness=2, par_seconds=165),
+        # LEVEL 4, MAP B: SLAG PITS (36 x 34). 9 chargers, 9 imps, 8 spitters, 4 golems. Key: red.
+        # Route: about 82 squares.
+        #   rows 27-32  the crane yard, where the player starts (P at 3, 31). Its only door into the
+        #               slag field is in the west (6, 26). A secret wall S (31, 32) hides supplies.
+        #   rows 10-25  the slag field: three long strips of molten slag (4) across it, each open at
+        #               one end and with one gap, so you zig-zag up through the lanes between them.
+        #               Long straight lanes are where chargers charge. The red key K (33, 15) is at the
+        #               east end of the second lane.
+        #   row 9       doors up: the tool room (8, 9) with the rocket launcher L (3, 3), the pour room
+        #               (18, 9) with its furnaces, and the RED door (28, 9) to the exit room
+        #   rows 1-8    tool room | pour room | exit room with the exit X (30, 0)
+        dict(name="Slag Pits", rows=load_map(4, "B"), goal="Cross the slag for the red key", tint="#7a3a08",
+             angle=0, ceil=(8, 50), floor=(4, 45), secret_look="5",
+             max_ray_steps=36, light_falloff=4.2, sprite_darkness=1, par_seconds=120),
+        # LEVEL 4, MAP C: ROLLING MILL (34 x 36). 9 chargers, 9 imps, 8 spitters, 4 golems. Key: red.
+        # Route: about 88 squares.
+        #   Three long halls side by side, running north to south:
+        #   columns 1-9    the west hall, with storage racks (2). The red key K (3, 3) is at its north
+        #                  end. Doors to the mill floor: south (10, 30) and north (10, 8). A secret
+        #                  wall S (3, 34) in the south-west corner hides supplies.
+        #   columns 11-22  the mill floor, where the player starts (P at 16, 33), with two long lines
+        #                  of rollers (9) and crossings between them. The rocket launcher L (16, 19).
+        #   columns 24-32  the east hall, with furnaces (4). Its only door is the RED door (23, 10);
+        #                  at its top, an office (door 28, 6) with the exit X (33, 2).
+        #   Route: mill floor -> west hall (south door) -> north to the key -> north door -> red door.
+        dict(name="Rolling Mill", rows=load_map(4, "C"), goal="Down the west hall for the key", tint="#5a3010",
+             angle=270, ceil=(10, 30), floor=(6, 30), secret_look="5",
+             max_ray_steps=36, light_falloff=4.5, sprite_darkness=2, par_seconds=120),
     ]),
 
     dict(name="The Sunken Vaults", episode=2, best_weapon=5,
@@ -453,6 +482,36 @@ def next_to(column, row, squares):
     return any((column + column_step, row + row_step) in squares for column_step, row_step in NEIGHBOR_STEPS)
 
 
+def play_through(map_rows, start, door_that_never_opens=None):
+    """PLAY THE LEVEL, ROUGHLY: work out what a player could reach, the way they would really
+    play it. At first only plain doors (D) open. Each pass flood-fills from the start:
+      - found the red key K? Next pass, red doors R count as open too.
+      - found the blue key J? Then blue doors B open.
+      - reached a boss? Beating it drops the skull key, so skull doors Z open.
+    Keep going until a pass finds nothing new. Returns the squares reached (without secret walls)
+    and the letters that were walkable in the end.
+    'door_that_never_opens' (R, B or Z) stays shut whatever keys are found: check 9 uses it to
+    ask "could you finish without this door?"."""
+    keys_found = set()
+    while True:
+        walkable = FLOOR_LETTERS | {"D"}
+        if "K" in keys_found:
+            walkable = walkable | {"R"}
+        if "J" in keys_found:
+            walkable = walkable | {"B"}
+        if "boss" in keys_found:
+            walkable = walkable | {"Z"}
+        walkable = walkable - {door_that_never_opens}
+        reachable = reachable_squares(map_rows, start, walkable)
+        letters_reached = {map_rows[row][column] for column, row in reachable}
+        found_this_pass = letters_reached & KEY_LETTERS
+        if letters_reached & BOSS_LETTERS:
+            found_this_pass.add("boss")          # beating a reachable boss drops the skull key
+        if found_this_pass <= keys_found:        # nothing new this pass (a subset): stop
+            return reachable, walkable
+        keys_found |= found_this_pass            # add the new keys and try again
+
+
 def validate(level):
     """Checks one map the way a careful player would: everything that matters must be reachable
     WITHOUT opening secret walls or blowing up barrels; pickups may hide behind secrets.
@@ -496,30 +555,9 @@ def validate(level):
           + (": " + "; ".join(where(column, row) for column, row in starts) if starts else "."))
     start = starts[0]
 
-    # PLAY THE LEVEL, ROUGHLY: work out what a player could reach, the way they would really
-    # play it. At first only plain doors (D) open. Each pass flood-fills from the start:
-    #   - found the red key K? Next pass, red doors R count as open too.
-    #   - found the blue key J? Then blue doors B open.
-    #   - reached a boss? Beating it drops the skull key, so skull doors Z open.
-    # Keep going until a pass finds nothing new. 'reachable' is then everything the player can
-    # get to without secret walls.
-    keys_found = set()
-    while True:
-        walkable = FLOOR_LETTERS | {"D"}
-        if "K" in keys_found:
-            walkable = walkable | {"R"}
-        if "J" in keys_found:
-            walkable = walkable | {"B"}
-        if "boss" in keys_found:
-            walkable = walkable | {"Z"}
-        reachable = reachable_squares(map_rows, start, walkable)
-        letters_reached = {map_rows[row][column] for column, row in reachable}
-        found_this_pass = letters_reached & KEY_LETTERS
-        if letters_reached & BOSS_LETTERS:
-            found_this_pass.add("boss")          # beating a reachable boss drops the skull key
-        if found_this_pass <= keys_found:        # nothing new this pass (a subset): stop
-            break
-        keys_found |= found_this_pass            # add the new keys and try again
+    # PLAY THE LEVEL, ROUGHLY (see play_through() above): everything a player can get to, picking
+    # up keys and beating the boss on the way, without secret walls.
+    reachable, walkable = play_through(map_rows, start)
     # The same, but with secret walls opened too. Bonus pickups are allowed to hide in there.
     reachable_with_secrets = reachable_squares(map_rows, start, walkable | {"S"})
 
@@ -572,6 +610,15 @@ def validate(level):
         check(not next_to(exit_column, exit_row, reachable_without_skull_door),
               f"{name}: the exit can be reached without going through the skull door, so players "
               "could skip the boss. Put the Z in the only way into the exit.")
+
+    # CHECK 9: every key must be NEEDED. Play the level again with the key's door shut for good:
+    # if the exit can still be reached, players can walk round that door and the key is pointless.
+    for key_letter, door_letter, color in (("K", "R", "red"), ("J", "B", "blue")):
+        if key_letter in whole_map_text:
+            reachable_with_door_shut, _ = play_through(map_rows, start, door_that_never_opens=door_letter)
+            check(not next_to(exit_column, exit_row, reachable_with_door_shut),
+                  f"{name}: the exit can be reached without going through a {color} door ({door_letter}), so "
+                  f"the {color} key ({key_letter}) isn't needed. Close the other way round, or remove the key.")
 
     # Everything passed: report the map's size and how many of each letter it has.
     return dict(size=f"{map_width}x{map_height}",

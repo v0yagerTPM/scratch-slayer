@@ -138,6 +138,12 @@ def test_skull_door_that_can_be_walked_around():
     expect_problem(change(change(GOOD_MAP, 5, 5, "0"), 5, 6, "0"), "without going through the skull door")
 
 
+
+def test_key_that_isnt_needed():
+    # A second way round the red door (a plain door in the wall at column 4, row 3): the red key
+    # no longer matters.
+    expect_problem(change(GOOD_MAP, 4, 3, "D"), "without going through a red door", "red key (K) isn't needed")
+
 def load_from_text(file_bytes):
     """Write a map file into a temporary maps folder, load it with load_map(), and return the rows."""
     with tempfile.TemporaryDirectory() as folder:

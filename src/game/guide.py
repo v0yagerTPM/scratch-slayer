@@ -132,6 +132,8 @@ RULES FOR A MAP THAT WORKS
   otherwise players just walk around them.
 - The red key K must be reachable BEFORE the red door R
   (same for J and B), or the level can't be finished.
+- And the key must MATTER: no second way round its door, or
+  players can skip the key.
 - Keys, monsters and the exit must be reachable WITHOUT opening a
   secret wall or blowing up a barrel. Hide bonus items behind secrets.
 - Put a secret wall S in a wall, with a closed-off closet behind it.

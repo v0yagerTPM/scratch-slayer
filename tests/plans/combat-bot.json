@@ -3,8 +3,10 @@
   "frames": 30,
   "set": {
    "highest level reached": 6,
-   "start level choice": 4
-  }
+   "start level choice": 4,
+   "map choice": 1
+  },
+  "note": "MAP: always map A, so the positions below are on map A of each level"
  },
  {
   "startGame": true

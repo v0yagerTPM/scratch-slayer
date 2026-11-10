@@ -7,8 +7,10 @@
    "field of view": 66,
    "turn speed": 4,
    "mouse steering": 0,
-   "music is on": 1
-  }
+   "music is on": 1,
+   "map choice": 1
+  },
+  "note": "MAP: always map A, so the positions below are on map A of each level"
  },
  {
   "frames": 2,

@@ -273,19 +273,37 @@
  },
  {
   "continueToNextLevel": true,
-  "log": "level 4 has only map A, so MAP: B can't apply there: it plays map A",
+  "log": "level 4 follows the MAP setting: map B (Slag Pits)",
   "expect": {
    "level": 4,
-   "map name": "level 4 map A",
-   "level map count": 1
+   "map name": "level 4 map B",
+   "level map count": 3,
+   "px": 3.5,
+   "py": 31.5
   },
   "expectCostume": {
-   "Card Background": "card 4 A",
-   "Card Heading": "heading 4 A"
+   "Card Background": "card 4 B",
+   "Card Heading": "heading 4 B"
   }
  },
  {
-  "note": "die on level 4",
+  "finishLevel": true
+ },
+ {
+  "continueToNextLevel": true,
+  "log": "level 5 has only map A, so MAP: B can't apply there: it plays map A",
+  "expect": {
+   "level": 5,
+   "map name": "level 5 map A",
+   "level map count": 1
+  },
+  "expectCostume": {
+   "Card Background": "card 5 A",
+   "Card Heading": "heading 5 A"
+  }
+ },
+ {
+  "note": "die on level 5",
   "set": {
    "HEALTH": 0
   },
@@ -316,7 +334,7 @@
  {
   "retryLevel": true,
   "expect": {
-   "map name": "level 4 map A",
+   "map name": "level 5 map A",
    "game state": "playing"
   }
  }

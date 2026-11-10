@@ -71,9 +71,21 @@ normal / hard: the difficulty changes monster health, how many supplies appear a
 
 ### Map A: Furnace Hall
 
-36 x 36 squares · 19 monsters · par 165 s · ammo ratio 5.8 / 2.95 / 1.69, health 190 / 125 / 100 (easy / normal / hard)
+36 x 36 squares · 36 monsters · par 165 s · ammo ratio 2.89 / 1.46 / 0.91, health 190 / 125 / 75 (easy / normal / hard)
 
 ![The Foundry, map A](level%204%20map%20A.svg)
+
+### Map B: Slag Pits
+
+36 x 34 squares · 30 monsters · par 120 s · ammo ratio 2.93 / 1.47 / 1.01, health 228 / 150 / 75 (easy / normal / hard)
+
+![The Foundry, map B](level%204%20map%20B.svg)
+
+### Map C: Rolling Mill
+
+34 x 36 squares · 30 monsters · par 120 s · ammo ratio 2.93 / 1.47 / 0.99, health 228 / 150 / 75 (easy / normal / hard)
+
+![The Foundry, map C](level%204%20map%20C.svg)
 
 ## Level 5: The Sunken Vaults (episode 2)
 

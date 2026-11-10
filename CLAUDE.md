@@ -81,7 +81,7 @@ npm run compare                                 # is the built project identical
   Python = one map file + one map record; adding a level = a map file + a level record (tested by
   building a 7-level copy and playing level 7). `validate()` checks one map and raises `LevelError`
   with a message naming the map and square. It checks reachability, keys, and that a skull door
-  (`Z`) really gates the exit behind the boss. `python3 src/levels.py` also prints a **balance
+  (`Z`) really gates the exit behind the boss, and that no key's door can be walked round (check 9). `python3 src/levels.py` also prints a **balance
   report** per map (monster health vs. the damage in the ammo lying around, health packs).
 - `map_preview.py`: draws every map as a top-down SVG in `docs/maps/` (walls in their game colors,
   tokens for things, edge numbers every 5 squares, a legend, the balance numbers) plus
