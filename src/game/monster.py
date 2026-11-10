@@ -34,7 +34,9 @@ for name in ["monster id", "is clone", "monster type", "monster name", "monster 
              "charge direction y", "blink timer", "blink side", "has called for help", "helper x", "helper y",
              # moving: one monster per square, and chasing what I can see
              "my square", "square to try", "step x", "step y", "target offset x", "target offset y", "target distance",
-             "can see player", "sight timer", "knows where player is", "last seen x", "last seen y"]:
+             "can see player", "sight timer", "knows where player is", "last seen x", "last seen y",
+             # keeping my body out of the walls
+             "my wall gap", "wall check x", "wall check y", "landing is clear", "offset from middle"]:
     monster.var(name)
 
 def stat(column):
@@ -46,12 +48,55 @@ def square_number(x_value, y_value):
     numbered row by row, so square number = row x map width + column + 1."""
     return add(add(mul(floor_(y_value), V("map width")), floor_(x_value)), 1)
 
-def square_is_free(x_value, y_value):
-    """Floor (letter 0), and no OTHER monster standing there ('square to try' must already
-    hold this square's number)."""
-    return and_(eq(map_letter_at(floor_(x_value), floor_(y_value)), 0),
-                or_(eq(item(V("square to try"), "monster on square"), 0),
-                    eq(item(V("square to try"), "monster on square"), V("monster id"))))
+def is_floor(x_value, y_value):
+    """True if the map square under the point (x, y) is floor (letter 0), not a wall or closed door."""
+    return eq(map_letter_at(floor_(x_value), floor_(y_value)), 0)
+
+def no_other_monster_on_square():
+    """No OTHER monster stands on the square numbered 'square to try'."""
+    return or_(eq(item(V("square to try"), "monster on square"), 0),
+               eq(item(V("square to try"), "monster on square"), V("monster id")))
+
+def leading_edge(position, step, edge):
+    """Where my front edge would be along one direction: my middle plus 'my wall gap' in the
+    direction I'm moving (minus it if the step goes backwards). Sets the variable 'edge'."""
+    return ifelse(gt(step, 0), [setv(edge, add(position, V("my wall gap")))],
+                  [setv(edge, sub(position, V("my wall gap")))])
+
+def body_is_clear(x_value, y_value, why):
+    """Blocks that set 'landing is clear' to 1 if a monster standing at (x, y) would fit: all
+    four corners of my body (a square 'my wall gap' out from my middle each way) on floor, and
+    my middle on a square no other monster has. 'why' becomes the comment on the first block."""
+    gap = V("my wall gap")
+    return [note(why, setv("square to try", square_number(x_value, y_value))), setv("landing is clear", 0),
+            if_(and_(and_(and_(is_floor(sub(x_value, gap), sub(y_value, gap)), is_floor(add(x_value, gap), sub(y_value, gap))),
+                          and_(is_floor(sub(x_value, gap), add(y_value, gap)), is_floor(add(x_value, gap), add(y_value, gap)))),
+                     no_other_monster_on_square()),
+                setv("landing is clear", 1))]
+
+def step_along(axis, other_axis, step):
+    """One half of 'take a step': move along 'axis' ("x" or "y") by 'step', if my body fits.
+    My front edge is 'my wall gap' ahead of my middle; both of its corners must be on floor.
+    If only one corner is blocked (I'm brushing past the corner of a wall, or lining up with a
+    doorway), slide sideways toward the middle of my row (or column) instead, so next time I fit."""
+    position, other = V(f"monster {axis}"), V(f"monster {other_axis}")
+    edge, gap = V(f"wall check {axis}"), V("my wall gap")
+
+    def floor_at(along, across):      # is_floor with the coordinates in the right order
+        return is_floor(along, across) if axis == "x" else is_floor(across, along)
+    return [setv(f"next monster {axis}", add(position, step)),
+            leading_edge(V(f"next monster {axis}"), step, f"wall check {axis}"),
+            setv("square to try", square_number(V("next monster x"), V("monster y")) if axis == "x"
+                 else square_number(V("monster x"), V("next monster y"))),
+            if_(no_other_monster_on_square(),
+                ifelse(and_(floor_at(edge, sub(other, gap)), floor_at(edge, add(other, gap))),
+                       [setv(f"monster {axis}", V(f"next monster {axis}"))],
+                       [if_(floor_at(edge, other),
+                            setv("offset from middle", sub(add(floor_(other), 0.5), other)),
+                            ifelse(lt(abs_(V("offset from middle")), abs_(step)),
+                                   [setv(f"monster {other_axis}", add(floor_(other), 0.5))],
+                                   [ifelse(gt(V("offset from middle"), 0), [chg(f"monster {other_axis}", abs_(step))],
+                                           [chg(f"monster {other_axis}", mul(-1, abs_(step)))])]))]))]
 
 def claim_my_square():
     """After moving: if I'm on a new square, give the old one back (0) and put my id on the new one."""
@@ -105,6 +150,13 @@ monster.script(as_clone(), setv("is clone", 1),
          setv("monster y", add(item(V("monster id"), "monster start y"), 0.5)),
          setv("monster type", item(V("monster id"), "monster start type")),
          setv("monster name", stat("names")),
+         note("MY WALL GAP: how close my middle may come to a wall. My picture is\n"
+              "wider than a point, so without a gap half of me would sink into the\n"
+              "wall. Bigger monsters keep a bigger gap: 0.3 squares at size 100.\n"
+              "Never more than 0.45, so I still fit through a 1-square doorway.\n"
+              "(The player keeps 0.25: see 'wall buffer' in the Engine.)",
+              setv("my wall gap", mul(0.3, div(stat("size"), 100)))),
+         if_(gt(V("my wall gap"), 0.45), setv("my wall gap", 0.45)),
          note("DIFFICULTY: start with the difficulty's percent of my type's health\n"
               "(easy 75, normal 100, hard 125), rounded. An imp has 3 normally:\n"
               "2 on easy, 4 on hard.",
@@ -127,17 +179,20 @@ monster.script(as_clone(), setv("is clone", 1),
          costume("imp walk 1", join(V("monster name"), " walk 1")), cleareffects(), hide(),
          comment="NEW CLONE: set myself up from the monster type lists.")
 
+x_part = step_along("x", "y", V("step x"))
 monster.script(Def("take a step"),
          note("Try the x part of the step, then the y part, so I slide along walls.\n"
-              "A square counts as free only if it's floor AND no other monster is\n"
-              "standing on it ('monster on square'), so monsters queue up instead of\n"
-              "piling on top of each other. Wolfenstein 3D kept one thing per square too.",
-              setv("next monster x", add(V("monster x"), V("step x")))),
-         setv("square to try", square_number(V("next monster x"), V("monster y"))),
-         if_(square_is_free(V("next monster x"), V("monster y")), setv("monster x", V("next monster x"))),
-         setv("next monster y", add(V("monster y"), V("step y"))),
-         setv("square to try", square_number(V("monster x"), V("next monster y"))),
-         if_(square_is_free(V("monster x"), V("next monster y")), setv("monster y", V("next monster y"))),
+              "My body is a square, 'my wall gap' out from my middle each way. To move:\n"
+              "- both corners of my FRONT EDGE must stay on floor, so my picture never\n"
+              "  sinks into a wall. If just one corner is blocked (a wall corner, or a\n"
+              "  doorway I'm not lined up with), I slide toward the middle of my row\n"
+              "  or column instead, and fit through next time;\n"
+              "- no other monster may stand on the square my middle moves onto\n"
+              "  ('monster on square'), so monsters queue up instead of piling on top\n"
+              "  of each other. Wolfenstein 3D kept one thing per square too.",
+              x_part[0]),
+         *x_part[1:],
+         *step_along("y", "x", V("step y")),
          *claim_my_square(), setv("moved this frame", 1),
          comment="TAKE A STEP: move by 'step x' and 'step y' if the squares are free.")
 
@@ -230,8 +285,9 @@ monster.script(Def("charge at the player"),
                          "and the charge ends.",
                          setv("next monster x", add(V("monster x"), mul(V("charge direction x"), 0.17)))),
                     setv("next monster y", add(V("monster y"), mul(V("charge direction y"), 0.17))),
-                    setv("square to try", square_number(V("next monster x"), V("next monster y"))),
-                    ifelse(square_is_free(V("next monster x"), V("next monster y")),
+                    *body_is_clear(V("next monster x"), V("next monster y"),
+                                   "Slam into the wall when my edge would touch it, not my middle."),
+                    ifelse(eq(V("landing is clear"), 1),
                            [setv("monster x", V("next monster x")), setv("monster y", V("next monster y")),
                             *claim_my_square(), setv("moved this frame", 1)],
                            [setv("charge state", 3), setv("charge timer", 45), play("slam")]),
@@ -260,8 +316,10 @@ monster.script(Def("blink sideways"),
                                                             mul(1.6, V("blink side"))))),
              setv("next monster y", sub(V("monster y"), mul(div(V("offset x from player"), V("distance to player")),
                                                             mul(1.6, V("blink side"))))),
-             setv("square to try", square_number(V("next monster x"), V("next monster y"))),
-             if_(square_is_free(V("next monster x"), V("next monster y")),
+             *body_is_clear(V("next monster x"), V("next monster y"),
+                            "Only land where all of me fits: not in a wall, not half in one, and\n"
+                            "not on another monster's square."),
+             if_(eq(V("landing is clear"), 1),
                  setv("monster x", V("next monster x")), setv("monster y", V("next monster y")),
                  *claim_my_square(), play("blink")),
              setv("blink timer", rnd(60, 120)))),

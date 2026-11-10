@@ -1,0 +1,163 @@
+[
+ {
+  "frames": 30,
+  "set": {
+   "map choice": 1,
+   "developer mode": 1
+  },
+  "note": "MAP: always map A; developer mode on for the console"
+ },
+ {
+  "startGame": true
+ },
+ {
+  "frames": 1,
+  "console": "god",
+  "note": "god mode, so the bot survives long fights",
+  "expect": {
+   "god mode": 1
+  }
+ },
+ {
+  "frames": 1,
+  "console": "level 2 a",
+  "note": "level 2: spitters back away from you"
+ },
+ {
+  "until": {
+   "game state": "playing"
+  },
+  "note": "level 2 starts"
+ },
+ {
+  "frames": 600,
+  "auto": true,
+  "set": {
+   "HEALTH": 100
+  },
+  "expectMonstersClearOfWalls": 0.25,
+  "note": "level 2: the bot fights; spitters back away from you. No monster's middle may come within 0.25 squares of a wall",
+  "log": "level 2 after the fight"
+ },
+ {
+  "frames": 1,
+  "console": "level 4 a",
+  "note": "level 4: chargers charge and slam into walls"
+ },
+ {
+  "until": {
+   "game state": "playing"
+  },
+  "note": "level 4 starts"
+ },
+ {
+  "frames": 600,
+  "auto": true,
+  "set": {
+   "HEALTH": 100
+  },
+  "expectMonstersClearOfWalls": 0.25,
+  "note": "level 4: the bot fights; chargers charge and slam into walls. No monster's middle may come within 0.25 squares of a wall",
+  "log": "level 4 after the fight"
+ },
+ {
+  "frames": 1,
+  "console": "level 5 a",
+  "note": "level 5: wraiths blink sideways"
+ },
+ {
+  "until": {
+   "game state": "playing"
+  },
+  "note": "level 5 starts"
+ },
+ {
+  "frames": 600,
+  "auto": true,
+  "set": {
+   "HEALTH": 100
+  },
+  "expectMonstersClearOfWalls": 0.25,
+  "note": "level 5: the bot fights; wraiths blink sideways. No monster's middle may come within 0.25 squares of a wall",
+  "log": "level 5 after the fight"
+ },
+ {
+  "frames": 1,
+  "console": "level 1 a",
+  "note": "level 1: imps chase you round corners"
+ },
+ {
+  "until": {
+   "game state": "playing"
+  },
+  "note": "level 1 starts"
+ },
+ {
+  "frames": 600,
+  "auto": true,
+  "set": {
+   "HEALTH": 100
+  },
+  "expectMonstersClearOfWalls": 0.25,
+  "note": "level 1: the bot fights; imps chase you round corners. No monster's middle may come within 0.25 squares of a wall",
+  "log": "level 1 after the fight"
+ },
+ {
+  "frames": 1,
+  "console": "level 1 a",
+  "note": "DOORWAY: level 1 map A again, fresh"
+ },
+ {
+  "until": {
+   "game state": "playing"
+  }
+ },
+ {
+  "frames": 4,
+  "keys": [
+   "e"
+  ],
+  "set": {
+   "px": 13.5,
+   "py": 22.5,
+   "ang": 270
+  },
+  "note": "open the main gate (the door at column 13, row 21)"
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 13.5,
+   "py": 19.5,
+   "ang": 90
+  },
+  "setMonsterType": {
+   "type": 1,
+   "first": 1,
+   "vars": {
+    "monster x": 10.5,
+    "monster y": 23.5,
+    "is chasing": 1,
+    "knows where player is": 1,
+    "last seen x": 13.5,
+    "last seen y": 19.5
+   }
+  },
+  "note": "the player inside the gatehouse; the first imp outside, 3 squares to the side of the 1-square gate, chasing"
+ },
+ {
+  "frames": 300,
+  "expectMonstersClearOfWalls": 0.25,
+  "note": "the imp lines itself up with the gateway and walks through it, without touching the walls",
+  "log": "the imp came through the gate",
+  "expectMonster": {
+   "at": [
+    5,
+    1
+   ],
+   "monster y": {
+    "lt": 21
+   }
+  }
+ }
+]

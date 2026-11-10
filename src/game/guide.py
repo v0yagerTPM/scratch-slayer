@@ -217,6 +217,10 @@ HOW MONSTERS MOVE: a monster chases you only while it can SEE you
 sight, it walks to the spot where it last saw you and waits there.
 Only ONE monster can stand on a map square ("monster on square"), so
 they line up in corridors instead of piling on top of each other.
+A monster's body is a small square round its middle ('my wall gap':
+0.3 squares at size 100, bigger for big monsters, at most 0.45), so it
+stops before its picture sinks into a wall, and slides to line up with
+a doorway before walking through.
 Nobody wakes up in the first 1.5 seconds of a level.
 
 NEW MONSTER: add one item to the end of EVERY "monster ..." list,

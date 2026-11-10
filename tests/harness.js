@@ -223,9 +223,47 @@ async function runFrame(step, frameInStep) {
         for (const thread of threads) vm.runtime.sequencer.stepThread(thread);
     }
     stepTimes.push(realNow() - started);
+    if (step.expectMonstersClearOfWalls !== undefined) checkMonstersClearOfWalls(step);
     frame++; fakeNow += FRAME_MS;
     await new Promise(resolve => setImmediate(resolve));
     if (step.snapEvery && frame % step.snapEvery === 0) snapshot(`${step.prefix}${frame}`);
+}
+
+// "expectMonstersClearOfWalls": 0.25 checks, after every frame of the step, that no live monster's middle is
+// closer than that to a wall or closed door beside its square, or to the corner of one diagonally next to it
+// (so its picture doesn't sink into the wall).
+const WALL_LETTERS = '123456789DRBXSZ';
+let closestToWall = Infinity;
+function checkMonstersClearOfWalls(step) {
+    const margin = step.expectMonstersClearOfWalls;
+    const rows = stageVariable('current map').value.map(String);
+    const isWall = (column, row) => WALL_LETTERS.includes(((rows[row] || '')[column] || '1').toUpperCase());
+    for (const clone of monsterClones()) {
+        const monster = localValues(clone);
+        if (+monster['is alive'] !== 1) continue;
+        const x = +monster['monster x'], y = +monster['monster y'];
+        const column = Math.floor(x), row = Math.floor(y);
+        const gaps = [];
+        if (isWall(column, row)) gaps.push(0);                       // standing inside a wall
+        if (isWall(column - 1, row)) gaps.push(x - column);          // wall on the left
+        if (isWall(column + 1, row)) gaps.push(column + 1 - x);      // on the right
+        if (isWall(column, row - 1)) gaps.push(y - row);             // above
+        if (isWall(column, row + 1)) gaps.push(row + 1 - y);         // below
+        // A wall square touching mine only at a corner: my body (a square round my middle) overlaps
+        // it if I'm closer than the gap both across and down, so the gap is the larger of the two.
+        for (const [columnStep, rowStep] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+            if (!isWall(column + columnStep, row + rowStep)) continue;
+            const across = columnStep < 0 ? x - column : column + 1 - x, down = rowStep < 0 ? y - row : row + 1 - y;
+            gaps.push(Math.max(across, down));
+        }
+        const gap = Math.min(Infinity, ...gaps);
+        closestToWall = Math.min(closestToWall, gap);
+        if (gap < margin - 1e-9) {
+            fail(`${describe(step)}: frame ${frame}: ${monster['monster name']} #${monster['monster id']} at ` +
+                 `${x.toFixed(3)}, ${y.toFixed(3)} is only ${gap.toFixed(3)} from a wall (want ${margin})`);
+            step.expectMonstersClearOfWalls = -1;   // report each step once
+        }
+    }
 }
 
 // "auto": a simple bot. Turn toward the nearest live monster, shoot when lined up, walk closer.
@@ -477,6 +515,7 @@ function printDumps(step) {
                `pos=${(+monster['monster x']).toFixed(2)},${(+monster['monster y']).toFixed(2)} vis=${clone.visible}`;
     }).join('\n'));
     const realErrors = engineErrors.filter(error => !/audio|Audio|Translation/.test(error));
+    if (closestToWall < Infinity) console.log('closest a monster came to a wall', closestToWall.toFixed(3));
     console.log('threads', vm.runtime.threads.length, 'errors', realErrors.slice(0, 10));
     for (const error of realErrors) failures.push('VM error: ' + error);
     console.log(failures.length ? `RESULT FAIL (${failures.length})` : 'RESULT PASS');

@@ -126,7 +126,11 @@ tally screen. 'level time' adds the timer difference each frame; closing the opt
 waking needs sight within 'wake distance' (or a shot within 11 squares), and out of sight they walk to
 'last seen x/y' and wait. Nobody wakes in a level's first 1.5 seconds. One monster per map square:
 the Stage list `monster on square` (built in `load level`, one item per square, row by row) holds the
-id standing there; every move goes through `take a step` / `square_is_free()` / `claim_my_square()`.
+id standing there; every move goes through `take a step` (`step_along()`) / `body_is_clear()` / `claim_my_square()`.
+A monster's body is a square 'my wall gap' round its middle (0.3 x size/100, at most 0.45 so it fits a
+1-square doorway): both front corners must stay on floor, and if only one is blocked it slides toward the
+middle of its row/column (lining up with doorways). Charges and blinks check all four corners. The
+`monster-walls` plan checks no monster's middle gets within 0.25 of a wall.
 
 **Developer console** (`game/engine/console.py`): hold D+E+V on the title screen to toggle
 `developer mode` (not reset by the green flag); then C during a game asks for a command with
@@ -209,6 +213,7 @@ and steps it frame by frame. A plan is a JSON list of steps:
 | `expectInFront` | `{"front": "Boss Bar", "behind": "Monster"}`: while both show, every visible one of `front` is drawn over every visible `behind` |
 | `monstersMoveAfterHud` | `true`: after each frame, run the monsters' update scripts again (as if the HUD had gone to the front first) |
 | `expectMonstersApart` | `true`: no two live monsters on the same map square |
+| `expectMonstersClearOfWalls` | `0.25`: after every frame of the step, no live monster's middle is closer than that to a wall beside it (or a wall corner diagonally) |
 | `expectPickup` | `{"at": [25, 19], "item type": {"oneOf": [1, 2, 6]}}`: the item on that square |
 | `expectMonsters` | `{"type": 1, "monster health": 2}`: every clone of that monster type must have these local values |
 | `expect` | assertions: `{"current weapon": 3, "list:ammo counts": [48,7,0], "health": {"lt": 100}, "map name": {"not": "level 1 map B"}}`; also `{"oneOf": [...]}` |
