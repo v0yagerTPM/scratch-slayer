@@ -9,10 +9,13 @@
 
 // ---- fake clock: the game reads Scratch's timer, so time must move exactly one frame per frame ----
 // (This must happen before scratch-vm is loaded.)
+// Each look at the clock moves it on a little. TEST_CLOCK_STEP=<ms> makes that bigger, so frames
+// "take longer": Scratch then runs out of time in a frame (about 25 ms) like a slow computer does.
 let fakeNow = 1e6;
+const CLOCK_STEP = Number(process.env.TEST_CLOCK_STEP || 0.01);
 const realNow = Date.now;
-Date.now = () => (fakeNow += 0.01);
-if (globalThis.performance) globalThis.performance.now = () => (fakeNow += 0.01);
+Date.now = () => (fakeNow += CLOCK_STEP);
+if (globalThis.performance) globalThis.performance.now = () => (fakeNow += CLOCK_STEP);
 const FRAME_MS = 1000 / 30;
 
 // ---- seeded random numbers: Scratch's "pick random" uses Math.random. Seeding it makes every run
@@ -214,6 +217,11 @@ async function runFrame(step, frameInStep) {
     if (step.auto) autoAim(step, frameInStep);
     const started = realNow();
     vm.runtime._step();
+    if (step.monstersMoveAfterHud) {    // run the monsters' 'update' scripts again, AFTER the HUD has gone to
+        const threads = vm.runtime.startHats('event_whenbroadcastreceived',   // the front: does the HUD stay
+                                             {BROADCAST_OPTION: 'update monsters and objects'});   // on top?
+        for (const thread of threads) vm.runtime.sequencer.stepThread(thread);
+    }
     stepTimes.push(realNow() - started);
     frame++; fakeNow += FRAME_MS;
     await new Promise(resolve => setImmediate(resolve));
@@ -400,6 +408,15 @@ function checkExpectations(step) {
         else for (const [name, value] of Object.entries(want)) {
             const got = localVariable(pickup, name).value;
             if (!matches(got, value)) fail(`${describe(step)}: item on ${JSON.stringify(at)}: ${name} = ${JSON.stringify(got)}, expected ${JSON.stringify(value)}`);
+        }
+    }
+    if (step.expectInFront) {       // {"front": "Boss Bar", "behind": "Monster"}: while both are showing, every
+        const {front, behind} = step.expectInFront;   // visible 'front' is drawn over every visible 'behind'
+        const layersOf = name => vm.runtime.targets.filter(target => target.sprite.name === name && target.visible)
+                                                   .map(target => layerOrder.indexOf(target.drawableID));
+        const frontLayers = layersOf(front), behindLayers = layersOf(behind);
+        if (frontLayers.length && behindLayers.length && Math.min(...frontLayers) < Math.max(...behindLayers)) {
+            fail(`${describe(step)}: ${front} (layer ${Math.min(...frontLayers)}) is behind a ${behind} (layer ${Math.max(...behindLayers)})`);
         }
     }
     if (step.expectMonstersApart) { // no two live monsters on the same map square

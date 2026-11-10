@@ -1,0 +1,650 @@
+[
+ {
+  "frames": 30,
+  "set": {
+   "map choice": 1,
+   "developer mode": 1
+  },
+  "note": "MAP: always map A"
+ },
+ {
+  "startGame": true
+ },
+ {
+  "console": "level 6",
+  "note": "the Colossus's level (map A, The Ring)"
+ },
+ {
+  "until": {
+   "game state": "playing"
+  }
+ },
+ {
+  "frames": 1,
+  "set": {
+   "px": 20.5,
+   "py": 21.0,
+   "ang": 270,
+   "god mode": 1
+  },
+  "note": "in the arena, 3 squares from the Colossus, facing it"
+ },
+ {
+  "frames": 1,
+  "hit": {
+   "type": 7,
+   "damage": 1
+  },
+  "note": "wake it up: the boss bar appears"
+ },
+ {
+  "frames": 2,
+  "set": {
+   "HEALTH": 100,
+   "px": 20.5,
+   "py": 21.0,
+   "ang": 270
+  },
+  "expectInFront": {
+   "front": "Boss Bar",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 0"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "Weapon",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 0"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "HUD",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 0"
+ },
+ {
+  "frames": 2,
+  "set": {
+   "HEALTH": 100,
+   "px": 20.5,
+   "py": 21.0,
+   "ang": 270
+  },
+  "expectInFront": {
+   "front": "Boss Bar",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 2"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "Weapon",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 2"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "HUD",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 2"
+ },
+ {
+  "frames": 2,
+  "set": {
+   "HEALTH": 100,
+   "px": 20.5,
+   "py": 21.0,
+   "ang": 270
+  },
+  "expectInFront": {
+   "front": "Boss Bar",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 4"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "Weapon",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 4"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "HUD",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 4"
+ },
+ {
+  "frames": 2,
+  "set": {
+   "HEALTH": 100,
+   "px": 20.5,
+   "py": 21.0,
+   "ang": 270
+  },
+  "expectInFront": {
+   "front": "Boss Bar",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 6"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "Weapon",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 6"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "HUD",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 6"
+ },
+ {
+  "frames": 2,
+  "set": {
+   "HEALTH": 100,
+   "px": 20.5,
+   "py": 21.0,
+   "ang": 270
+  },
+  "expectInFront": {
+   "front": "Boss Bar",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 8"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "Weapon",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 8"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "HUD",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 8"
+ },
+ {
+  "frames": 2,
+  "set": {
+   "HEALTH": 100,
+   "px": 20.5,
+   "py": 21.0,
+   "ang": 270
+  },
+  "expectInFront": {
+   "front": "Boss Bar",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 10"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "Weapon",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 10"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "HUD",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 10"
+ },
+ {
+  "frames": 2,
+  "set": {
+   "HEALTH": 100,
+   "px": 20.5,
+   "py": 21.0,
+   "ang": 270
+  },
+  "expectInFront": {
+   "front": "Boss Bar",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 12"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "Weapon",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 12"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "HUD",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 12"
+ },
+ {
+  "frames": 2,
+  "set": {
+   "HEALTH": 100,
+   "px": 20.5,
+   "py": 21.0,
+   "ang": 270
+  },
+  "expectInFront": {
+   "front": "Boss Bar",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 14"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "Weapon",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 14"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "HUD",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 14"
+ },
+ {
+  "frames": 2,
+  "set": {
+   "HEALTH": 100,
+   "px": 20.5,
+   "py": 21.0,
+   "ang": 270
+  },
+  "expectInFront": {
+   "front": "Boss Bar",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 16"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "Weapon",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 16"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "HUD",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 16"
+ },
+ {
+  "frames": 2,
+  "set": {
+   "HEALTH": 100,
+   "px": 20.5,
+   "py": 21.0,
+   "ang": 270
+  },
+  "expectInFront": {
+   "front": "Boss Bar",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 18"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "Weapon",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 18"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "HUD",
+   "behind": "Monster"
+  },
+  "note": "normal order, frame 18"
+ },
+ {
+  "frames": 2,
+  "monstersMoveAfterHud": true,
+  "set": {
+   "HEALTH": 100,
+   "px": 20.5,
+   "py": 21.0,
+   "ang": 270
+  },
+  "expectInFront": {
+   "front": "Boss Bar",
+   "behind": "Monster"
+  },
+  "note": "monsters placed AFTER the HUD (a frame where the order flips), frame 0"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "Weapon",
+   "behind": "Monster"
+  },
+  "note": "monsters after the HUD, frame 0"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "HUD",
+   "behind": "Monster"
+  },
+  "note": "monsters after the HUD, frame 0"
+ },
+ {
+  "frames": 2,
+  "monstersMoveAfterHud": true,
+  "set": {
+   "HEALTH": 100,
+   "px": 20.5,
+   "py": 21.0,
+   "ang": 270
+  },
+  "expectInFront": {
+   "front": "Boss Bar",
+   "behind": "Monster"
+  },
+  "note": "monsters placed AFTER the HUD (a frame where the order flips), frame 2"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "Weapon",
+   "behind": "Monster"
+  },
+  "note": "monsters after the HUD, frame 2"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "HUD",
+   "behind": "Monster"
+  },
+  "note": "monsters after the HUD, frame 2"
+ },
+ {
+  "frames": 2,
+  "monstersMoveAfterHud": true,
+  "set": {
+   "HEALTH": 100,
+   "px": 20.5,
+   "py": 21.0,
+   "ang": 270
+  },
+  "expectInFront": {
+   "front": "Boss Bar",
+   "behind": "Monster"
+  },
+  "note": "monsters placed AFTER the HUD (a frame where the order flips), frame 4"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "Weapon",
+   "behind": "Monster"
+  },
+  "note": "monsters after the HUD, frame 4"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "HUD",
+   "behind": "Monster"
+  },
+  "note": "monsters after the HUD, frame 4"
+ },
+ {
+  "frames": 2,
+  "monstersMoveAfterHud": true,
+  "set": {
+   "HEALTH": 100,
+   "px": 20.5,
+   "py": 21.0,
+   "ang": 270
+  },
+  "expectInFront": {
+   "front": "Boss Bar",
+   "behind": "Monster"
+  },
+  "note": "monsters placed AFTER the HUD (a frame where the order flips), frame 6"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "Weapon",
+   "behind": "Monster"
+  },
+  "note": "monsters after the HUD, frame 6"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "HUD",
+   "behind": "Monster"
+  },
+  "note": "monsters after the HUD, frame 6"
+ },
+ {
+  "frames": 2,
+  "monstersMoveAfterHud": true,
+  "set": {
+   "HEALTH": 100,
+   "px": 20.5,
+   "py": 21.0,
+   "ang": 270
+  },
+  "expectInFront": {
+   "front": "Boss Bar",
+   "behind": "Monster"
+  },
+  "note": "monsters placed AFTER the HUD (a frame where the order flips), frame 8"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "Weapon",
+   "behind": "Monster"
+  },
+  "note": "monsters after the HUD, frame 8"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "HUD",
+   "behind": "Monster"
+  },
+  "note": "monsters after the HUD, frame 8"
+ },
+ {
+  "frames": 2,
+  "monstersMoveAfterHud": true,
+  "set": {
+   "HEALTH": 100,
+   "px": 20.5,
+   "py": 21.0,
+   "ang": 270
+  },
+  "expectInFront": {
+   "front": "Boss Bar",
+   "behind": "Monster"
+  },
+  "note": "monsters placed AFTER the HUD (a frame where the order flips), frame 10"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "Weapon",
+   "behind": "Monster"
+  },
+  "note": "monsters after the HUD, frame 10"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "HUD",
+   "behind": "Monster"
+  },
+  "note": "monsters after the HUD, frame 10"
+ },
+ {
+  "frames": 2,
+  "monstersMoveAfterHud": true,
+  "set": {
+   "HEALTH": 100,
+   "px": 20.5,
+   "py": 21.0,
+   "ang": 270
+  },
+  "expectInFront": {
+   "front": "Boss Bar",
+   "behind": "Monster"
+  },
+  "note": "monsters placed AFTER the HUD (a frame where the order flips), frame 12"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "Weapon",
+   "behind": "Monster"
+  },
+  "note": "monsters after the HUD, frame 12"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "HUD",
+   "behind": "Monster"
+  },
+  "note": "monsters after the HUD, frame 12"
+ },
+ {
+  "frames": 2,
+  "monstersMoveAfterHud": true,
+  "set": {
+   "HEALTH": 100,
+   "px": 20.5,
+   "py": 21.0,
+   "ang": 270
+  },
+  "expectInFront": {
+   "front": "Boss Bar",
+   "behind": "Monster"
+  },
+  "note": "monsters placed AFTER the HUD (a frame where the order flips), frame 14"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "Weapon",
+   "behind": "Monster"
+  },
+  "note": "monsters after the HUD, frame 14"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "HUD",
+   "behind": "Monster"
+  },
+  "note": "monsters after the HUD, frame 14"
+ },
+ {
+  "frames": 2,
+  "monstersMoveAfterHud": true,
+  "set": {
+   "HEALTH": 100,
+   "px": 20.5,
+   "py": 21.0,
+   "ang": 270
+  },
+  "expectInFront": {
+   "front": "Boss Bar",
+   "behind": "Monster"
+  },
+  "note": "monsters placed AFTER the HUD (a frame where the order flips), frame 16"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "Weapon",
+   "behind": "Monster"
+  },
+  "note": "monsters after the HUD, frame 16"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "HUD",
+   "behind": "Monster"
+  },
+  "note": "monsters after the HUD, frame 16"
+ },
+ {
+  "frames": 2,
+  "monstersMoveAfterHud": true,
+  "set": {
+   "HEALTH": 100,
+   "px": 20.5,
+   "py": 21.0,
+   "ang": 270
+  },
+  "expectInFront": {
+   "front": "Boss Bar",
+   "behind": "Monster"
+  },
+  "note": "monsters placed AFTER the HUD (a frame where the order flips), frame 18"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "Weapon",
+   "behind": "Monster"
+  },
+  "note": "monsters after the HUD, frame 18"
+ },
+ {
+  "frames": 0,
+  "expectInFront": {
+   "front": "HUD",
+   "behind": "Monster"
+  },
+  "note": "monsters after the HUD, frame 18"
+ }
+]

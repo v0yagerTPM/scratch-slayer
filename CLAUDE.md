@@ -149,7 +149,11 @@ difficulties, using the game's own rounding (`scratch_round()`).
 - Switching to a costume name that doesn't exist silently does nothing, so check names.
 - Scratch's clone limit is 300. The game currently uses up to about 130 (the episode 2 maps have up to 39 monsters).
 - Front/back layering is "last `go to front` wins". Sprites that must stay on top (options
-  menu, digits) call `front()` every frame after the others.
+  menu, digits) call `front()` every frame after the others. World sprites (monsters, items,
+  barrels, shots) don't rely on that order: `place_on_screen()` sends them to the front and then
+  back past the HUD's `HUD_LAYERS` (7 HUD sprites + Digits and its clones) plus 2 x depth, so the
+  boss bar and the gun stay on top even in a frame where the HUD went to the front first
+  (`hud-layers` plan). Add a HUD sprite → update `HUD_LAYERS` in `screen_placement.py`.
 - **Clones run in layer order, so clones that all `go to front` in one broadcast swap places
   every frame.** If one must stay under its siblings (the options row highlight), give it its
   own broadcast sent earlier: threads of an earlier plain broadcast always run first.
@@ -191,6 +195,8 @@ and steps it frame by frame. A plan is a JSON list of steps:
 | `log` / `snap` | print state / save a snapshot (render with `tests/render.js`) |
 | `dumpMonsters` | print every monster (or one type) |
 | `expectMonster` | `{"at": [16, 2], "is chasing": 0}`: the one monster that started on that square |
+| `expectInFront` | `{"front": "Boss Bar", "behind": "Monster"}`: while both show, every visible one of `front` is drawn over every visible `behind` |
+| `monstersMoveAfterHud` | `true`: after each frame, run the monsters' update scripts again (as if the HUD had gone to the front first) |
 | `expectMonstersApart` | `true`: no two live monsters on the same map square |
 | `expectPickup` | `{"at": [25, 19], "item type": {"oneOf": [1, 2, 6]}}`: the item on that square |
 | `expectMonsters` | `{"type": 1, "monster health": 2}`: every clone of that monster type must have these local values |
@@ -198,6 +204,9 @@ and steps it frame by frame. A plan is a JSON list of steps:
 | `expectCostume` | `{"Card Background": "card 1 {map variant letter}"}`: a sprite's costume; `{var}` is filled from stage variables |
 
 Plans that walk to exact squares set `"map choice": 1` in their first step, so they always get map A.
+
+`TEST_CLOCK_STEP=<ms>` makes each read of the fake clock move it further (default 0.01), to imitate a
+slow computer.
 
 The harness exits non-zero if any `expect` fails, an `until` times out, or the VM logs an error.
 Add a plan (or steps with `expect`) for every new feature. **Prefer the named steps and `until` to
