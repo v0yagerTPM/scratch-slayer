@@ -485,32 +485,48 @@ def validate(level):
 # =================================================================================================
 # BALANCE REPORT: is there enough ammo and health on a map for its monsters?
 # =================================================================================================
-def balance(map_rows, config):
+def balance(map_rows, config, difficulty_name="normal"):
     """Adds up what a map gives you and what it throws at you, using the game's own tables in
-    game/config.py (passed in as 'config'), at normal difficulty:
-      monster health  every monster's hit points added up (a colossus also calls 2 chargers)
-      ammo damage     how much damage all the ammo lying on the map can do: a bullet does 1, a
-                      shell about 2.5 (the shotgun does 2 or 3), a rocket up to 6 to everything
-                      near the blast. Weapons count for the ammo they come with.
+    game/config.py (passed in as 'config'), at one difficulty ("easy", "normal" or "hard"):
+      monster health  every monster's hit points added up, scaled by the difficulty's 'monster
+                      health' (a colossus also calls 2 chargers)
+      ammo damage     how much damage all the ammo on the map can do: a bullet does 1, a shell
+                      about 2.5 (the shotgun does 2 or 3), a rocket up to 6 to everything near the
+                      blast. Weapons count for the ammo they come with. Only the supplies the
+                      difficulty keeps count, and each gives its 'pickup amount'.
       ammo ratio      ammo damage / monster health. Below 1, the map's ammo can't kill
                       everything (you also bring ammo from the last level). The bigger it
                       is, the easier the map.
-      health          the health packs on the map, at 25 each
-    Barrels and your fists aren't counted, so the real fight is a bit easier than the numbers."""
-    whole_map_text = "".join(map_rows)
-    monster_health = {row[0]: row[2] for row in config.MONSTER_TYPES}
-    total_health = sum(monster_health[letter] * whole_map_text.count(letter) for letter in monster_health)
+      health          what the health packs that appear give, added up
+    Rounding is done the way the game does it, so these are the game's own numbers. Barrels and
+    your fists aren't counted, so the real fight is a bit easier than the numbers."""
+    difficulty = next(row for row in config.DIFFICULTIES if row[0] == difficulty_name)
+    monster_health_percent, supplies_percent, pickup_percent = difficulty[2], difficulty[3], difficulty[4]
+    whole_map_text = "".join(map_rows).upper()
+
+    def monster_health(letter):
+        """One monster's starting health at this difficulty (rounded, like the game)."""
+        row = next(row for row in config.MONSTER_TYPES if row[0] == letter)
+        return config.scratch_round(row[2] * monster_health_percent / 100)
+    monster_letters = [row[0] for row in config.MONSTER_TYPES]
+    total_health = sum(monster_health(letter) * whole_map_text.count(letter) for letter in monster_letters)
     if "T" in whole_map_text:
-        total_health += 2 * config.MONSTER_TYPES[config.CHARGER_TYPE - 1][2]
+        total_health += 2 * monster_health(config.MONSTER_TYPES[config.CHARGER_TYPE - 1][0])
+
     shotgun = config.WEAPON_TYPES[2]
     damage_per_ammo = {"bullets": 1, "shells": (shotgun[3] + shotgun[4]) / 2,
                        "rockets": config.EXPLOSION_DAMAGE_UP_CLOSE}
-    ammo_damage = sum(damage_per_ammo[ammo_name] * amount * whole_map_text.count(letter)
-                      for letter, (ammo_name, amount) in config.AMMO_PICKUPS.items())
-    return dict(monsters=sum(whole_map_text.count(letter) for letter in monster_health),
+    kept = config.supplies_kept(map_rows, supplies_percent)
+    pickups_on_map = ([letter for column, row, letter in kept]                          # supplies that appear
+                      + [letter for letter in whole_map_text if letter in "NQL"])       # weapons always do
+    ammo_damage = sum(damage_per_ammo[config.AMMO_PICKUPS[letter][0]]
+                      * config.scratch_round(config.AMMO_PICKUPS[letter][1] * pickup_percent / 100)
+                      for letter in pickups_on_map if letter in config.AMMO_PICKUPS)
+    health = pickups_on_map.count("H") * config.scratch_round(config.HEALTH_PACK * pickup_percent / 100)
+    return dict(monsters=sum(whole_map_text.count(letter) for letter in monster_letters),
                 monster_health=total_health, ammo_damage=round(ammo_damage),
                 ammo_ratio=round(ammo_damage / total_health, 2) if total_health else None,
-                health=25 * whole_map_text.count("H"))
+                health=health)
 
 
 # Running this file directly (python3 src/levels.py) checks every map, prints what is in it,
@@ -528,10 +544,12 @@ if __name__ == "__main__":
     import game.config   # the monster, weapon and pickup tables (imported here, not at the top,
                          # because game/config.py itself imports this file)
     print()
-    print("BALANCE REPORT (normal difficulty; see balance() above)")
-    print(f"{'map':<52}{'monsters':>9}{'monster health':>16}{'ammo damage':>13}{'ammo ratio':>12}{'health':>8}")
+    print("BALANCE REPORT (see balance() above). Ammo ratio = ammo damage / monster health; bigger = easier.")
+    difficulty_names = [row[0] for row in game.config.DIFFICULTIES]
+    print(f"{'':<50}{'':>9}{'ammo ratio':^24}{'health':^24}")
+    print(f"{'map':<50}{'monsters':>9}" + "".join(f"{name:>8}" for name in difficulty_names) * 2)
     for level_number, map_letter, level, game_map in every_map():
-        numbers = balance(game_map["rows"], game.config)
-        print(f"{map_title(level_number, map_letter, level, game_map):<52}{numbers['monsters']:>9}"
-              f"{numbers['monster_health']:>16}{numbers['ammo_damage']:>13}{str(numbers['ammo_ratio']):>12}"
-              f"{numbers['health']:>8}")
+        numbers = {name: balance(game_map["rows"], game.config, name) for name in difficulty_names}
+        print(f"{map_title(level_number, map_letter, level, game_map):<50}{numbers['normal']['monsters']:>9}"
+              + "".join(f"{str(numbers[name]['ammo_ratio']):>8}" for name in difficulty_names)
+              + "".join(f"{numbers[name]['health']:>8}" for name in difficulty_names))

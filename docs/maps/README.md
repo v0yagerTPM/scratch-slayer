@@ -4,13 +4,14 @@ Every map of every level, seen from above. Made by `python3 src/map_preview.py` 
 in `src/maps/` (don't edit these pictures: run the script again after changing a map).
 
 **Ammo ratio** = how much damage all the ammo lying on the map can do, divided by the health of all
-its monsters (normal difficulty). Bigger = easier. **Health** = its health packs, 25 each.
+its monsters. Bigger = easier. **Health** = what its health packs give. Both are shown for easy /
+normal / hard: the difficulty changes monster health, how many supplies appear and how much each gives.
 
 ## Level 1: The Outpost (episode 1)
 
 ### Map A: Three Halls
 
-20 x 20 squares · 9 monsters · ammo ratio 4.44 · health 75 · par 60 s
+20 x 20 squares · 9 monsters · par 60 s · ammo ratio 10.0 / 4.44 / 2.78, health 114 / 75 / 50 (easy / normal / hard)
 
 ![The Outpost, map A](level%201%20map%20A.svg)
 
@@ -18,7 +19,7 @@ its monsters (normal difficulty). Bigger = easier. **Health** = its health packs
 
 ### Map A: The Red Door
 
-24 x 24 squares · 13 monsters · ammo ratio 3.59 · health 125 · par 90 s
+24 x 24 squares · 13 monsters · par 90 s · ammo ratio 8.08 / 3.59 / 1.54, health 190 / 125 / 125 (easy / normal / hard)
 
 ![The Processing Plant, map A](level%202%20map%20A.svg)
 
@@ -26,7 +27,7 @@ its monsters (normal difficulty). Bigger = easier. **Health** = its health packs
 
 ### Map A: Three Wings
 
-28 x 28 squares · 16 monsters · ammo ratio 1.75 · health 150 · par 135 s
+28 x 28 squares · 16 monsters · par 135 s · ammo ratio 3.23 / 1.75 / 0.8, health 228 / 150 / 125 (easy / normal / hard)
 
 ![The Fortress, map A](level%203%20map%20A.svg)
 
@@ -34,7 +35,7 @@ its monsters (normal difficulty). Bigger = easier. **Health** = its health packs
 
 ### Map A: Furnace Hall
 
-36 x 36 squares · 19 monsters · ammo ratio 2.95 · health 125 · par 165 s
+36 x 36 squares · 19 monsters · par 165 s · ammo ratio 5.8 / 2.95 / 1.69, health 190 / 125 / 100 (easy / normal / hard)
 
 ![The Foundry, map A](level%204%20map%20A.svg)
 
@@ -42,7 +43,7 @@ its monsters (normal difficulty). Bigger = easier. **Health** = its health packs
 
 ### Map A: Flooded Caves
 
-38 x 38 squares · 18 monsters · ammo ratio 2.99 · health 150 · par 180 s
+38 x 38 squares · 18 monsters · par 180 s · ammo ratio 6.0 / 2.99 / 1.83, health 228 / 150 / 75 (easy / normal / hard)
 
 ![The Sunken Vaults, map A](level%205%20map%20A.svg)
 
@@ -50,6 +51,6 @@ its monsters (normal difficulty). Bigger = easier. **Health** = its health packs
 
 ### Map A: The Ring
 
-40 x 40 squares · 21 monsters · ammo ratio 1.53 · health 175 · par 240 s
+40 x 40 squares · 21 monsters · par 240 s · ammo ratio 3.03 / 1.53 / 0.76, health 266 / 175 / 150 (easy / normal / hard)
 
 ![The Core, map A](level%206%20map%20A.svg)

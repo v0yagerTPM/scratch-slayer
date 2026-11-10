@@ -28,7 +28,7 @@ import game.config  # noqa: E402
 
 PREVIEW_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "docs", "maps")
 SQUARE = 16                 # pixels per map square
-MARGIN_LEFT, MARGIN_TOP = 28, 58   # room for the row numbers on the left, title and column numbers on top
+MARGIN_LEFT, MARGIN_TOP = 28, 72   # room for the row numbers on the left, title and column numbers on top
 FLOOR_COLOR, GRID_COLOR = "#1c1a1e", "#2a272d"
 
 # ---------------- what each letter looks like ----------------
@@ -102,6 +102,14 @@ def thing_picture(letter, left, top, start_angle):
     return picture
 
 
+def by_difficulty(map_rows):
+    """'ammo ratio 10.0 / 4.44 / 2.78, health 114 / 75 / 50 (easy / normal / hard)'"""
+    names = [row[0] for row in game.config.DIFFICULTIES]
+    numbers = [balance(map_rows, game.config, name) for name in names]
+    return (f"ammo ratio {' / '.join(str(each['ammo_ratio']) for each in numbers)}, "
+            f"health {' / '.join(str(each['health']) for each in numbers)} ({' / '.join(names)})")
+
+
 def map_picture(level_number, map_letter, level, game_map):
     """The whole picture for one map, as SVG text."""
     map_rows = game_map["rows"]
@@ -114,9 +122,9 @@ def map_picture(level_number, map_letter, level, game_map):
     body = [f'<rect width="{picture_width}" height="{picture_height}" fill="#0e0d10"/>',
             text(8, 20, f"LEVEL {level_number}-{map_letter}  {level['name'].upper()}: {game_map['name']}",
                  size=14, fill="#ff6a2a", anchor="start", weight="bold"),
-            text(8, 36, f"{map_width} x {map_height} squares, {numbers['monsters']} monsters, ammo ratio "
-                        f"{numbers['ammo_ratio']}, health {numbers['health']}, par {game_map['par_seconds']} s",
-                 size=10, anchor="start")]
+            text(8, 36, f"{map_width} x {map_height} squares, {numbers['monsters']} monsters, par "
+                        f"{game_map['par_seconds']} s", size=10, anchor="start"),
+            text(8, 50, by_difficulty(map_rows), size=10, anchor="start")]
     # Column numbers along the top, row numbers down the left: every fifth one.
     for column in range(0, map_width, 5):
         body.append(text(MARGIN_LEFT + column * SQUARE + SQUARE / 2, MARGIN_TOP - 5, column, size=9, fill="#8a8a8a"))
@@ -158,7 +166,8 @@ def index_page():
              "Every map of every level, seen from above. Made by `python3 src/map_preview.py` from the map files",
              "in `src/maps/` (don't edit these pictures: run the script again after changing a map).", "",
              "**Ammo ratio** = how much damage all the ammo lying on the map can do, divided by the health of all",
-             "its monsters (normal difficulty). Bigger = easier. **Health** = its health packs, 25 each.", ""]
+             "its monsters. Bigger = easier. **Health** = what its health packs give. Both are shown for easy /",
+             "normal / hard: the difficulty changes monster health, how many supplies appear and how much each gives.", ""]
     for level_number, level in enumerate(LEVELS, start=1):
         lines += [f"## Level {level_number}: {level['name']} (episode {level['episode']})", ""]
         for map_letter, game_map in zip("ABCDEFGHI", level["maps"]):
@@ -166,7 +175,7 @@ def index_page():
             file_name = map_list_name(level_number, map_letter) + ".svg"
             lines += [f"### Map {map_letter}: {game_map['name']}", "",
                       f"{len(game_map['rows'][0])} x {len(game_map['rows'])} squares · {numbers['monsters']} monsters · "
-                      f"ammo ratio {numbers['ammo_ratio']} · health {numbers['health']} · par {game_map['par_seconds']} s", "",
+                      f"par {game_map['par_seconds']} s · {by_difficulty(game_map['rows'])}", "",
                       f"![{level['name']}, map {map_letter}]({file_name.replace(' ', '%20')})", ""]
     return "\n".join(lines)
 

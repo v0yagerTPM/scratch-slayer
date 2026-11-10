@@ -370,13 +370,28 @@ difficulty damage to you   every hit on you is multiplied by this / 100.
 difficulty monster health  every monster starts with this percent of
                            its "monster health", rounded. Hard = 125,
                            so an imp (3) needs 4 pistol shots.
+difficulty supplies kept   how many of the map's health packs and ammo
+                           boxes (H A I U) appear. Hard = 70: 7 in every
+                           10. Keys and weapons always appear.
+difficulty pickup amount   how much each health pack and ammo pickup
+                           gives. Easy = 150: 8 shells become 12.
+
+SHARING OUT THE SUPPLIES: 'load level' doesn't pick the missing ones at
+random. Each supply adds 'supplies kept' to 'supply share' (which starts
+at 50), and the item only appears when the share reaches 100; then 100
+comes off. At 70: 120 yes (20 left), 90 no, 160 yes (60), 130 yes (30),
+100 yes (0), 70 no ... so the gaps are spread evenly over the map, and
+the same items are missing every time you play that map on hard.
+The tally's items percent only counts the items that appeared.
 
 Where it happens: search for "difficulty" in the Monster sprite (when
-a clone starts) and in every block that does 'change health by'
-(Monster, Barrel and Projectile sprites).
+a clone starts), in every block that does 'change health by'
+(Monster, Barrel and Projectile sprites), in the Engine's 'load level'
+(supplies) and in the Pickup sprite (pickup amounts).
 
 Doom (1993) had five skill levels. Its easiest one also halved the
-damage you take, just like our easy setting.""",
+damage you take and doubled the ammo you picked up, a lot like our
+easy setting.""",
 
 """THE LEVEL TALLY  (the screen after each level)
 

@@ -15,6 +15,13 @@ def copy_rows_if_picked(name):
 def thing(letter_code, *blocks):
     return if_(eq(V("map letter"), letter_code), *blocks, setv("map letter", 0))
 
+def supply(letter_code, type_number):
+    """A health pack or ammo box: it only appears if the difficulty's sharing-out count says so."""
+    return if_(eq(V("map letter"), letter_code),
+               chg("supply share", item(V("difficulty"), "difficulty supplies kept")),
+               if_(not_(lt(V("supply share"), 100)), chg("supply share", -100), *item_start(type_number)),
+               setv("map letter", 0))
+
 def item_start(type_number):
     return [addto("item start x", V("map column")), addto("item start y", V("map row")),
             addto("item start type", type_number)]
@@ -46,7 +53,7 @@ engine.script(
     setv("exit timer", 0), setv("message timer", 0), setv("shot cooldown", 0),
     setv("stamina", 100), setv("is exhausted", 0), setv("is sprinting", 0), setv("speed boost", 1),
     setv("stamina rest timer", 0),
-    setv("player starts found", 0), setv("exits found", 0),
+    setv("player starts found", 0), setv("exits found", 0), setv("supply share", SUPPLY_SHARE_START),
     note("2. COPY THE PICKED MAP into 'rows to load'. 'map name' says which map\n"
          "to play (the 'pick map' block chose it). Scratch can't choose a list by\n"
          "its name, so there is one 'if' per map: the one whose list matches 'map\n"
@@ -90,11 +97,16 @@ engine.script(
                                 chg("level monster count", 1), setv("map letter", 0))),
                        note("Items -> 'item start x/y/type': 1 health, 2 shells, 3 red key,\n"
                             "4 blue key, (5 skull key), 6 bullets, 7 rockets, 8 shotgun,\n"
-                            "9 chaingun, 10 rocket launcher.",
-                            thing("H", *item_start(1))),
-                       thing("A", *item_start(2)),
+                            "9 chaingun, 10 rocket launcher.\n"
+                            "SUPPLIES (H, A, I, U) are shared out by the difficulty's 'supplies\n"
+                            "kept' percent: each one adds it to 'supply share', and the item only\n"
+                            "appears when the share reaches 100 (then 100 comes off). At 70 that\n"
+                            "keeps 7 in every 10, spread evenly over the map. At 100, all of them.",
+                            supply("H", 1)),
+                       supply("A", 2),
                        thing("K", *item_start(3)), thing("J", *item_start(4)),
-                       *[thing(item_letter, *item_start(item_type)) for item_letter, item_type in (("I", 6), ("U", 7), ("N", 8), ("Q", 9), ("L", 10))],
+                       supply("I", 6), supply("U", 7),
+                       *[thing(item_letter, *item_start(item_type)) for item_letter, item_type in (("N", 8), ("Q", 9), ("L", 10))],
                        note("BARRELS (E) keep their letter, so they block like a wall until they\n"
                             "explode. SECRET WALLS (S) are counted for the results screen.",
                             if_(eq(V("map letter"), "E"), addto("barrel start x", V("map column")),

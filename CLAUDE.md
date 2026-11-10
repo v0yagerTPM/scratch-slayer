@@ -112,7 +112,11 @@ tally screen. 'level time' adds the timer difference each frame; closing the opt
 
 **Difficulty** (stage var `difficulty`, lists `difficulty ...`) scales monster health when a clone
 starts (`full health`) and every hit on the player: always damage the player with `hurt_player()`
-in `game/config.py`, never `chg("health", ...)` directly.
+in `game/config.py`, never `chg("health", ...)` directly. It also decides which supplies (`H A I U`)
+appear (`supplies kept`, shared out evenly in reading order by `supply share` in `load level`;
+`supplies_kept()` in config.py is the same rule in Python) and how much every health and ammo pickup
+gives: always go through `pickup_amount()`. The balance report and map previews show all three
+difficulties, using the game's own rounding (`scratch_round()`).
 
 ## Scratch quirks learned the hard way
 
