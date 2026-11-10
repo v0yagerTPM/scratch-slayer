@@ -105,6 +105,10 @@ NONE, TITLE, DIED, COMPLETE, WIN = "none", "title", "died", "level complete", "y
 PLAYING, EXIT_REACHED, DEAD = "playing", "exit reached", "dead"
 LEVEL_JUMP = "level jump"   # the developer console asked for another level or map
 
+# Only these Scratch usernames can switch developer mode on (Scratch's 'username' block says who is
+# signed in; it is empty for someone who isn't). Add a name to let another teacher in.
+DEVELOPER_USERNAMES = ["allenwatsonBMS"]
+
 # What the console list on the stage says while you type. One line per item.
 CONSOLE_HELP = [
     "DEVELOPER CONSOLE: type a command, then Enter",

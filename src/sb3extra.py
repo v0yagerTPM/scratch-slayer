@@ -35,6 +35,7 @@ def mouse_y(): return Block("sensing_mousey")
 def mouse_down(): return Block("sensing_mousedown")
 def ask_and_wait(question): return Block("sensing_askandwait", {"QUESTION": txt(question)})
 def answer(): return Block("sensing_answer")
+def username(): return Block("sensing_username")
 def tan_(angle): return Block("operator_mathop", {"NUM": num(angle)}, {"OPERATOR": "tan"})
 def set_volume(volume): return Block("sound_setvolumeto", {"VOLUME": num(volume)})
 def play_named(default, plug):

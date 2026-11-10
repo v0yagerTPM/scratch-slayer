@@ -1,11 +1,12 @@
 [
  {
   "frames": 30,
+  "username": "somestudent",
   "set": {
    "map choice": 1,
-   "developer mode": 0
+   "developer mode": 1
   },
-  "note": "MAP: always map A"
+  "note": "a student, in a project saved with developer mode on: the green flag switched it off"
  },
  {
   "frames": 3,
@@ -14,11 +15,28 @@
    "e",
    "v"
   ],
-  "note": "hold D + E + V on the title screen"
+  "note": "the student holds D + E + V"
  },
  {
   "frames": 3,
-  "log": "developer mode on",
+  "log": "not on the developer list: nothing happens",
+  "expect": {
+   "developer mode": 0
+  }
+ },
+ {
+  "frames": 3,
+  "username": "allenwatsonBMS",
+  "keys": [
+   "d",
+   "e",
+   "v"
+  ],
+  "note": "the teacher holds D + E + V"
+ },
+ {
+  "frames": 3,
+  "log": "developer mode on for the teacher",
   "expect": {
    "developer mode": 1
   }

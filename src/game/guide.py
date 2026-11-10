@@ -379,6 +379,10 @@ keys and the mouse.""",
 
 """DEVELOPER CONSOLE  (for testing levels quickly)
 
+WHO CAN USE IT: only the Scratch usernames in the list "developer
+usernames" (Scratch's 'username' block says who is signed in). For
+anyone else, D + E + V does nothing.
+
 TURN IT ON: on the title screen, hold D + E + V together. The list of
 commands appears. (Do it again to turn it off. The green flag doesn't
 reset it, like the options.) The options menu's level select then

@@ -137,6 +137,10 @@ engine.script(
     setv("E key was held", 0), setv("shot cooldown", 0), setv("shot fired this frame", 0),
     setv("target hit id", 0), setv("gun bob angle", 0), setv("player is moving", 0),
     hide_list("map problems"), hide_list("developer console"), stop_sounds(), pen_clear(),
+    note("DEVELOPER MODE is only for the Scratch usernames in \"developer usernames\"\n"
+         "('item # of' is 0 for a name that isn't in the list, or nobody signed in).\n"
+         "For anyone else it's switched off, even if the project was saved with it on.",
+         if_(eq(itemnum(username(), "developer usernames"), 0), setv("developer mode", 0))),
     note("TITLE SCREEN: pick one of level 1's maps and load it (ready for\n"
          "later), then tell the title sprites to start their animations, and\n"
          "wait for SPACE. O opens the options menu.",
@@ -144,8 +148,10 @@ engine.script(
     call("pick map"), call("start level", warp=False),
     bcast(SHOW_TITLE), wait_until(not_(key("space"))),
     until(key("space"), if_(key("o"), call("options menu", warp=False)),
-          note("Hold D + E + V together to switch developer mode on or off.",
-               if_(and_(and_(key("d"), key("e")), key("v")), call("toggle developer mode", warp=False)))),
+          note("Hold D + E + V together to switch developer mode on or off (only for\n"
+               "the usernames in \"developer usernames\").",
+               if_(and_(and_(and_(key("d"), key("e")), key("v")), gt(itemnum(username(), "developer usernames"), 0)),
+                   call("toggle developer mode", warp=False)))),
     hide_list("developer console"),
     wait_until(not_(key("space"))),
     note("Leaving the title: changing 'game state' ends every title animation\n"
