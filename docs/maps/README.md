@@ -91,9 +91,21 @@ normal / hard: the difficulty changes monster health, how many supplies appear a
 
 ### Map A: Flooded Caves
 
-38 x 38 squares · 18 monsters · par 180 s · ammo ratio 6.0 / 2.99 / 1.83, health 228 / 150 / 75 (easy / normal / hard)
+38 x 38 squares · 34 monsters · par 180 s · ammo ratio 2.64 / 1.34 / 0.94, health 228 / 150 / 75 (easy / normal / hard)
 
 ![The Sunken Vaults, map A](level%205%20map%20A.svg)
+
+### Map B: The Cistern
+
+36 x 36 squares · 34 monsters · par 150 s · ammo ratio 2.82 / 1.41 / 0.97, health 228 / 150 / 75 (easy / normal / hard)
+
+![The Sunken Vaults, map B](level%205%20map%20B.svg)
+
+### Map C: Bone Tunnels
+
+38 x 36 squares · 34 monsters · par 165 s · ammo ratio 2.82 / 1.41 / 0.99, health 228 / 150 / 75 (easy / normal / hard)
+
+![The Sunken Vaults, map C](level%205%20map%20C.svg)
 
 ## Level 6: The Core (episode 2)
 

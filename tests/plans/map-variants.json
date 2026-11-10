@@ -291,19 +291,37 @@
  },
  {
   "continueToNextLevel": true,
-  "log": "level 5 has only map A, so MAP: B can't apply there: it plays map A",
+  "log": "level 5 follows the MAP setting: map B (The Cistern)",
   "expect": {
    "level": 5,
-   "map name": "level 5 map A",
-   "level map count": 1
+   "map name": "level 5 map B",
+   "level map count": 3,
+   "px": 2.5,
+   "py": 34.5
   },
   "expectCostume": {
-   "Card Background": "card 5 A",
-   "Card Heading": "heading 5 A"
+   "Card Background": "card 5 B",
+   "Card Heading": "heading 5 B"
   }
  },
  {
-  "note": "die on level 5",
+  "finishLevel": true
+ },
+ {
+  "continueToNextLevel": true,
+  "log": "level 6 has only map A, so MAP: B can't apply there: it plays map A",
+  "expect": {
+   "level": 6,
+   "map name": "level 6 map A",
+   "level map count": 1
+  },
+  "expectCostume": {
+   "Card Background": "card 6 A",
+   "Card Heading": "heading 6 A"
+  }
+ },
+ {
+  "note": "die on level 6",
   "set": {
    "HEALTH": 0
   },
@@ -334,7 +352,7 @@
  {
   "retryLevel": true,
   "expect": {
-   "map name": "level 5 map A",
+   "map name": "level 6 map A",
    "game state": "playing"
   }
  }

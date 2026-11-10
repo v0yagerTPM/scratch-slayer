@@ -375,7 +375,8 @@ LEVELS = [
          card=dict(enemy="WRAITH", lines=["Almost invisible from far away,", "and it blinks sideways. Stay sharp."],
                    boss=None),
          card_monster=6, card_boss=0, maps=[
-        # LEVEL 5, MAP A: FLOODED CAVES (38 x 38). Wraiths, plus the others. Keys: red, blue. Dark!
+        # LEVEL 5, MAP A: FLOODED CAVES (38 x 38). Dark! 15 wraiths, 6 golems, 5 spitters, 4 imps,
+        # 4 chargers. Keys: red, blue. Route: about 125 squares.
         #   Solid rock (7) with caves dug out of it, joined by tunnels one square wide. Cave corners
         #   are rounded off with wall 3.
         #   The player starts in the south-west cave (P at 5, 33). The red key K (3, 3) is in the
@@ -386,6 +387,32 @@ LEVELS = [
         dict(name="Flooded Caves", rows=load_map(5, "A"), goal="Two keys, deep in the dark", tint="#0f3a4a",
              angle=270, ceil=(55, 20), floor=(50, 25), secret_look="7",
              max_ray_steps=26, light_falloff=6.5, sprite_darkness=5, par_seconds=180),
+        # LEVEL 5, MAP B: THE CISTERN (36 x 36). Dark. 10 wraiths, 8 spitters, 6 imps, 6 chargers,
+        # 4 golems. Keys: red, blue. Route: about 109 squares.
+        #   A walkway three squares wide runs round a flooded hall (water = wall 7). In the water:
+        #   four small islands and a big one in the middle, joined by causeways one square wide.
+        #   The player starts in the walkway's south-west corner (P at 2, 34). The red key K (10, 26)
+        #   is on the south-west island (causeway from the walkway at row 25). The middle island's
+        #   causeway to the north-east island has the RED door (22, 13); the blue key J (25, 9) is
+        #   there. The pump room in the walkway's north-east corner is behind the BLUE door (28, 2)
+        #   and has the exit X (33, 0). Spitters on the islands shoot across the water.
+        #   A secret wall S (2, 31) in the walkway's south-west corner hides supplies.
+        dict(name="The Cistern", rows=load_map(5, "B"), goal="Island to island, two keys", tint="#0f2a4a",
+             angle=270, ceil=(60, 25), floor=(55, 20), secret_look="9",
+             max_ray_steps=30, light_falloff=6.0, sprite_darkness=4, par_seconds=150),
+        # LEVEL 5, MAP C: BONE TUNNELS (38 x 36). Very dark. 10 wraiths, 7 imps, 7 spitters,
+        # 6 chargers, 4 golems. Keys: red, blue. Route: about 114 squares.
+        #   Solid bone-white rock (1) with burial chambers dug out of it, joined by tunnels one
+        #   square wide; piles of bones (8) in the chambers.
+        #   The player starts in the south-west chamber (P at 4, 32). The tunnel east leads to the
+        #   crypt with the red key K (21, 31); beyond it, the deep crypt is a side trip (a secret
+        #   wall S at 31, 33 hides supplies). From the crypt, north to the great ossuary, whose east
+        #   tunnel has the RED door (22, 18) to the bone chapel with the blue key J (32, 17).
+        #   Then west: the west ossuary, north up a long tunnel to the north-west tomb, and the BLUE
+        #   door (12, 6) into the last tomb with the exit X (19, 1).
+        dict(name="Bone Tunnels", rows=load_map(5, "C"), goal="Through the crypts, two keys", tint="#3a3a2a",
+             angle=0, ceil=(10, 10), floor=(12, 15), secret_look="1",
+             max_ray_steps=26, light_falloff=7.0, sprite_darkness=5, par_seconds=165),
     ]),
 
     dict(name="The Core", episode=2, best_weapon=5,
