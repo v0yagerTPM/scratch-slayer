@@ -17,8 +17,12 @@ the blocks must stay readable.
 - **Keep the Stage guide comments current.** `GUIDE` in `game/guide.py` (map letters, monster and
   weapon tables, options, how to add a level) is what students read first. Update it with
   every feature.
-- After every change: `npm test` (it builds first). For a map change also run `python3 src/levels.py`
-  and `python3 src/map_preview.py` (npm test fails if the map pictures in `docs/maps` are out of date).
+- After every change: `npm test` (it builds first). For a map change also run `python3 src/levels.py`,
+  `python3 src/map_preview.py` and `python3 src/map_editor.py` (npm test fails if the map pictures in
+  `docs/maps` or the map editor page are out of date).
+- **Change a map check in both places.** `validate()`/`balance()` in `levels.py` have a JavaScript copy in
+  `src/editor/map_checker.js` (the map editor's live checks). `tests/test_levels.py` runs both on every
+  real map and thousands of broken ones and fails if their first message or balance numbers differ.
 - **Refactors must not change the game.** For any change that shouldn't affect what students see
   (renaming, moving code), `npm run compare` must say IDENTICAL. The build is deterministic, so
   any difference it lists is real.
@@ -37,6 +41,7 @@ node tests/harness.js dist/scratch-slayer.sb3 tests/plans/sprint.json tests/out/
 node tests/render.js tests/out/sprint <snap names...>   # snapshots -> PNG (needs sharp)
 python3 src/levels.py                           # validate all maps + balance report
 python3 src/map_preview.py                      # redraw docs/maps (top-down picture of every map)
+python3 src/map_editor.py                       # rebuild docs/map-editor.html (the map editor web page)
 python3 tests/test_levels.py                    # map checker tests (npm test runs them too)
 npm run compare                                 # is the built project identical to main's? (-- <ref> for another)
 ```
@@ -87,6 +92,12 @@ npm run compare                                 # is the built project identical
 - `map_preview.py`: draws every map as a top-down SVG in `docs/maps/` (walls in their game colors,
   tokens for things, edge numbers every 5 squares, a legend, the balance numbers) plus
   `docs/maps/README.md` showing them all. Generated files: never edit them by hand.
+- `map_editor.py`: joins `src/editor/` (`page.html`, `editor.css`, `map_checker.js`, `editor.js`) and
+  `EDITOR_DATA` (letter groups from `levels.py`, tables from `config.py`, colors from `map_preview.py`,
+  every map) into `docs/map-editor.html`, a single page that works offline. Tools: paint, rectangle, room
+  walls, fill, pick; undo; resize; reach and start-safety overlays; download/copy as a map file; a draft
+  kept in localStorage. `--artifact <file>` writes a copy without the outer tags or Download, for a
+  claude.ai Artifact. Generated file: never edit it by hand.
 - `pictures/`: every costume and backdrop as hand-written SVG, **by subject**: `drawing` (svg(),
   `text_label`, `full_screen`, gradients), `lettering` (the block-letter font `LETTERS` and digit
   glyphs; `block_text(..., font=)` takes a variant, e.g. `OPTIONS_LETTERS`), `monsters`, `weapons`,
@@ -149,7 +160,11 @@ difficulties, using the game's own rounding (`scratch_round()`).
 - Switching to a costume name that doesn't exist silently does nothing, so check names.
 - Scratch's clone limit is 300. The game currently uses up to about 130 (the episode 2 maps have up to 39 monsters).
 - Front/back layering is "last `go to front` wins". Sprites that must stay on top (options
-  menu, digits) call `front()` every frame after the others.
+  menu, digits) call `front()` every frame after the others. World sprites (monsters, items,
+  barrels, shots) don't rely on that order: `place_on_screen()` sends them to the front and then
+  back past the HUD's `HUD_LAYERS` (7 HUD sprites + Digits and its clones) plus 2 x depth, so the
+  boss bar and the gun stay on top even in a frame where the HUD went to the front first
+  (`hud-layers` plan). Add a HUD sprite → update `HUD_LAYERS` in `screen_placement.py`.
 - **Clones run in layer order, so clones that all `go to front` in one broadcast swap places
   every frame.** If one must stay under its siblings (the options row highlight), give it its
   own broadcast sent earlier: threads of an earlier plain broadcast always run first.
@@ -191,6 +206,8 @@ and steps it frame by frame. A plan is a JSON list of steps:
 | `log` / `snap` | print state / save a snapshot (render with `tests/render.js`) |
 | `dumpMonsters` | print every monster (or one type) |
 | `expectMonster` | `{"at": [16, 2], "is chasing": 0}`: the one monster that started on that square |
+| `expectInFront` | `{"front": "Boss Bar", "behind": "Monster"}`: while both show, every visible one of `front` is drawn over every visible `behind` |
+| `monstersMoveAfterHud` | `true`: after each frame, run the monsters' update scripts again (as if the HUD had gone to the front first) |
 | `expectMonstersApart` | `true`: no two live monsters on the same map square |
 | `expectPickup` | `{"at": [25, 19], "item type": {"oneOf": [1, 2, 6]}}`: the item on that square |
 | `expectMonsters` | `{"type": 1, "monster health": 2}`: every clone of that monster type must have these local values |
@@ -198,6 +215,9 @@ and steps it frame by frame. A plan is a JSON list of steps:
 | `expectCostume` | `{"Card Background": "card 1 {map variant letter}"}`: a sprite's costume; `{var}` is filled from stage variables |
 
 Plans that walk to exact squares set `"map choice": 1` in their first step, so they always get map A.
+
+`TEST_CLOCK_STEP=<ms>` makes each read of the fake clock move it further (default 0.01), to imitate a
+slow computer.
 
 The harness exits non-zero if any `expect` fails, an `until` times out, or the VM logs an error.
 Add a plan (or steps with `expect`) for every new feature. **Prefer the named steps and `until` to

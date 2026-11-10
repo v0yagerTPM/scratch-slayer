@@ -2,6 +2,11 @@
 is, where something appears on screen, and which explosions are close."""
 from sb3extra import *
 from game.config import *
+from game.stage import HUD_SLOTS
+
+# How many layers the HUD takes at the front: the Weapon, Crosshair, HUD, Arms Panel, Boss Bar,
+# Message and Screens sprites, plus the Digits sprite and its 3 clones per number slot.
+HUD_LAYERS = 8 + HUD_SLOTS * 3
 
 def offset_from_player(x_var, y_var):
     return [setv("offset x from player", sub(V(x_var), V("player x"))),
@@ -35,10 +40,14 @@ def place_on_screen(when_visible, what, size=None, height=-180):
                                         V("depth in view"))),
                                  [hide()],
                                  [note("Visible: farther = smaller and closer to the horizon. Layers:\n"
-                                       "go to front, then back by 2 x depth, so near things cover far ones.",
+                                       "go to front, then back by 2 x depth, so near things cover far ones.\n"
+                                       f"Also back past the {HUD_LAYERS} layers of the HUD (weapon, boss bar,\n"
+                                       "numbers...), so the world can never cover the HUD, even in a frame\n"
+                                       "where the HUD went to the front first.",
                                        setsize(div(size, V("depth in view")))),
                                   gotoxy(V("screen x"), div(height, V("depth in view"))), show(),
-                                  front(), backward(round_(mul(V("depth in view"), 2))), *when_visible]))],
+                                  front(), backward(add(HUD_LAYERS, round_(mul(V("depth in view"), 2)))),
+                                  *when_visible]))],
                     [hide()]))]
 
 def explosion_scan(x_var, y_var, *for_each_close_blast):

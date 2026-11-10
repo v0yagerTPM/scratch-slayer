@@ -1,0 +1,1573 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Slayer Map Editor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<!-- Made by src/map_editor.py from the files in src/editor. Don't edit this file: edit those and run python3 src/map_editor.py again. -->
+<style>
+/* The map editor's look: the same dark colors as the map pictures in docs/maps, so a map looks
+   the same in the editor, in the pictures, and (nearly) in the game.
+   Layout: a bar along the top; then letters on the left, the map in the middle, checks on the right.
+   On a narrow screen the three columns stack. */
+:root {
+  --ground: #0e0d10;        /* the page, like the map pictures' background */
+  --panel: #17151a;         /* panels and fields */
+  --panel-raised: #211e25;  /* buttons */
+  --line: #2f2b34;          /* borders */
+  --text: #d8d5dc;
+  --text-quiet: #8d8894;
+  --accent: #ff6a2a;        /* the orange of the map pictures' titles */
+  --accent-text: #1a0a02;
+  --secret-gold: #ffd23f;
+  --good: #4fd16b;
+  --bad: #ff6464;
+  --font-display: "Chakra Petch", "Arial Narrow", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", Consolas, "Courier New", monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+[hidden] { display: none !important; }   /* the New map form and the toast use 'hidden' */
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--text);
+  font: 14px/1.45 var(--font-body);
+}
+h1, h2 { font-family: var(--font-display); font-weight: 600; margin: 0; text-wrap: balance; }
+h2 { font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-quiet);
+     display: flex; align-items: center; gap: 8px; }
+code, kbd { font-family: var(--font-mono); font-size: 12px; }
+kbd { border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 3px; padding: 0 4px; background: var(--panel-raised); }
+.hint { color: var(--text-quiet); font-size: 12px; margin: 0; }
+
+button, .button, select, input[type="text"], input[type="number"], textarea {
+  font: inherit; color: var(--text); background: var(--panel-raised);
+  border: 1px solid var(--line); border-radius: 4px;
+}
+button, .button { padding: 5px 11px; cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; }
+button:hover, .button:hover { border-color: var(--text-quiet); }
+button:disabled { opacity: 0.4; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+select, input[type="text"], input[type="number"] { padding: 4px 6px; background: var(--panel); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.field { display: flex; flex-direction: column; gap: 2px; }
+.field-label { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-quiet); }
+
+/* ---- the top bar ---- */
+.top-bar {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 24px;
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  border-bottom: 1px solid var(--line); background: var(--panel);
+}
+.brand { display: flex; flex-direction: column; margin-right: auto; }
+.brand-game { font-family: var(--font-display); font-size: 11px; letter-spacing: 0.3em; color: var(--accent); font-weight: 700; }
+.brand h1 { font-size: 22px; line-height: 1.1; }
+.file-controls, .save-controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; }
+.new-map-form {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 14px;
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--panel-raised); border-bottom: 1px solid var(--line);
+}
+.new-map-form input[type="number"] { width: 70px; }
+
+/* ---- the three columns ---- */
+.workspace {
+  display: grid; grid-template-columns: 236px minmax(0, 1fr) 340px; gap: 16px;
+  padding-block: 16px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  align-items: start;
+}
+.palette-panel, .side-panel { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.palette-panel section, .side-panel section { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.map-area { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+/* ---- tools and letters ---- */
+.tool-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+.tool-buttons button { justify-content: flex-start; gap: 6px; }
+.tool-buttons button[aria-checked="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.palette-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.palette-group-name { font-size: 11px; color: var(--text-quiet); }
+.palette-letters { display: flex; flex-wrap: wrap; gap: 4px; }
+.letter-button { padding: 2px; border-radius: 4px; background: var(--panel); position: relative; }
+.letter-button canvas { display: block; width: 26px; height: 26px; }
+.letter-button[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.current-letter { font-family: var(--font-body); text-transform: none; letter-spacing: 0; color: var(--text); font-weight: 400; }
+
+/* ---- the map ---- */
+.map-heading, .map-tools { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 16px; }
+.file-name-row { display: flex; align-items: center; gap: 2px; }
+.file-name-row input { width: 170px; font-family: var(--font-mono); }
+.file-extension { font-family: var(--font-mono); color: var(--text-quiet); }
+.map-size, .changes { font-variant-numeric: tabular-nums; color: var(--text-quiet); padding-bottom: 5px; }
+.changes.has-changes { color: var(--secret-gold); }
+.resize-controls { display: flex; align-items: center; gap: 4px; }
+.resize-controls button { padding: 2px 9px; }
+.resize-controls .field-label:not(:first-child) { margin-left: 8px; }
+.toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; padding-bottom: 4px; }
+.zoom-field input { width: 110px; accent-color: var(--accent); }
+.canvas-scroller {
+  overflow: auto; max-height: calc(100vh - 230px); min-height: 200px;
+  border: 1px solid var(--line); border-radius: 4px; background: var(--ground);
+}
+#map-canvas { display: block; touch-action: none; cursor: crosshair; }
+.square-info { font-family: var(--font-mono); font-size: 12px; color: var(--text-quiet); min-height: 3em; }
+.square-info strong { color: var(--text); font-weight: 500; }
+
+/* ---- checks, balance, text ---- */
+.check-badge { font-family: var(--font-body); font-size: 11px; letter-spacing: 0.04em; padding: 1px 8px; border-radius: 10px; }
+.check-badge.passes { background: var(--good); color: #062110; }
+.check-badge.fails { background: var(--bad); color: #2a0404; }
+.problem-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; }
+.problem-list li {
+  font-size: 13px; padding: 6px 8px 6px 10px; border-left: 3px solid var(--bad); background: var(--panel);
+  border-radius: 0 4px 4px 0; cursor: pointer; overflow-wrap: anywhere;
+}
+.problem-list li:hover, .problem-list li:focus-visible { background: var(--panel-raised); }
+.problem-list li.passes { border-left-color: var(--good); cursor: default; }
+.problem-list li.first-problem::before { content: "npm test stops here: "; color: var(--bad); font-weight: 600; }
+.table-scroller { overflow-x: auto; }
+.balance-table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 13px; }
+.balance-table th, .balance-table td { padding: 4px 8px; text-align: right; border-bottom: 1px solid var(--line); }
+.balance-table th:first-child, .balance-table td:first-child { text-align: left; color: var(--text-quiet); font-weight: 400; }
+.balance-table thead th { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-quiet); }
+.monster-counts { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--text-quiet); }
+.monster-counts strong { color: var(--text); font-variant-numeric: tabular-nums; }
+.settings-row { display: flex; flex-wrap: wrap; gap: 12px; }
+textarea {
+  width: 100%; box-sizing: border-box; padding: 8px; resize: vertical;
+  font-family: var(--font-mono); font-size: 12px; line-height: 1.25; background: var(--panel); white-space: pre;
+  overflow-x: auto;
+}
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  background: var(--panel-raised); border: 1px solid var(--accent); padding: 8px 16px; border-radius: 4px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5); max-width: calc(100% - 32px);
+}
+
+@media (max-width: 1180px) {
+  .workspace { grid-template-columns: 220px minmax(0, 1fr); }
+  .side-panel { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+}
+@media (max-width: 720px) {
+  .workspace { grid-template-columns: minmax(0, 1fr); }
+  .palette-panel { order: 2; }
+  .map-area { order: 1; }
+  .side-panel { order: 3; display: flex; }
+  .canvas-scroller { max-height: 70vh; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .toast { transition: opacity 0.2s; }
+}
+
+</style>
+</head>
+<body>
+<header class="top-bar">
+  <div class="brand">
+    <span class="brand-game">SCRATCH SLAYER</span>
+    <h1>Map Editor</h1>
+  </div>
+  <div class="file-controls">
+    <label class="field">
+      <span class="field-label">Open a game map</span>
+      <select id="game-map-choice"></select>
+    </label>
+    <button type="button" id="new-map-button">New map…</button>
+    <label class="button" for="open-file-input">Open file…</label>
+    <input type="file" id="open-file-input" accept=".txt,text/plain" hidden>
+  </div>
+  <div class="save-controls">
+    <button type="button" id="undo-button" title="Undo (Ctrl+Z)">Undo</button>
+    <button type="button" id="redo-button" title="Redo (Ctrl+Y)">Redo</button>
+    <button type="button" id="copy-button">Copy map text</button>
+    <button type="button" id="download-button" class="primary">Download .txt</button>
+  </div>
+</header>
+
+<form id="new-map-form" class="new-map-form" hidden>
+  <strong>New map</strong>
+  <label class="field"><span class="field-label">Columns</span><input type="number" id="new-map-width" min="5" max="64" value="24"></label>
+  <label class="field"><span class="field-label">Rows</span><input type="number" id="new-map-height" min="5" max="64" value="20"></label>
+  <label class="field"><span class="field-label">Outside wall</span><select id="new-map-wall"></select></label>
+  <button type="submit" class="primary">Make it</button>
+  <button type="button" id="new-map-cancel">Cancel</button>
+  <span class="hint">Starts with a wall all round, the player start P and the exit switch X.</span>
+</form>
+
+<main class="workspace">
+  <aside class="palette-panel" aria-label="Letters and tools">
+    <section>
+      <h2>Tool</h2>
+      <div class="tool-buttons" id="tool-buttons" role="radiogroup" aria-label="Drawing tool"></div>
+      <p class="hint">Right-click paints floor. Hold <kbd>Shift</kbd> and click for a straight line.
+        <kbd>Alt</kbd>-click picks up the letter under the mouse.</p>
+    </section>
+    <section>
+      <h2>Letter <span class="current-letter" id="current-letter-label"></span></h2>
+      <div id="palette"></div>
+      <p class="hint">Or type the letter on the keyboard: <kbd>M</kbd> for an imp, <kbd>3</kbd> for wall 3, <kbd>0</kbd> for floor.</p>
+    </section>
+  </aside>
+
+  <section class="map-area" aria-label="The map">
+    <div class="map-heading">
+      <label class="field file-name-field">
+        <span class="field-label">File name</span>
+        <span class="file-name-row"><input type="text" id="file-name-input" spellcheck="false"><span class="file-extension">.txt</span></span>
+      </label>
+      <div class="map-size" id="map-size"></div>
+      <div class="changes" id="changes-label"></div>
+      <button type="button" id="revert-button">Revert</button>
+    </div>
+    <div class="map-tools">
+      <div class="resize-controls" aria-label="Map size">
+        <span class="field-label">Columns</span>
+        <button type="button" data-resize="columns:-1" title="Remove the column just inside the right wall">−</button>
+        <button type="button" data-resize="columns:1" title="Add a column just inside the right wall">+</button>
+        <span class="field-label">Rows</span>
+        <button type="button" data-resize="rows:-1" title="Remove the row just inside the bottom wall">−</button>
+        <button type="button" data-resize="rows:1" title="Add a row just inside the bottom wall">+</button>
+      </div>
+      <label class="toggle"><input type="checkbox" id="show-reach" checked> Shade what can't be reached</label>
+      <label class="toggle"><input type="checkbox" id="show-safe-zone" checked> Start safety zone</label>
+      <label class="field zoom-field"><span class="field-label">Zoom</span><input type="range" id="zoom-input" min="8" max="36" value="18"></label>
+    </div>
+    <div class="canvas-scroller" id="canvas-scroller">
+      <canvas id="map-canvas" aria-label="Map grid: click or drag to paint the chosen letter"></canvas>
+    </div>
+    <div class="square-info" id="square-info" aria-live="polite">Point at a square to see what it is.</div>
+  </section>
+
+  <aside class="side-panel">
+    <section class="check-panel">
+      <h2>Map check <span class="check-badge" id="check-badge"></span></h2>
+      <p class="hint">The same checks <code>npm test</code> runs. Point at a problem to see its square on the map.</p>
+      <ol class="problem-list" id="problem-list"></ol>
+    </section>
+    <section>
+      <h2>Balance</h2>
+      <div class="table-scroller">
+        <table class="balance-table" id="balance-table"></table>
+      </div>
+      <p class="hint"><strong>Ammo ratio</strong>: damage all the ammo on the map can do ÷ the health of all its monsters.
+        Bigger is easier. <strong>Health</strong>: what the health packs give.</p>
+      <div class="monster-counts" id="monster-counts"></div>
+    </section>
+    <section>
+      <h2>Picture settings</h2>
+      <p class="hint">These live in the map's record in <code>src/levels.py</code>, not in the file. Here they only change the picture.</p>
+      <div class="settings-row">
+        <label class="field"><span class="field-label">Secret walls look like</span><select id="secret-look-choice"></select></label>
+        <label class="field"><span class="field-label">Player faces</span>
+          <select id="start-angle-choice">
+            <option value="270">up (270)</option><option value="0">right (0)</option>
+            <option value="90">down (90)</option><option value="180">left (180)</option>
+          </select>
+        </label>
+      </div>
+    </section>
+    <section>
+      <h2>Map text</h2>
+      <p class="hint">Exactly what goes in the file: one row per line. Type or paste here and the map follows.</p>
+      <textarea id="map-text" spellcheck="false" rows="12" aria-label="The map as text"></textarea>
+      <p class="hint" id="save-hint"></p>
+    </section>
+  </aside>
+</main>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>window.EDITOR_DATA = {"game":{"wallLetters":"123456789BDRSXZ","monsterLetters":"CFGMTVW","bossLetters":"TW","pickupLetters":"?AHILNQU","keyLetters":"JK","floorLetters":"0?ACFGHIJKLMNPQTUVW","edgeLetters":"123456789X","safeStartDistance":6,"monsters":{"M":{"name":"imp","health":3},"V":{"name":"spitter","health":3},"G":{"name":"golem","health":6},"W":{"name":"warden","health":24},"C":{"name":"charger","health":5},"F":{"name":"wraith","health":4},"T":{"name":"colossus","health":60}},"chargerLetter":"C","difficulties":[{"name":"easy","monsterHealth":75,"suppliesKept":100,"pickupAmount":150},{"name":"normal","monsterHealth":100,"suppliesKept":100,"pickupAmount":100},{"name":"hard","monsterHealth":125,"suppliesKept":70,"pickupAmount":100}],"ammoPickups":{"I":["bullets",25],"A":["shells",10],"U":["rockets",5],"N":["shells",8],"Q":["bullets",40],"L":["rockets",4]},"damagePerAmmo":{"bullets":1,"shells":2.5,"rockets":6},"mysteryItems":["H","H","A","A","I","U"],"healthPack":25,"supplyLetters":"HAIU?","supplyShareStart":50},"look":{"wallColors":{"1":"#b8b8b8","2":"#ad7c4e","3":"#519e4f","4":"#a83232","5":"#829e96","6":"#3b9425","7":"#768da3","8":"#80242f","9":"#716380","D":"#948268","R":"#b81212","B":"#1254b8","X":"#8c8c8c","Y":"#8c8c8c","S":"#999999","Z":"#987db2"},"wallNames":{"1":"grey","2":"brown","3":"green","4":"red","5":"slate","6":"moss","7":"steel blue","8":"crimson","9":"violet grey"},"doorColors":{"D":"#8a6a4a","R":"#e03131","B":"#2f6fe0","Z":"#8f5fc0","X":"#e8e8e8"},"floorColor":"#1c1a1e","things":{"P":["#40c057","player start"],"M":["#e03131","imp"],"V":["#e03131","spitter"],"G":["#e03131","golem"],"W":["#7a0c0c","warden (boss)"],"C":["#e03131","charger"],"F":["#e03131","wraith"],"T":["#7a0c0c","colossus (boss)"],"H":["#2f9e44","health"],"A":["#f2c200","shells"],"I":["#f2c200","bullets"],"U":["#f2c200","rockets"],"N":["#fd7e14","shotgun"],"Q":["#fd7e14","chaingun"],"L":["#fd7e14","rocket launcher"],"K":["#ff5a5a","red key"],"J":["#4a8bff","blue key"],"E":["#6b7a2a","barrel"],"?":["#be4bdb","mystery item"]},"specialWalls":{"D":"door","R":"red door","B":"blue door","Z":"skull door","X":"exit switch","S":"secret wall"},"bossLetters":"TW"},"maps":[{"level":1,"letter":"A","levelName":"The Outpost","mapName":"Front Gate","fileName":"level 1 map A","rows":["1111111111111X11111111111111","1H000M0050000000000500000001","10000000500M0000M00500000M01","10000000D0000000000D00000001","1000000050000H00000500000001","15555555555555555555555D5551","1000000000000000000000000001","1000000000000000000000000A01","100022000000M000000002200001","10002200M0000000000002200001","100000E00000044000000000M001","100M0000000004400000E0000001","10000000333000M0033300000001","1002000000000000000M00002001","10I00000000000000000000000H1","1555D55555555555555555555551","10M0000005H00000005000000M01","10N0000005000000005000000001","100000000D000M0000D000000551","100000M00500000000500M00S??1","1000000005000000005000005001","1555555555555D55555555555551","1I00000000000000000000000001","10000M000E000000000000M00001","1000003330000000003330000001","1000000000000P00000000000001","1000000000000000000000000001","1111111111111111111111111111"],"secretLook":"5","angle":270},{"level":1,"letter":"B","levelName":"The Outpost","mapName":"Barracks","fileName":"level 1 map B","rows":["77777777777777X777777777777777","700000000900000000009000000007","70M0000009000M0000009000000A07","7000000009000000M000D000000M07","7H0000000900000000009000000007","7999D99999999999999999999D9997","700000000000090090000000000007","702002002000090090200200200207","7000M00000000D0090000000M00007","702002002000090090200200200207","70000000000M090090M000000000H7","799999D9999999009999999D999997","700M0000000000000000E000000007","70000000000000000000000000M007","79D999999999999999999999999997","700000000000090090000000000007","70000M000000090090200200200207","700022002200090M90000M00000007","70000000000I090090200200200207","700M000000000D009000000000M007","7000220022000900999999D9999997","7000000000M00900D0000000000007","799000000000H9009000M000000007","7??S0000000009P090000000N00M07","70090000000009009A000000000007","777777777777777777777777777777"],"secretLook":"9","angle":270},{"level":1,"letter":"C","levelName":"The Outpost","mapName":"Motor Pool","fileName":"level 1 map C","rows":["11111111111111111111111111X111","1H00000500000050000M0050000001","1000000506660050000000D0000M01","10M00005066600D00000005M000001","1000000D06660050M00000500000H1","100000A50000005000000050000001","155D55555555555555555555555551","100000000M00000000000000000001","1000000000000000000022000M0001","100066000006666000002200000001","10M066000006666000000000E00001","10006600000000000M00000000M001","100066000I00000000000000000001","1H0000000000000000000000000001","10000000M000000999900011111111","100000000000000999900010E00M01","10000000000000099990000000E001","100000000000M000000000000M0001","10000000000000000000M0100E0E01","1000000000000000000000100000A1","15555D555555555555555555555551","1000000M0050000000050000M00001","10N022000050000000050000000001","1000220000D00000000D0000000001","10M00000005000000005H000000551","10000000005000P00005000000S??1","100000000050000000050000005001","111111111111111111111111111111"],"secretLook":"5","angle":270},{"level":2,"letter":"A","levelName":"The Processing Plant","mapName":"Pump Station","fileName":"level 2 map A","rows":["7777777777777777X777777777777777","7??0S000A00700000000070000000007","70007000000702000002070V33003307","7777000M00070000M000070033003307","7000000000070V000000070000K00007","70000000HV070000000V07000M000V07","70000000000700000000070000000007","77777D7777777777R7777777777D7777","70000000000000000000000700000007","70V000000000V00000000I070V000007","70005500055000550005500700060007","70005500055000550005500700060007","70000000000000000000000D00060M07","7H00000E000M0000M0000V0700060007","70000000000000000000000700060007","7000550005500055000550070E0600I7","70005500055000550005500700060007","70000000000000000000000D00060007","70A0000V0000E0000V00000700000007","70000000000000000000000700060007","77777D77777777777777777700060M07","70000000000700000000000700060007","70V00000000700000E000V070M0600H7","70000000M00700M00000000700060007","70000000000700022000000700060007","70000000000D00022000000D00060007","70000P00000700000000000700060007","7000000000070H0000QM000700000V07","70000000000700000000000700000007","77777777777777777777777777777777"],"secretLook":"7","angle":270},{"level":2,"letter":"B","levelName":"The Processing Plant","mapName":"Acid Vats","fileName":"level 2 map B","rows":["7777777777777777X777777777777777","7000M000R000M000000000H700000007","7000000070000000V00EM00700000007","70099999999999999999999999999007","700900000000000000000000I0009007","70V90V00000000000000000000V09M07","70090066600666666660066600009007","70090066600666666660066600009007","70090066600666666660066600009007","700900000000000000000000000090H7","700D000000E000V000000000V0009007","70090066600666006666666600009007","7I090066600666006666666600009M07","70090066600666006666666600V09007","7009000000V000K00000000000009007","7009H00000000000000V000000009007","70M90066666666006660066600009007","70090066666666006660066600009007","70090066666666V06660066600009007","700900000000000000000000V0009007","70090V00000000000000E0000000D0V7","70090066600666666660066600009007","7H090066600666666660066600009007","70090066600666666660066600009007","7009A0000000000000000000000090Q7","70M900000V000000000V000000999007","7009000000000000000000000S?09M07","700900000000000000000000090?9007","700999999999999D9999999999999007","70000P0000000000000000000M000007","70000E000000M0000000000000I00007","77777777777777777777777777777777"],"secretLook":"9","angle":0},{"level":2,"letter":"C","levelName":"The Processing Plant","mapName":"Filter Halls","fileName":"level 2 map C","rows":["7777777777777X77777777","70H00000000600060000M7","7000M00000060006V00007","70000000000600060M0007","700000V00000M000000007","700000000E00000000V007","7777777777777777777R77","70000V00000V00000000M7","70M0000777777700000007","7I0660070000V70V6600A7","700660070VK0070066M007","70000007000007000E00Q7","77D7777777D77777777777","700000000000M000070?07","700V6600H00000660S00?7","7M006600000A0E66007777","7000000M0V000000V000H7","7000000000000000000007","7777777777777777777D77","7H00000E00M00000000007","7000030003000300030V07","70P00300030003V0030007","70000000000000000M00I7","7777777777777777777777"],"secretLook":"7","angle":0},{"level":3,"letter":"A","levelName":"The Fortress","mapName":"Gatehouse","fileName":"level 3 map A","rows":["88888888888888888888888888888X8888","80H00000M08I0000000000V08000000008","8000000000800090000090008000000V08","800J00G0008000000W000000Z000000008","8000000000800G0000000000800M000008","80V0000000800090000090008000000008","800000000A800000000000H08000000008","88888R88888888888B8888888888888888","8A00000000000000000000000000000H08","80V00000000000000000V0E000000M0008","8000004400004400000044000044000008","8000004400004400000044000044000008","8000M0000000E000G00000000000000008","80G0000000G0000000000000G000000V08","8000000000000000I000000000000000I8","88888D8888888888888888888888D88888","80000000000008000000080000000000H8","80M000000000I80V00000800000000M008","800000000000080000000D000000000008","800000G0000008000G00080000G0000008","8000000000000D00000008000000000008","800000000000080E00000800000000K008","8000000000V0080000M00800V000000A08","8H000000000008I0000008000000000008","88888888888888888D8888888888888888","8??0800000000000000000000000000008","8000S0004000000000000000040000V008","8888000040000000000000000400000008","80000000400M0000000000000400E00008","80000000000000000P00000M0000000008","80000A0000000000000000000000000I08","8888888888888888888888888888888888"],"secretLook":"8","angle":270},{"level":3,"letter":"B","levelName":"The Fortress","mapName":"The Keep","fileName":"level 3 map B","rows":["888888888888888888888888888888888","8I0000000000000000M00000000000008","80000000000000000000H000G00000K08","8000000000G00000000000V0000000008","800V00000000000000000000000000008","800008888888888888888888888800008","800008A0000000008000000000I800M08","800008000000V00080000000G00800008","8000080004400000800000000008000A8","8000080004400G0080000000440800008","80000R000000000080000000440800008","8000080000099999X999990000H800008","8H000800G00900900090H900000800G08","8000080000090090009G0900000800008","800008E000090099Z99009000V0800008","80M00800J0090000000009000008000I8","80000800000B000000040900000800008","8000080000H90000W0000900000800008","8000080000090400000409E00008000E8","8000080000090V0000000900000800008","8000A8004409I00000000900M0080G008","800008004409999999999900000800008","8000080V0000000080000000000D00008","800008000000000080000000440800008","80M008000000G00080000G00440800008","8000080I000000M0800000000I0800008","8000080000000000800000000008000V8","800008888888888888888888888800008","888000000000000000000000000000008","8??8000000M0000000000000000000008","800S000000000000P000E000000000V08","8008000000V00000000000M00000000I8","888888888888888888888888888888888"],"secretLook":"8","angle":0},{"level":3,"letter":"C","levelName":"The Fortress","mapName":"Dungeons","fileName":"level 3 map C","rows":["99999999999999999999999999999999","9H0000I0900009H00090000900009999","90000000900M0900V09A000900009999","900P000090000900009000090KG09999","900000009000I90000900M0900009999","90000000900009000090000900009999","9999D99999D9999D9999D9999D999999","9000000E000G00000M00000000000009","9A0000M000000000000000E0000000V9","999D999999999999999999999999R999","9990000000000009A000000000I00009","9900000000000V0900G7770007770V09","90004000040000090007770007770009","9H000000000000090007770007770009","900V000M00000E090000000000000009","900000000000000900J0000V0000M009","90004000040000090007770000000009","900000G00000M009000777000000G009","90I00000000A000900000000H00000I9","9999999999999999999999B999999999","90000000000000000000000000000009","9000I000G000000000H0G000M0000009","9000000000400G004000004000V00009","90000000004000004000004000000009","90000000000000000V00000E00000009","9999990000000000000000000G000009","900009000000V000W000000000009999","X0000Z00M000000000000000000S??09","90000900000000000000000000090009","99999999999999999999999999999999"],"secretLook":"9","angle":0},{"level":4,"letter":"A","levelName":"The Foundry","mapName":"Furnace Hall","fileName":"level 4 map A","rows":["222222222222222222222222222222X22222","200000000005000000000000500000000002","20K000000H05H0000L000G0050E000000G02","200550000005000400004000500V05500002","2005500G0005000400004000500005500002","2000000V0005000400004000500V00000002","2000000000050M000000C0U0500000000002","200000000005000000000000500000000002","255D5555555555555D55555555555555R552","200000500000000000000000000005000002","2000005000000000000C000E0000I5000002","20000050C00000G000000000000005000002","20V00050004400000440000044000500V002","200M00500044000004400000440005000002","20000050V00000000000000000000D00G002","20H0005000000C0000000C00000005000002","20000050000000004S400000000005000002","20000050004400004?400M00440005000002","200000D00044000044400000440005000H02","200000500000000000000000000005000002","200M005000000C0000000C00000V05000002","2000005000000000000000000000050M0002","2000C0500044000004400000440005000002","20000050004400000440000044000500V002","2000V0500000000000000000000C05000002","20000050U000E0C0000000000000050A0002","20E0005000000000000000000I0005000002","25555555D555555555555555555D55555552","200000000000000000000000000000000002","200000000000000000000000V00000000002","20000M00M0000000A0000000000000ME0002","200000000000005500000550000000000002","200000000000G0550000055000000000C002","20H0000000I0000000P0000000M000000A02","200000000000000000000000000000000002","222222222222222222222222222222222222"],"secretLook":"4","angle":270},{"level":4,"letter":"B","levelName":"The Foundry","mapName":"Slag Pits","fileName":"level 4 map B","rows":["222222222222222222222222222222X22222","200000000000500000000000500000000002","20000000U00050V0000000E050M000000002","200L00000000500440004400500055000002","2000V0000000500440004400500055000002","200000000000D0000000000050000000V002","200000000000500000C000G0500000000002","2000000M00005000000H000050H0000000I2","200000000000500000000000500000000002","25555555D555555555D555555555R5555552","200000000000000000000000000000000002","20000C00000M0E00000000000C00000G0002","2000000000000000000000000000000000H2","244444444444444444444404444444440002","200000000000000000000000000000000002","20V0000000C000000G000000000000000K02","2000000E000000000000000M0000C0000002","200000000000000000000000000000000002","200044444044444444444444444444444442","200000000000000000000000000000000V02","200000C0H0000V000000000000000E000002","20M00000000000000000C000000000000002","200000000000000000000000000000000C02","244444444444444404444444444444440002","20A000000000000C0000000000V000000002","2000000000000000U0000000000000000002","255555D55555555555555555555555555552","2H0000000000000000000000000000000002","20000000M0000000000V0000000M00000M02","200000000000550000000055000000000002","200000000000550000000055000000005552","200P00000G0000000E0000000000000500?2","2H00000000000000M0000000A000000S0?02","222222222222222222222222222222222222"],"secretLook":"5","angle":0},{"level":4,"letter":"C","levelName":"The Foundry","mapName":"Rolling Mill","fileName":"level 4 map C","rows":["2222222222222222222222222222222222","2000000000500000000000050000H00002","20000000005H000000000005000000000X","200K00000050000000000G0500V0000002","2000000C00500E00000000050000000M02","2000000000500090000900050000000002","20000000005000900C0900055555D55552","20M0000000500090000900050000000002","20000000V0D000900009U0050000000002","200000000050009000090005000E000002","200220E0005000000000000R0000000C02","2002200000500090000900050000000002","200000000H500090C0090M050V00000002","2000G000005000900009000500000000I2","200000000050V090000900050044000002","2H0000000050009000090005004400M002","2000002200500000000000050044000002","2000002200500090000900050000000002","200000000050009000090C05H0000G0002","20V0000000500090L00900050000000002","200000000050M09000090005000C000002","20000000A0500090000900050000000002","2002200000500000G000000500000000V2","2002200000500090000900050000000002","2000000000500090000900050000000002","200000M00050C09000090E050000000002","2000000000500090000900050000044002","20H00000005U00000M0000050M00044002","20000C000050009000090V050000044002","2000000000500090000900050000000002","2000000000D00090000900050000000002","200000000050V00E000000050C00000002","2550000000500000000000050000000002","2?050000M0500000P000000500000000U2","20?S000000500000000000050000000002","2222222222222222222222222222222222"],"secretLook":"5","angle":270},{"level":5,"letter":"A","levelName":"The Sunken Vaults","mapName":"Flooded Caves","fileName":"level 5 map A","rows":["77777777777777777777777777777777777777","77777777777777777777777777777777777777","77300000000003773000000000377300000377","770K00000000I0770000V0000J07700000H077","77000000000M0077000M0000F0077000000077","770000000000007700000000000770000000X7","770G0000F00000770U0000C00007700F000077","77000000000G00773000000000377000000077","77000000A00000777777707777777000F00077","773000000000037777777R7777777000990077","77777770777777777777707777777000990077","77777770777777773000000000037000000077","77777770777777770F0000000IV07000000077","7730000000003777000000E00000700000C077","7700000000000777000990009900B000000077","7700F000000V07770009900099007000000077","770000000000077700000000000070000G0077","7700003300000000000000G0F0007000000077","77000F330000077700C000000000700V000077","770000000G0007770009900099007000000077","7700H000000007770009900099007300000377","7700000000F007770H000E0000F07777777777","770H0000000007773000000000037777?77777","77300000000037777777077777777777S77777","77777077777777777777077777777300000377","777770777777777777770777777770I0000077","7777707777777773000000003777700000V077","77777077777777700000000007777000F00077","7730000F03777770M00F000H07777000000077","77000000M07777700000000007777000000077","77I000000077777000033000000000000F0077","77000000000000000003300G07777000000077","77000000007777700000000007777000000077","77000P00007777700CE000F00777700000U077","7700000000777770A000000007777000000077","7730000003777773000000003777730000U377","77777777777777777777777777777777777777","77777777777777777777777777777777777777"],"secretLook":"7","angle":270},{"level":5,"letter":"B","levelName":"The Sunken Vaults","mapName":"The Cistern","fileName":"level 5 map B","rows":["999999999999999999999999999999999X99","9I00000000000000M0000000000090000009","900000000F00C00V00000H00M000B0000009","900000000000000000000000000090000009","900077777077777777777777777777770009","900077777077777777777777777777770F09","900077777077777777777777777777770009","900077790000977777777779000097779999","90007770H000077777777770000007770009","90V077700V0C0777777777700J00077700I9","900077700A0007777777777000F0H7770009","900077700000077777777770V00007770009","9000777900000077777777000000077700M9","9000777777777077777777R7777777770009","90M07777777770000000U007777777770009","9000777777777700000V0077777777770C09","9000777777777700F0000C77777777770009","900077777777770009900077777777770009","9000777777777700099000777777777700E9","90007777777777000000F077777777770009","90F077777777770GE0000077777777770F09","900077777777700I00000007777777770009","900077777777707777777707777777770009","900077700000007777777700000H07770009","90007770G00E077777777770V00007770009","9000000000F0077777777770000F077700G9","90C0777000K007777777777000G0077700H9","9000777000V0077777777770A00007770009","900077790000977777777779000097770009","990077777777777777777777770777770009","9?9077777777777777777777770777770V09","9?S077777777777777777777770777770009","9?90000M0000000000000000000000000009","99000000000000000000F0C0000000M00009","90P000E0000000U000000000000000000009","999999999999999999999999999999999999"],"secretLook":"9","angle":270},{"level":5,"letter":"C","levelName":"The Sunken Vaults","mapName":"Bone Tunnels","fileName":"level 5 map C","rows":["11111111111111111111111111111111111111","1111111111111111111X111111111111111111","111111111111110000000000U1111111111111","110000000H1111000000000M01111111111111","11V00000001111008000F00001111111111111","11000F00001111000000000001111111111111","110000000000B00000000000C1111111111111","11000000001111000000008001111111111111","11000000M0111100V000000001111111111111","11000000001111000000000001111111111111","11H00000001111111111111111111111111111","11111011111111111111111111111111111111","11111011111111111111111111111111111111","11111C11111111111111111111111111111111","11111011111111111111111100H0000V001111","1111101111110000000F011100000000001111","111110111111G0000000U1110000F000001111","11111011111100800080011100000000J01111","11000000E1110000C00000R000000C00001111","11V000000111E00F0000011100000000001111","110000F0000000000000H1110G000000F01111","11H000000111008000800111000000E00I1111","1100000C01110M000000V11111111111111111","110M00000111H0000000011111111111111111","11000000I11111111011111111111111111111","11110111111111111011111111111111111111","11110111111111111011111111111111111111","11110111111111111011111111000000000U11","11110111111111A0000000E1110000F0000G11","1111011111111100G0000M0111000880000011","110000001111110080000000000008800M0011","110000001111110000F00K0111000000000011","1100P0000000M0000000800111000001111011","11000000111111V0000C0F01110V000S??1011","11I0000A111111000000000111000000111011","11111111111111111111111111111111111111"],"secretLook":"1","angle":0},{"level":6,"letter":"A","levelName":"The Core","mapName":"The Ring","fileName":"level 6 map A","rows":["8888888888888888888888888888888888888888","8000000000000000000000000000000000000008","80H000000M000000V0000000000000C00000HI08","800000000000000000000000F000000000000008","8000000000000000000000000000000000000008","80000999999D9999999999999999D99999900008","800009U000000000009999900000000000900008","800009000000C0000099999000000V0000900008","80V00900000000F0009999900F0000000090M008","80000900A0E00000009999900000000H00900008","80F00900000000000099X9900000000000900G08","8000099999999999999909999999999999900008","80000999999944444444Z4444444999999900008","800009000009400000000000000490000A900008","80000900000940H0000000000H04900000900008","80E00900V0094009900000099004900MV0900008","8000090000094009900000099004900000900008","8000090000094000000000000004900000900008","80000900000940000000T0000004900000900008","8000090000094000000000000004900000900008","80M00D0K00094U000000000000U4900C00R00M08","8000090000094000000000000004900000900008","800009000009400000E000E0000490F000900008","8000090000094009900000099004900000900008","80000900F0094009900M00099004900000900008","800C0900000940H0000000000H04900000900E08","8000090G000940000000000000049000J0900008","800009000A094444444404444444900000900008","80000999999999999999B9999999999999900F08","8000099900000000000000000000000099900008","80G009990000440000000F000044000099900008","80000S?900G044000000C00000440V0099900008","80000999000000V0I0000000U000000099900008","800009990000000000000000000000009990G008","80000999999999999999D9999999999999900008","8000000000000000000000000000000000000008","800U0000G000000000000000000000F000000008","80I000000C000V000000P0000000000C00000U08","8000000000000000000000000000000000000008","8888888888888888888888888888888888888888"],"secretLook":"9","angle":270},{"level":6,"letter":"B","levelName":"The Core","mapName":"Reactor","fileName":"level 6 map B","rows":["8888888888888888888X88888888888888888888","80H000000000H090000000000900000000000H08","800000F0000V0090000000V0090000000M000008","8000M00000000090000000000900G0000000C008","80000000G00000900M0000000900000000000008","80C000000000009000000000090U000000000V08","80000000000000900000F0000900000000000008","89999D9999999990000000000999999999D99998","8000000000009999999Z99999999000000000008","8A00000000V090000000000000090V0000000008","8000000000009000000000000009000000000008","8000550055009005000000005009000777700H08","80G0550055009000000000000009000777700008","8000000000009000000000000F09000777700008","800000000M009000000000E000090F000000M008","8000000000009000000000000009000000000008","8H0000000000900000444400000900000J000008","8000550055F0900000444400000900000000G008","8000550055009000004444000009000000000008","8000000000009000004444000009000777700008","80M000C0E0009000E00000000009000777700008","8000000000009000000000000009000777700008","8000000000009000000000000009E000000000I8","8000550055009000000T0000000900000C000008","8000550055009000000000000009000000000V08","80000000000H9005000000005009000000000008","8000000V000090F000000000000900M000000008","800K000000009000000000000009000000000008","800000000000900000000000000900A000000008","89999D9999999999999B99999999999999R99998","8U000000000000000000000000000000000000U8","8000000000M000E00I00000V000000C000000008","800000000000000000000F000000000000000008","80000555000055500000000005550000555000U8","80U0055500005550000000000555000055500008","8000055500005550000000000555000055500008","800V000000000000000000000000000000009998","800000000000G000000P0000A0E00M00000S??08","8I0000000C000000000000000000000000090008","8888888888888888888888888888888888888888"],"secretLook":"9","angle":270},{"level":6,"letter":"C","levelName":"The Core","mapName":"The Spire","fileName":"level 6 map C","rows":["888888888888888888888888888888","8?80F0000000H000H00M0000000008","8?S0000040V0000000000400000008","880000000000000000000000000C08","800099999999999R99999999990008","80G090000000000000000000090008","800090V0000000F000C000M00900H8","80009000000000000000000H090008","804090008888888888888800090408","800090C0800088000880080G090008","8000900E80008X0008800800090008","800090008000888Z888008000900E8","8K009040800000000000U804090008","8000900080F000000V000800090008","800M9000800000E000000800090V08","800090A08009000000090800090008","800090008009000T00090800090008","800090408000000000000804090008","8I00900080000G0000000800090F08","800090M080U000000F000800090008","80009000800000000000080J090008","804090008888888B88888800090408","8000900F0000M000000E000V0900U8","80009H00000000000I0000C0090008","80009000000000000000000009M008","800099999999999999999999990008","8V00000000M0000000000000U00008","8000C0004000E00P000004000G0008","80000000A00000000000V0000U00I8","888888888888888888888888888888"],"secretLook":"8","angle":270}],"levelCount":6,"canDownload":true};</script>
+<script>
+// THE MAP CHECKER, in JavaScript, for the map editor (docs/map-editor.html).
+//
+// This is the same detective work as validate() and balance() in src/levels.py, written again
+// in JavaScript so the editor can check a map while you draw it, in the web browser, without
+// Python. It gives exactly the same messages as the build, in the same order: the first problem
+// it lists is the one `npm test` would stop on. (tests/test_levels.py checks that the two
+// agree, on every real map and on thousands of broken ones.) If you change a check in
+// levels.py, change it here too.
+//
+// It doesn't know any letters or numbers by itself: the 'game' object handed to it holds the
+// letter groups from levels.py and the tables from game/config.py (src/map_editor.py writes
+// them into the page), so the two can't drift apart.
+//
+// A map is a list of strings, one per row, top row first: rows[row][column], like levels.py.
+// A square is written [column, row].
+
+(function () {
+    'use strict';
+
+    // One step right, left, down and up, as [column change, row change].
+    const NEIGHBOR_STEPS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+    // A square as one piece of text, "column,row", so squares can go in a Set or a Map.
+    function squareKey(column, row) {
+        return column + ',' + row;
+    }
+
+    // A square's position, in Python numbers and in Scratch list numbers (like where() in levels.py).
+    function where(column, row) {
+        return `column ${column}, row ${row} (in Scratch: item ${row + 1} of the list, letter ${column + 1})`;
+    }
+
+    // FLOOD FILL with step counting: every square you can walk to from 'start', and how many steps
+    // away it is. Returns a Map from squareKey to steps. (reachable_squares() and
+    // walking_distances() in levels.py, in one: the squares reached are the Map's keys.)
+    function walkingDistances(rows, start, walkableLetters) {
+        const mapHeight = rows.length, mapWidth = rows[0].length;
+        const steps = new Map([[squareKey(start[0], start[1]), 0]]);
+        const toDo = [start];
+        for (let next = 0; next < toDo.length; next++) {      // toDo[next] is the front of the queue
+            const [column, row] = toDo[next];
+            const stepsHere = steps.get(squareKey(column, row));
+            for (const [columnStep, rowStep] of NEIGHBOR_STEPS) {
+                const neighborColumn = column + columnStep, neighborRow = row + rowStep;
+                const neighbor = squareKey(neighborColumn, neighborRow);
+                if (neighborColumn >= 0 && neighborColumn < mapWidth && neighborRow >= 0 && neighborRow < mapHeight
+                        && !steps.has(neighbor) && walkableLetters.has(rows[neighborRow][neighborColumn])) {
+                    steps.set(neighbor, stepsHere + 1);
+                    toDo.push([neighborColumn, neighborRow]);
+                }
+            }
+        }
+        return steps;
+    }
+
+    // True if any of the 4 squares beside [column, row] is in 'squares' (a Set or Map of squareKeys).
+    function nextTo(column, row, squares) {
+        return NEIGHBOR_STEPS.some(([columnStep, rowStep]) => squares.has(squareKey(column + columnStep, row + rowStep)));
+    }
+
+    function union(...letterSets) {
+        const together = new Set();
+        for (const letters of letterSets) for (const letter of letters) together.add(letter);
+        return together;
+    }
+
+    // PLAY THE LEVEL, ROUGHLY (play_through() in levels.py): plain doors open; finding the red key
+    // opens red doors, the blue key blue doors, reaching the boss the skull doors. Repeat until a
+    // pass finds nothing new. 'doorThatNeverOpens' stays shut whatever happens (check 9).
+    function playThrough(game, rows, start, doorThatNeverOpens) {
+        const keysFound = new Set();
+        while (true) {
+            const walkable = union(game.floorLetters, 'D');
+            if (keysFound.has('K')) walkable.add('R');
+            if (keysFound.has('J')) walkable.add('B');
+            if (keysFound.has('boss')) walkable.add('Z');
+            walkable.delete(doorThatNeverOpens);
+            const reachable = walkingDistances(rows, start, walkable);
+            let foundSomethingNew = false;
+            for (const key of reachable.keys()) {
+                const [column, row] = key.split(',').map(Number);
+                const letter = rows[row][column];
+                const found = game.keyLetters.has(letter) ? letter : game.bossLetters.has(letter) ? 'boss' : null;
+                if (found && !keysFound.has(found)) {
+                    keysFound.add(found);
+                    foundSomethingNew = true;
+                }
+            }
+            if (!foundSomethingNew) return {reachable, walkable};
+        }
+    }
+
+    // CHECK A MAP: validate() in levels.py, but instead of stopping at the first problem it
+    // carries on and lists them all (where it can: without a player start, there's nowhere to
+    // walk from). Each problem is {message, squares}: the words, and the squares to point at.
+    // Also returns what the overlays in the editor draw: the squares a player can reach without
+    // secrets ('reachable'), with secrets ('reachableWithSecrets'), and every square's walking
+    // distance from the start with all doors open ('stepsFromStart'). Any of them can be null.
+    function checkMap(game, rows) {
+        const problems = [];
+        const problem = (message, squares) => problems.push({message, squares: squares || []});
+        const result = {problems, reachable: null, reachableWithSecrets: null, stepsFromStart: null};
+        if (!rows.length) {
+            problem('the map is empty.');
+            return result;
+        }
+        const mapHeight = rows.length, mapWidth = rows[0].length;
+
+        // CHECK 1: every row is as long as the first one. (Nothing else makes sense until it is.)
+        rows.forEach((rowText, row) => {
+            if (rowText.length !== mapWidth) {
+                problem(`row ${row} has ${rowText.length} letters but row 0 has ${mapWidth}. `
+                        + 'Every row must be the same length.', [[Math.min(rowText.length, mapWidth) , row]]);
+            }
+        });
+        if (problems.length) return result;
+
+        const everySquare = [];
+        rows.forEach((rowText, row) => {
+            for (let column = 0; column < mapWidth; column++) everySquare.push([column, row, rowText[column]]);
+        });
+        const allowedLetters = union(game.wallLetters, game.floorLetters, 'E');
+
+        // CHECK 2: no unknown letters.
+        for (const [column, row, letter] of everySquare) {
+            if (!allowedLetters.has(letter)) {
+                problem(`unknown letter '${letter}' at ${where(column, row)}. `
+                        + 'See the LEGEND at the top of levels.py for the letters you can use.', [[column, row]]);
+            }
+        }
+        // CHECK 3: the outside edge is all wall (or the exit switch).
+        for (const [column, row, letter] of everySquare) {
+            const onEdge = row === 0 || row === mapHeight - 1 || column === 0 || column === mapWidth - 1;
+            if (onEdge && !game.edgeLetters.has(letter)) {
+                problem(`the outside edge must be wall, but there is a '${letter}' at ${where(column, row)}.`, [[column, row]]);
+            }
+        }
+        // CHECK 4: exactly one player start.
+        const starts = everySquare.filter(([, , letter]) => letter === 'P').map(([column, row]) => [column, row]);
+        if (starts.length !== 1) {
+            problem(`there must be exactly one player start P, but there are ${starts.length}`
+                    + (starts.length ? ': ' + starts.map(([column, row]) => where(column, row)).join('; ') : '.'), starts);
+        }
+        const start = starts.length === 1 ? starts[0] : null;
+
+        let reachable = null, walkable = null;
+        if (start) {
+            ({reachable, walkable} = playThrough(game, rows, start));
+            const reachableWithSecrets = walkingDistances(rows, start, union(walkable, 'S'));
+            result.reachable = reachable;
+            result.reachableWithSecrets = reachableWithSecrets;
+            // CHECK 5: monsters and keys reachable without secrets, pickups somehow, and something
+            // to stand on next to every secret wall and barrel.
+            for (const [column, row, letter] of everySquare) {
+                const here = squareKey(column, row);
+                if ((game.monsterLetters.has(letter) || game.keyLetters.has(letter)) && !reachable.has(here)) {
+                    problem(`the '${letter}' at ${where(column, row)} can't be reached. Monsters and `
+                            + 'keys must be reachable without secret walls or blowing up barrels.', [[column, row]]);
+                }
+                if (game.pickupLetters.has(letter) && !reachableWithSecrets.has(here)) {
+                    problem(`the '${letter}' at ${where(column, row)} can't be reached, even through secret walls.`, [[column, row]]);
+                }
+                if (letter === 'S' && !nextTo(column, row, reachable)) {
+                    problem(`the secret wall at ${where(column, row)} has no reachable floor next to it.`, [[column, row]]);
+                }
+                if (letter === 'E' && !nextTo(column, row, reachable)) {
+                    problem(`the barrel at ${where(column, row)} has no reachable floor next to it.`, [[column, row]]);
+                }
+            }
+        }
+
+        // CHECK 6: at most one boss.
+        const bosses = everySquare.filter(([, , letter]) => game.bossLetters.has(letter)).map(([column, row]) => [column, row]);
+        if (bosses.length > 1) {
+            problem(`only one boss per level, but there are ${bosses.length}: `
+                    + bosses.map(([column, row]) => where(column, row)).join('; '), bosses);
+        }
+        const wholeMapText = rows.join('');
+        const skullDoors = everySquare.filter(([, , letter]) => letter === 'Z').map(([column, row]) => [column, row]);
+        if (skullDoors.length && bosses.length !== 1) {
+            problem('a skull door (Z) needs a boss (W or T) to drop the skull key.', skullDoors);
+        }
+
+        // CHECK 7: exactly one exit switch, with reachable floor next to it.
+        const exits = everySquare.filter(([, , letter]) => letter === 'X').map(([column, row]) => [column, row]);
+        if (exits.length !== 1) {
+            problem(`there must be exactly one exit switch X, but there are ${exits.length}.`, exits);
+        } else if (start) {
+            const [exitColumn, exitRow] = exits[0];
+            if (!nextTo(exitColumn, exitRow, reachable)) {
+                problem(`the exit switch at ${where(exitColumn, exitRow)} can't be reached. Check the `
+                        + 'keys come before their doors, and that floor touches the switch.', [exits[0]]);
+            }
+            // CHECK 8: the skull door really guards the exit.
+            if (skullDoors.length) {
+                const withoutSkullDoor = new Set(walkable);
+                withoutSkullDoor.delete('Z');
+                if (nextTo(exitColumn, exitRow, walkingDistances(rows, start, withoutSkullDoor))) {
+                    problem('the exit can be reached without going through the skull door, so players '
+                            + 'could skip the boss. Put the Z in the only way into the exit.', skullDoors);
+                }
+            }
+            // CHECK 9: every key is needed.
+            for (const [keyLetter, doorLetter, color] of [['K', 'R', 'red'], ['J', 'B', 'blue']]) {
+                if (wholeMapText.includes(keyLetter)
+                        && nextTo(exitColumn, exitRow, playThrough(game, rows, start, doorLetter).reachable)) {
+                    problem(`the exit can be reached without going through a ${color} door (${doorLetter}), so `
+                            + `the ${color} key (${keyLetter}) isn't needed. Close the other way round, or remove the key.`,
+                            everySquare.filter(([, , letter]) => letter === doorLetter).map(([column, row]) => [column, row]));
+                }
+            }
+        }
+
+        // CHECK 10: no monster starts closer than game.safeStartDistance squares' walk (doors open).
+        if (start) {
+            const stepsFromStart = walkingDistances(rows, start, union(game.floorLetters, 'DRBZ'));
+            result.stepsFromStart = stepsFromStart;
+            for (const [column, row, letter] of everySquare) {
+                const steps = stepsFromStart.get(squareKey(column, row));
+                if (game.monsterLetters.has(letter) && steps !== undefined && steps < game.safeStartDistance) {
+                    problem(`the '${letter}' at ${where(column, row)} is only ${steps} squares' walk `
+                            + `from the player start. Monsters must start at least ${game.safeStartDistance} squares away.`,
+                            [[column, row]]);
+                }
+            }
+        }
+        return result;
+    }
+
+    // ROUNDING, three ways, so the numbers match the game and the Python report exactly.
+    // Scratch's 'round' block: 2.5 -> 3 (scratch_round() in config.py).
+    function scratchRound(number) {
+        return number >= 0 ? Math.floor(number + 0.5) : -Math.floor(-number + 0.5);
+    }
+    // Python's round(): halfway goes to the even number, so 2.5 -> 2 and 3.5 -> 4.
+    function pythonRound(number) {
+        const whole = Math.floor(number);
+        if (number - whole === 0.5) return whole % 2 === 0 ? whole : whole + 1;
+        return Math.round(number);
+    }
+    // Python's round(number, 2). Python looks at the exact number the computer stores: 1.575 is
+    // really stored as 1.57499999..., so it rounds to 1.57 (toFixed() does the same). Only a number
+    // stored exactly halfway goes to the even last digit, and the only ones are eighths: 1.125, 1.375 ...
+    function pythonRound2(number) {
+        const eighths = number * 8;
+        if (Number.isInteger(eighths) && eighths % 2 !== 0) {
+            const hundredths = Math.floor(number * 100);
+            return (hundredths % 2 === 0 ? hundredths : hundredths + 1) / 100;
+        }
+        return Number(number.toFixed(2));
+    }
+
+    // Which supplies (H A I U ?) appear at this 'supplies kept' percent, in reading order
+    // (supplies_kept() in config.py): a running count goes up by the percent at each supply;
+    // reaching 100 keeps one and takes 100 off.
+    function suppliesKept(game, rows, percentKept) {
+        let share = game.supplyShareStart;
+        const kept = [];
+        rows.forEach((rowText, row) => {
+            [...rowText.toUpperCase()].forEach((letter, column) => {
+                if (game.supplyLetters.has(letter)) {
+                    share += percentKept;
+                    if (share >= 100) {
+                        share -= 100;
+                        kept.push([column, row, letter]);
+                    }
+                }
+            });
+        });
+        return kept;
+    }
+
+    // Add up a list of numbers carefully, like math.fsum() in balance(): keep track of the tiny
+    // bits plain adding loses to rounding (Neumaier's method), so a total like 365.5 is really
+    // 365.5 and gets rounded the same way as in the Python balance report.
+    function carefulSum(numbers) {
+        let total = 0, lostBits = 0;
+        for (const number of numbers) {
+            const newTotal = total + number;
+            lostBits += Math.abs(total) >= Math.abs(number) ? (total - newTotal) + number : (number - newTotal) + total;
+            total = newTotal;
+        }
+        return total + lostBits;
+    }
+
+    function countLetter(text, letter) {
+        return text.split(letter).length - 1;
+    }
+
+    // BALANCE: what a map gives you and what it throws at you, at one difficulty (balance() in
+    // levels.py, where every number is explained).
+    function balance(game, rows, difficultyName) {
+        const difficulty = game.difficulties.find(each => each.name === difficultyName);
+        const wholeMapText = rows.join('').toUpperCase();
+        const monsterHealth = letter => scratchRound(game.monsters[letter].health * difficulty.monsterHealth / 100);
+        const monsterLetters = Object.keys(game.monsters);
+        let totalHealth = 0;
+        for (const letter of monsterLetters) totalHealth += monsterHealth(letter) * countLetter(wholeMapText, letter);
+        if (wholeMapText.includes('T')) totalHealth += 2 * monsterHealth(game.chargerLetter);
+
+        const pickupsOnMap = suppliesKept(game, rows, difficulty.suppliesKept).map(([, , letter]) => letter)
+            .concat([...wholeMapText].filter(letter => 'NQL'.includes(letter)));
+        const ammoDamageOf = letter => {
+            if (letter === '?') {
+                return carefulSum(game.mysteryItems.map(ammoDamageOf)) / game.mysteryItems.length;
+            }
+            if (!(letter in game.ammoPickups)) return 0;
+            const [ammoName, amount] = game.ammoPickups[letter];
+            return game.damagePerAmmo[ammoName] * scratchRound(amount * difficulty.pickupAmount / 100);
+        };
+        const healthPack = scratchRound(game.healthPack * difficulty.pickupAmount / 100);
+        const ammoDamage = carefulSum(pickupsOnMap.map(ammoDamageOf));
+        const mysteryHealthShare = game.mysteryItems.filter(letter => letter === 'H').length / game.mysteryItems.length;
+        const health = pythonRound(healthPack * (pickupsOnMap.filter(letter => letter === 'H').length
+                                                 + pickupsOnMap.filter(letter => letter === '?').length * mysteryHealthShare));
+        return {
+            monsters: monsterLetters.reduce((sum, letter) => sum + countLetter(wholeMapText, letter), 0),
+            monster_health: totalHealth,
+            ammo_damage: pythonRound(ammoDamage),
+            ammo_ratio: totalHealth ? pythonRound2(ammoDamage / totalHealth) : null,
+            health,
+        };
+    }
+
+    // The game data arrives as plain lists (JSON); turn the letter groups into Sets once.
+    function prepareGame(gameData) {
+        const game = Object.assign({}, gameData);
+        for (const name of ['wallLetters', 'monsterLetters', 'bossLetters', 'pickupLetters', 'keyLetters',
+                            'floorLetters', 'edgeLetters', 'supplyLetters']) {
+            game[name] = new Set(gameData[name]);
+        }
+        return game;
+    }
+
+    const mapChecker = {checkMap, balance, prepareGame, squareKey, where, scratchRound};
+    if (typeof module !== 'undefined' && module.exports) module.exports = mapChecker;   // Node (the tests)
+    else window.mapChecker = mapChecker;                                                 // the web page
+})();
+
+</script>
+<script>
+// THE MAP EDITOR: draw a Scratch Slayer map with the mouse, see the build's map checks and the
+// balance numbers as you go, and save it as a map file (src/maps/level N map A.txt).
+//
+// src/map_editor.py puts this file into docs/map-editor.html, together with map_checker.js,
+// editor.css, page.html and EDITOR_DATA: the game's own letters, colors, tables and every map.
+//
+// THE IDEA: the map is a list of strings, one per row ('mapState.rows', rows[row][column]),
+// exactly like the text file. Every tool changes that list; then the page redraws the picture,
+// re-runs the checks and rewrites the text box. Undo keeps copies of the list from before each change.
+
+(function () {
+    'use strict';
+    const data = window.EDITOR_DATA;
+    const game = mapChecker.prepareGame(data.game);
+    const look = data.look;
+    const SAFE_DISTANCE = game.safeStartDistance;
+    const DRAFT_STORAGE_KEY = 'scratch-slayer-map-editor-draft';
+    const RULER_LEFT = 26, RULER_TOP = 18;   // room round the map for the column and row numbers
+    const LETTER_FONT = '"IBM Plex Sans", Arial, sans-serif';
+
+    // ---------------------------------------------------------------------------------------------
+    // WHAT EACH LETTER IS CALLED, and the groups in the palette on the left
+    // ---------------------------------------------------------------------------------------------
+    const WALL_DIGITS = '123456789';
+    function letterName(letter) {
+        if (letter === '0') return 'floor';
+        if (WALL_DIGITS.includes(letter)) return `wall ${letter} (${look.wallNames[letter]})`;
+        if (letter in look.specialWalls) return look.specialWalls[letter];
+        if (letter in look.things) return look.things[letter][1];
+        return `unknown letter '${letter}'`;
+    }
+    const PALETTE_GROUPS = [
+        ['Floor and walls', '0' + WALL_DIGITS],
+        ['Doors and switches', 'DRBZSX'],
+        ['Player start', 'P'],
+        ['Monsters', 'MVGCF'],
+        ['Bosses (carry the skull key)', 'WT'],
+        ['Health and ammo', 'HAIU?'],
+        ['Weapons', 'NQL'],
+        ['Keys', 'KJ'],
+        ['Exploding barrel', 'E'],
+    ];
+    const PALETTE_LETTERS = PALETTE_GROUPS.map(([, letters]) => letters).join('');
+    const TOOLS = [
+        ['paint', 'Paint'], ['rectangle', 'Rectangle'], ['box', 'Room walls'],
+        ['fill', 'Fill'], ['pick', 'Pick up'],
+    ];
+    const TOOL_HINTS = {
+        paint: 'Click or drag to paint squares.',
+        rectangle: 'Drag from corner to corner to fill a rectangle.',
+        box: 'Drag from corner to corner to draw a room\'s walls (the inside is left alone).',
+        fill: 'Click to repaint a whole patch of the same letter.',
+        pick: 'Click a square to use its letter.',
+    };
+
+    // ---------------------------------------------------------------------------------------------
+    // THE MAP BEING EDITED
+    // ---------------------------------------------------------------------------------------------
+    const mapState = {
+        rows: [],              // the map, one string per row
+        originalRows: [],      // as it was when it was opened (for "N squares changed" and Revert)
+        fileName: '',          // without .txt
+        gameMapNumber: -1,     // which of data.maps it came from, or -1
+        secretLook: '9',       // the wall digit secret walls are drawn as
+        startAngle: 270,       // the arrow on the player start
+    };
+    const editor = {
+        letter: '1', tool: 'paint', zoom: 18,
+        undoList: [], redoList: [],
+        hoverSquare: null,           // [column, row] under the mouse
+        highlightedSquares: [],      // squares of the problem the mouse is on
+        stroke: null,                // the drag in progress: {before, anchor, last, letter}
+        lastPainted: null,           // for Shift+click straight lines
+        analysis: null,              // what mapChecker.checkMap() found
+        typingStartedFrom: null,     // the map before typing in the text box began
+    };
+
+    // ---------------------------------------------------------------------------------------------
+    // SMALL HELPERS
+    // ---------------------------------------------------------------------------------------------
+    const page = id => document.getElementById(id);
+    const mapWidth = () => Math.max(0, ...mapState.rows.map(row => row.length));
+    const mapHeight = () => mapState.rows.length;
+    const letterAt = (column, row) => (mapState.rows[row] || '')[column];
+
+    function setLetter(rows, column, row, letter) {
+        const rowText = rows[row];
+        if (rowText === undefined || column < 0 || column >= rowText.length || rowText[column] === letter) return false;
+        rows[row] = rowText.slice(0, column) + letter + rowText.slice(column + 1);
+        return true;
+    }
+
+    // Read a map file's text the way load_map() in levels.py does: any line endings, an invisible
+    // byte-order mark at the start is skipped, blank lines at the end are dropped.
+    function rowsFromText(text) {
+        const rows = text.replace(/^﻿/, '').split(/\r\n|\r|\n/);
+        while (rows.length && rows[rows.length - 1].trim() === '') rows.pop();
+        return rows;
+    }
+    const textFromRows = rows => rows.join('\n') + '\n';
+
+    // Every square on a straight line between two squares (Bresenham's line algorithm, the one
+    // drawing programs have used since the 1960s), so a fast drag doesn't leave gaps.
+    function squaresOnLine([fromColumn, fromRow], [toColumn, toRow]) {
+        const squares = [];
+        const columnDistance = Math.abs(toColumn - fromColumn), rowDistance = -Math.abs(toRow - fromRow);
+        const columnStep = fromColumn < toColumn ? 1 : -1, rowStep = fromRow < toRow ? 1 : -1;
+        let error = columnDistance + rowDistance, column = fromColumn, row = fromRow;
+        while (true) {
+            squares.push([column, row]);
+            if (column === toColumn && row === toRow) return squares;
+            const doubled = 2 * error;
+            if (doubled >= rowDistance) { error += rowDistance; column += columnStep; }
+            if (doubled <= columnDistance) { error += columnDistance; row += rowStep; }
+        }
+    }
+
+    function showToast(message) {
+        const toast = page('toast');
+        toast.textContent = message;
+        toast.hidden = false;
+        clearTimeout(showToast.timer);
+        showToast.timer = setTimeout(() => { toast.hidden = true; }, 3200);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // UNDO AND REDO: a copy of everything about the map, from before each change
+    // ---------------------------------------------------------------------------------------------
+    function snapshot() {
+        return JSON.parse(JSON.stringify(mapState));
+    }
+    function restore(saved) {
+        Object.assign(mapState, JSON.parse(JSON.stringify(saved)));
+    }
+    function remember(before) {
+        editor.undoList.push(before);
+        if (editor.undoList.length > 300) editor.undoList.shift();
+        editor.redoList = [];
+    }
+    function undo() {
+        if (!editor.undoList.length) return;
+        editor.redoList.push(snapshot());
+        restore(editor.undoList.pop());
+        mapChanged({everything: true});
+    }
+    function redo() {
+        if (!editor.redoList.length) return;
+        editor.undoList.push(snapshot());
+        restore(editor.redoList.pop());
+        mapChanged({everything: true});
+    }
+    // Make a change as one undo step: 'change' edits mapState and returns false if nothing changed.
+    function change(makeTheChange) {
+        const before = snapshot();
+        if (makeTheChange() === false || JSON.stringify(before) === JSON.stringify(mapState)) return;
+        remember(before);
+        mapChanged({everything: true});
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // DRAWING ONE SQUARE: the same colors and tokens as the map pictures (src/map_preview.py)
+    // ---------------------------------------------------------------------------------------------
+    function drawLetterInSquare(context, letter, left, top, size, color) {
+        if (size < 11) return;
+        context.fillStyle = color;
+        context.font = `700 ${Math.round(size * 0.62)}px ${LETTER_FONT}`;
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.fillText(letter, left + size / 2, top + size / 2 + size * 0.04);
+    }
+
+    // The square itself: floor, a wall in its color, a door or switch, or a secret wall.
+    function drawGround(context, letter, left, top, size, secretLook) {
+        if (letter === 'S') {
+            context.fillStyle = look.wallColors[secretLook] || look.floorColor;
+            context.fillRect(left, top, size, size);
+            context.save();
+            context.strokeStyle = '#ffd23f';
+            context.lineWidth = Math.max(1, size / 10);
+            context.setLineDash([size / 6, size / 8]);
+            context.strokeRect(left + size * 0.12, top + size * 0.12, size * 0.76, size * 0.76);
+            context.restore();
+        } else if (letter in look.doorColors) {
+            context.fillStyle = look.doorColors[letter];
+            context.fillRect(left, top, size, size);
+            drawLetterInSquare(context, letter, left, top, size, letter === 'X' ? '#000' : '#fff');
+        } else if (WALL_DIGITS.includes(letter)) {
+            context.fillStyle = look.wallColors[letter];
+            context.fillRect(left, top, size, size);
+        } else if (letter === '0' || letter in look.things) {
+            context.fillStyle = look.floorColor;
+            context.fillRect(left, top, size, size);
+        } else {
+            // A letter the game doesn't know (or a stray space): bright, so it gets noticed.
+            context.fillStyle = '#7a1f5c';
+            context.fillRect(left, top, size, size);
+            drawLetterInSquare(context, letter === ' ' ? '␣' : letter, left, top, size, '#fff');
+        }
+    }
+
+    // A thing standing on the floor: a round token with its letter (keys are diamonds, bosses are
+    // bigger, the player start has an arrow for the way they face).
+    function drawThing(context, letter, left, top, size, startAngle) {
+        if (!(letter in look.things)) return;
+        const [color] = look.things[letter];
+        const middleX = left + size / 2, middleY = top + size / 2;
+        context.fillStyle = color;
+        context.strokeStyle = '#000';
+        context.lineWidth = 1;
+        if (letter === 'K' || letter === 'J') {
+            const half = size * 0.36;
+            context.beginPath();
+            context.moveTo(middleX, middleY - half);
+            context.lineTo(middleX + half, middleY);
+            context.lineTo(middleX, middleY + half);
+            context.lineTo(middleX - half, middleY);
+            context.closePath();
+            context.fill();
+            context.stroke();
+            return;
+        }
+        const radius = size * (look.bossLetters.includes(letter) ? 0.62 : 0.42);
+        context.beginPath();
+        context.arc(middleX, middleY, radius, 0, Math.PI * 2);
+        context.fill();
+        context.stroke();
+        if (letter === 'P') {    // 0 = right, 90 = down, like the game
+            context.save();
+            context.translate(middleX, middleY);
+            context.rotate(startAngle * Math.PI / 180);
+            context.scale(size / 16, size / 16);
+            context.fillStyle = '#fff';
+            context.beginPath();
+            context.moveTo(-3, -3.5);
+            context.lineTo(4.5, 0);
+            context.lineTo(-3, 3.5);
+            context.closePath();
+            context.fill();
+            context.restore();
+        } else {
+            const darkLetter = color === '#f2c200' || color === '#fd7e14';
+            drawLetterInSquare(context, letter, left, top, size * 0.92, darkLetter ? '#000' : '#fff');
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // DRAWING THE WHOLE MAP
+    // ---------------------------------------------------------------------------------------------
+    const canvas = page('map-canvas');
+    const context = canvas.getContext('2d');
+
+    function squareLeft(column) { return RULER_LEFT + column * editor.zoom; }
+    function squareTop(row) { return RULER_TOP + row * editor.zoom; }
+
+    function drawMap() {
+        const size = editor.zoom, width = mapWidth(), height = mapHeight();
+        const pixelWidth = RULER_LEFT + width * size + 2, pixelHeight = RULER_TOP + height * size + 2;
+        const sharpness = window.devicePixelRatio || 1;
+        if (canvas.width !== Math.round(pixelWidth * sharpness) || canvas.height !== Math.round(pixelHeight * sharpness)) {
+            canvas.width = Math.round(pixelWidth * sharpness);
+            canvas.height = Math.round(pixelHeight * sharpness);
+            canvas.style.width = pixelWidth + 'px';
+            canvas.style.height = pixelHeight + 'px';
+        }
+        context.setTransform(sharpness, 0, 0, sharpness, 0, 0);
+        context.fillStyle = '#0e0d10';
+        context.fillRect(0, 0, pixelWidth, pixelHeight);
+
+        // Column numbers along the top and row numbers down the left, every fifth one.
+        context.fillStyle = '#8a8a8a';
+        context.font = '10px ' + 'Arial, sans-serif';
+        context.textBaseline = 'alphabetic';
+        context.textAlign = 'center';
+        for (let column = 0; column < width; column += 5) context.fillText(column, squareLeft(column) + size / 2, RULER_TOP - 5);
+        context.textAlign = 'right';
+        for (let row = 0; row < height; row += 5) context.fillText(row, RULER_LEFT - 5, squareTop(row) + size / 2 + 3.5);
+
+        // The squares first, then the things on them (so a big boss token isn't covered up).
+        mapState.rows.forEach((rowText, row) => {
+            for (let column = 0; column < width; column++) {
+                const left = squareLeft(column), top = squareTop(row);
+                if (column >= rowText.length) {      // past the end of a short row: nothing here
+                    context.fillStyle = '#2a0d1f';
+                    context.fillRect(left, top, size, size);
+                    continue;
+                }
+                drawGround(context, rowText[column], left, top, size, mapState.secretLook);
+            }
+        });
+        drawOverlays(size);
+        mapState.rows.forEach((rowText, row) => {
+            [...rowText].forEach((letter, column) => drawThing(context, letter, squareLeft(column), squareTop(row), size, mapState.startAngle));
+        });
+
+        // Grid lines: faint round every square, brighter every 5 squares to help count.
+        context.lineWidth = 1;
+        for (let column = 0; column <= width; column++) {
+            context.strokeStyle = column % 5 === 0 ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.045)';
+            context.beginPath();
+            context.moveTo(squareLeft(column) + 0.5, RULER_TOP);
+            context.lineTo(squareLeft(column) + 0.5, squareTop(height));
+            context.stroke();
+        }
+        for (let row = 0; row <= height; row++) {
+            context.strokeStyle = row % 5 === 0 ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.045)';
+            context.beginPath();
+            context.moveTo(RULER_LEFT, squareTop(row) + 0.5);
+            context.lineTo(squareLeft(width), squareTop(row) + 0.5);
+            context.stroke();
+        }
+
+        // The squares of the problem the mouse is on, and the square under the mouse.
+        context.lineWidth = 2.5;
+        context.strokeStyle = '#ff6464';
+        for (const [column, row] of editor.highlightedSquares) {
+            context.strokeRect(squareLeft(column) - 2, squareTop(row) - 2, size + 4, size + 4);
+        }
+        if (editor.hoverSquare) {
+            const [column, row] = editor.hoverSquare;
+            context.lineWidth = 1.5;
+            context.strokeStyle = '#ffffff';
+            context.strokeRect(squareLeft(column) + 0.75, squareTop(row) + 0.75, size - 1.5, size - 1.5);
+        }
+    }
+
+    // Shading on top of the floor: floor nobody can reach (red), floor only reachable through a
+    // secret wall (gold), and the start safety zone where no monster may stand (green).
+    function drawOverlays(size) {
+        const analysis = editor.analysis;
+        if (!analysis || !analysis.reachable) return;
+        const showReach = page('show-reach').checked, showSafeZone = page('show-safe-zone').checked;
+        mapState.rows.forEach((rowText, row) => {
+            [...rowText].forEach((letter, column) => {
+                const key = mapChecker.squareKey(column, row);
+                const left = squareLeft(column), top = squareTop(row);
+                const isFloor = game.floorLetters.has(letter);
+                if (showReach && isFloor) {
+                    if (!analysis.reachableWithSecrets.has(key)) {
+                        context.fillStyle = 'rgba(255, 70, 70, 0.32)';
+                        context.fillRect(left, top, size, size);
+                    } else if (!analysis.reachable.has(key)) {
+                        context.fillStyle = 'rgba(255, 210, 63, 0.16)';
+                        context.fillRect(left, top, size, size);
+                    }
+                }
+                if (showSafeZone && analysis.stepsFromStart) {
+                    const steps = analysis.stepsFromStart.get(key);
+                    if (steps !== undefined && steps < SAFE_DISTANCE && game.floorLetters.has(letter)) {
+                        context.fillStyle = 'rgba(79, 209, 107, 0.13)';
+                        context.fillRect(left, top, size, size);
+                    }
+                }
+            });
+        });
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // THE MOUSE ON THE MAP
+    // ---------------------------------------------------------------------------------------------
+    function squareUnderPointer(event) {
+        const box = canvas.getBoundingClientRect();
+        const column = Math.floor((event.clientX - box.left - RULER_LEFT) / editor.zoom);
+        const row = Math.floor((event.clientY - box.top - RULER_TOP) / editor.zoom);
+        if (row < 0 || row >= mapHeight() || column < 0 || column >= mapWidth()) return null;
+        return [column, row];
+    }
+
+    // Flood fill (like the paint bucket in a drawing program): the patch of squares with the same
+    // letter as the one clicked, joined up, side to side.
+    function fillPatch(rows, [startColumn, startRow], letter) {
+        const oldLetter = rows[startRow][startColumn];
+        if (oldLetter === letter) return;
+        const toDo = [[startColumn, startRow]];
+        while (toDo.length) {
+            const [column, row] = toDo.pop();
+            if ((rows[row] || '')[column] !== oldLetter) continue;
+            setLetter(rows, column, row, letter);
+            toDo.push([column + 1, row], [column - 1, row], [column, row + 1], [column, row - 1]);
+        }
+    }
+
+    function rectangleSquares([firstColumn, firstRow], [secondColumn, secondRow], outlineOnly) {
+        const squares = [];
+        const left = Math.min(firstColumn, secondColumn), right = Math.max(firstColumn, secondColumn);
+        const top = Math.min(firstRow, secondRow), bottom = Math.max(firstRow, secondRow);
+        for (let row = top; row <= bottom; row++) {
+            for (let column = left; column <= right; column++) {
+                const onOutline = row === top || row === bottom || column === left || column === right;
+                if (!outlineOnly || onOutline) squares.push([column, row]);
+            }
+        }
+        return squares;
+    }
+
+    function pickLetter(square) {
+        const letter = letterAt(...square);
+        if (letter !== undefined && PALETTE_LETTERS.includes(letter)) chooseLetter(letter);
+    }
+
+    canvas.addEventListener('contextmenu', event => event.preventDefault());
+    canvas.addEventListener('pointerdown', event => {
+        const square = squareUnderPointer(event);
+        if (!square || event.button > 2) return;
+        event.preventDefault();
+        if (editor.tool === 'pick' || event.altKey) {
+            pickLetter(square);
+            return;
+        }
+        const letter = event.button === 2 ? '0' : editor.letter;
+        const before = snapshot();
+        if (editor.tool === 'fill') {
+            fillPatch(mapState.rows, square, letter);
+            finishStroke(before);
+            return;
+        }
+        canvas.setPointerCapture(event.pointerId);
+        editor.stroke = {before, anchor: square, last: square, letter};
+        if (editor.tool === 'paint') {
+            const from = event.shiftKey && editor.lastPainted ? editor.lastPainted : square;
+            for (const [column, row] of squaresOnLine(from, square)) setLetter(mapState.rows, column, row, letter);
+            editor.lastPainted = square;
+        } else {
+            previewRectangle(square);
+        }
+        mapChanged({quick: true});
+    });
+    canvas.addEventListener('pointermove', event => {
+        const square = squareUnderPointer(event);
+        const moved = String(square) !== String(editor.hoverSquare);
+        editor.hoverSquare = square;
+        if (moved) showSquareInfo();
+        const stroke = editor.stroke;
+        if (stroke && square && String(square) !== String(stroke.last)) {
+            if (editor.tool === 'paint') {
+                for (const [column, row] of squaresOnLine(stroke.last, square)) setLetter(mapState.rows, column, row, stroke.letter);
+                editor.lastPainted = square;
+            } else {
+                previewRectangle(square);
+            }
+            stroke.last = square;
+            mapChanged({quick: true});
+        } else if (moved) {
+            drawMap();
+        }
+    });
+    function endStroke() {
+        if (!editor.stroke) return;
+        const before = editor.stroke.before;
+        editor.stroke = null;
+        finishStroke(before);
+    }
+    canvas.addEventListener('pointerup', endStroke);
+    canvas.addEventListener('pointercancel', endStroke);
+    canvas.addEventListener('pointerleave', () => {
+        if (editor.stroke) return;
+        editor.hoverSquare = null;
+        showSquareInfo();
+        drawMap();
+    });
+
+    // Rectangle and room tools: while dragging, draw the rectangle on a fresh copy of the map
+    // from before the drag, so moving the mouse back shrinks it again.
+    function previewRectangle(square) {
+        const stroke = editor.stroke;
+        mapState.rows = stroke.before.rows.slice();
+        for (const [column, row] of rectangleSquares(stroke.anchor, square, editor.tool === 'box')) {
+            setLetter(mapState.rows, column, row, stroke.letter);
+        }
+    }
+
+    function finishStroke(before) {
+        if (JSON.stringify(before.rows) !== JSON.stringify(mapState.rows)) remember(before);
+        mapChanged({everything: true});
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // AFTER EVERY CHANGE: check, redraw, rewrite the text, save a draft
+    // ---------------------------------------------------------------------------------------------
+    function mapChanged({quick = false} = {}) {
+        // During a drag only the picture is redrawn; the checks wait for the mouse button to go up.
+        if (!quick) editor.analysis = mapChecker.checkMap(game, mapState.rows);
+        drawMap();
+        if (quick) return;
+        showProblems();
+        showBalance();
+        showSquareInfo();
+        showMapDetails();
+        if (document.activeElement !== page('map-text')) page('map-text').value = textFromRows(mapState.rows);
+        page('undo-button').disabled = !editor.undoList.length;
+        page('redo-button').disabled = !editor.redoList.length;
+        saveDraft();
+    }
+
+    function showProblems() {
+        const list = page('problem-list'), badge = page('check-badge');
+        const problems = editor.analysis.problems;
+        list.replaceChildren();
+        if (!problems.length) {
+            const item = document.createElement('li');
+            item.className = 'passes';
+            item.textContent = 'This map passes every check. Ready for npm test.';
+            list.append(item);
+        }
+        problems.forEach((problem, number) => {
+            const item = document.createElement('li');
+            item.textContent = problem.message.charAt(0).toUpperCase() + problem.message.slice(1);
+            item.tabIndex = 0;
+            if (number === 0) item.classList.add('first-problem');
+            const highlight = () => { editor.highlightedSquares = problem.squares; drawMap(); };
+            const unhighlight = () => { editor.highlightedSquares = []; drawMap(); };
+            item.addEventListener('mouseenter', highlight);
+            item.addEventListener('focus', highlight);
+            item.addEventListener('mouseleave', unhighlight);
+            item.addEventListener('blur', unhighlight);
+            item.addEventListener('click', () => { highlight(); scrollToSquare(problem.squares[0]); });
+            list.append(item);
+        });
+        badge.textContent = problems.length ? `${problems.length} problem${problems.length === 1 ? '' : 's'}` : 'passes';
+        badge.className = 'check-badge ' + (problems.length ? 'fails' : 'passes');
+    }
+
+    function scrollToSquare(square) {
+        if (!square) return;
+        const scroller = page('canvas-scroller');
+        scroller.scrollTo({
+            left: squareLeft(square[0]) - scroller.clientWidth / 2,
+            top: squareTop(square[1]) - scroller.clientHeight / 2,
+            behavior: 'smooth',
+        });
+    }
+
+    function showBalance() {
+        const table = page('balance-table');
+        const rectangle = editor.analysis.problems.every(problem => !problem.message.includes('Every row must be the same length'));
+        if (!rectangle || !mapState.rows.length) {
+            table.innerHTML = '<tbody><tr><td>Make every row the same length first.</td></tr></tbody>';
+            page('monster-counts').replaceChildren();
+            return;
+        }
+        const numbers = game.difficulties.map(difficulty => mapChecker.balance(game, mapState.rows, difficulty.name));
+        const headings = game.difficulties.map(difficulty => `<th scope="col">${difficulty.name}</th>`).join('');
+        const tableRow = (name, key) => `<tr><th scope="row">${name}</th>`
+            + numbers.map(each => `<td>${each[key] === null ? '–' : each[key]}</td>`).join('') + '</tr>';
+        table.innerHTML = `<thead><tr><th></th>${headings}</tr></thead><tbody>`
+            + tableRow('Monster health', 'monster_health') + tableRow('Ammo damage', 'ammo_damage')
+            + tableRow('Ammo ratio', 'ammo_ratio') + tableRow('Health', 'health') + '</tbody>';
+        const wholeMap = mapState.rows.join('');
+        const counts = page('monster-counts');
+        counts.replaceChildren();
+        for (const [letter, monster] of Object.entries(game.monsters)) {
+            const count = wholeMap.split(letter).length - 1;
+            if (!count) continue;
+            const entry = document.createElement('span');
+            entry.innerHTML = `<strong>${count}</strong> ${monster.name}${count === 1 ? '' : 's'}`;
+            counts.append(entry);
+        }
+        if (!counts.children.length) counts.textContent = 'No monsters yet.';
+    }
+
+    function showSquareInfo() {
+        const info = page('square-info');
+        const square = editor.hoverSquare;
+        if (!square) {
+            info.textContent = TOOL_HINTS[editor.tool] + ' Point at a square to see what it is.';
+            return;
+        }
+        const [column, row] = square;
+        const letter = letterAt(column, row);
+        const parts = [`<strong>column ${column}, row ${row}</strong>`, `Scratch: item ${row + 1}, letter ${column + 1}`];
+        if (letter !== undefined) parts.push(`<strong>${letter === ' ' ? '␣' : escapeHtml(letter)}</strong> ${escapeHtml(letterName(letter))}`);
+        const analysis = editor.analysis;
+        if (analysis && analysis.stepsFromStart && letter !== undefined) {
+            const key = mapChecker.squareKey(column, row);
+            const steps = analysis.stepsFromStart.get(key);
+            if (steps !== undefined) parts.push(`${steps} squares' walk from the start`);
+            if (game.floorLetters.has(letter)) {
+                if (!analysis.reachableWithSecrets.has(key)) parts.push('nobody can get here');
+                else if (!analysis.reachable.has(key)) parts.push('only through a secret wall');
+            }
+        }
+        info.innerHTML = parts.join(' · ');
+    }
+
+    function escapeHtml(text) {
+        return text.replace(/[&<>"]/g, character => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'})[character]);
+    }
+
+    function showMapDetails() {
+        page('map-size').textContent = `${mapWidth()} × ${mapHeight()} squares`;
+        const fileNameInput = page('file-name-input');
+        if (document.activeElement !== fileNameInput) fileNameInput.value = mapState.fileName;
+        page('secret-look-choice').value = mapState.secretLook;
+        page('start-angle-choice').value = String(mapState.startAngle);
+        page('game-map-choice').value = String(mapState.gameMapNumber);
+        // How many squares differ from the map as it was opened.
+        const original = mapState.originalRows, label = page('changes-label');
+        let message;
+        if (JSON.stringify(original) === JSON.stringify(mapState.rows)) message = 'unchanged';
+        else if (original.length !== mapState.rows.length || original.some((rowText, row) => rowText.length !== mapState.rows[row].length)) message = 'size changed';
+        else {
+            let changed = 0;
+            original.forEach((rowText, row) => { for (let column = 0; column < rowText.length; column++) if (rowText[column] !== mapState.rows[row][column]) changed++; });
+            message = `${changed} square${changed === 1 ? '' : 's'} changed`;
+        }
+        label.textContent = message;
+        label.classList.toggle('has-changes', message !== 'unchanged');
+        page('revert-button').disabled = message === 'unchanged';
+        const savePlace = `src/maps/${mapState.fileName}.txt`;
+        page('save-hint').innerHTML = data.canDownload
+            ? `To put it in the game: save it as <code>${escapeHtml(savePlace)}</code> (Download does), then run <code>npm test</code>. A new map also needs its record in <code>src/levels.py</code>.`
+            : `To put it in the game: copy the text into <code>${escapeHtml(savePlace)}</code>, then run <code>npm test</code>. A new map also needs its record in <code>src/levels.py</code>.`;
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // OPENING, MAKING AND SAVING MAPS
+    // ---------------------------------------------------------------------------------------------
+    function openMap({rows, fileName, gameMapNumber = -1, secretLook = mapState.secretLook, startAngle = mapState.startAngle}) {
+        change(() => {
+            Object.assign(mapState, {rows: rows.slice(), originalRows: rows.slice(), fileName, gameMapNumber,
+                                     secretLook: String(secretLook), startAngle: Number(startAngle)});
+        });
+        editor.lastPainted = null;
+        page('canvas-scroller').scrollTo(0, 0);
+    }
+
+    function openGameMap(number) {
+        const gameMap = data.maps[number];
+        openMap({rows: gameMap.rows, fileName: gameMap.fileName, gameMapNumber: number,
+                 secretLook: gameMap.secretLook, startAngle: gameMap.angle});
+    }
+
+    function newMap(width, height, wallLetter) {
+        const rows = [];
+        for (let row = 0; row < height; row++) {
+            const edgeRow = row === 0 || row === height - 1;
+            rows.push(edgeRow ? wallLetter.repeat(width) : wallLetter + '0'.repeat(width - 2) + wallLetter);
+        }
+        const middle = Math.floor(width / 2);
+        setLetter(rows, middle, 0, 'X');
+        setLetter(rows, middle, height - 2, 'P');
+        openMap({rows, fileName: `level ${data.levelCount + 1} map A`, startAngle: 270});
+    }
+
+    function downloadMap() {
+        const file = new Blob([textFromRows(mapState.rows)], {type: 'text/plain'});
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(file);
+        link.download = (mapState.fileName || 'map') + '.txt';
+        document.body.append(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+        showToast(`Saved ${link.download} (look in your Downloads folder).`);
+    }
+
+    function copyMapText() {
+        const text = textFromRows(mapState.rows);
+        const selectTheText = () => {
+            const box = page('map-text');
+            box.focus();
+            box.select();
+            showToast('The map text is selected: press Ctrl+C (or ⌘C) to copy it.');
+        };
+        if (!navigator.clipboard) return selectTheText();
+        navigator.clipboard.writeText(text).then(() => showToast('Copied the map text.'), selectTheText);
+    }
+
+    // Grow or shrink the map by one column or row, just inside the right or bottom wall, so the
+    // outside wall stays closed: a new column copies the edge letter at the top and bottom rows
+    // and is floor in between.
+    function resizeMap(direction, amount) {
+        change(() => {
+            const rows = mapState.rows, width = mapWidth(), height = mapHeight();
+            if (direction === 'columns') {
+                if (amount < 0 && width <= 3) return false;
+                mapState.rows = rows.map((rowText, row) => {
+                    const edgeRow = row === 0 || row === height - 1;
+                    const at = rowText.length - 1;
+                    if (amount > 0) return rowText.slice(0, at) + (edgeRow ? rowText[at] : '0') + rowText.slice(at);
+                    return rowText.slice(0, at - 1) + rowText.slice(at);
+                });
+            } else {
+                if (amount < 0 && height <= 3) return false;
+                const at = height - 1;
+                if (amount > 0) {
+                    const lastRow = rows[at];
+                    const newRow = lastRow[0] + '0'.repeat(Math.max(0, lastRow.length - 2)) + lastRow[lastRow.length - 1];
+                    mapState.rows = rows.slice(0, at).concat([newRow], rows.slice(at));
+                } else {
+                    mapState.rows = rows.slice(0, at - 1).concat(rows.slice(at));
+                }
+            }
+        });
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // DRAFTS: the map is kept in this browser, so closing the page doesn't lose it
+    // ---------------------------------------------------------------------------------------------
+    function saveDraft() {
+        try {
+            localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({map: mapState, letter: editor.letter, zoom: editor.zoom}));
+        } catch (storageRefused) { /* private window or storage switched off: no draft, that's all */ }
+    }
+    function loadDraft() {
+        try {
+            const draft = JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY));
+            if (!draft || !Array.isArray(draft.map.rows) || !draft.map.rows.length) return false;
+            Object.assign(mapState, draft.map);
+            if (PALETTE_LETTERS.includes(draft.letter)) editor.letter = draft.letter;
+            if (draft.zoom) editor.zoom = Number(draft.zoom);
+            return true;
+        } catch (noDraft) {
+            return false;
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // THE PALETTE AND THE TOOLS
+    // ---------------------------------------------------------------------------------------------
+    function chooseLetter(letter) {
+        editor.letter = letter;
+        document.querySelectorAll('.letter-button').forEach(button => {
+            button.setAttribute('aria-pressed', String(button.dataset.letter === letter));
+        });
+        page('current-letter-label').textContent = `${letter} · ${letterName(letter)}`;
+        if (editor.tool === 'pick') chooseTool('paint');
+        saveDraft();
+    }
+    function chooseTool(tool) {
+        editor.tool = tool;
+        document.querySelectorAll('#tool-buttons button').forEach(button => {
+            button.setAttribute('aria-checked', String(button.dataset.tool === tool));
+        });
+        canvas.style.cursor = tool === 'pick' ? 'copy' : 'crosshair';
+        showSquareInfo();
+    }
+
+    function buildPalette() {
+        const palette = page('palette');
+        for (const [groupName, letters] of PALETTE_GROUPS) {
+            const group = document.createElement('div');
+            group.className = 'palette-group';
+            group.innerHTML = `<span class="palette-group-name">${groupName}</span><div class="palette-letters"></div>`;
+            for (const letter of letters) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'letter-button';
+                button.dataset.letter = letter;
+                button.title = `${letter}: ${letterName(letter)}`;
+                button.setAttribute('aria-label', `${letter}, ${letterName(letter)}`);
+                const swatch = document.createElement('canvas');
+                const sharpness = window.devicePixelRatio || 1;
+                swatch.width = swatch.height = Math.round(26 * sharpness);
+                const swatchContext = swatch.getContext('2d');
+                swatchContext.scale(sharpness, sharpness);
+                drawGround(swatchContext, letter, 0, 0, 26, '9');
+                drawThing(swatchContext, letter, 0, 0, 26, 0);
+                if (WALL_DIGITS.includes(letter) || letter === '0') drawLetterInSquare(swatchContext, letter, 0, 0, 26, 'rgba(255,255,255,0.75)');
+                button.append(swatch);
+                button.addEventListener('click', () => chooseLetter(letter));
+                group.querySelector('.palette-letters').append(button);
+            }
+            palette.append(group);
+        }
+        const toolButtons = page('tool-buttons');
+        for (const [tool, name] of TOOLS) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.dataset.tool = tool;
+            button.setAttribute('role', 'radio');
+            button.textContent = name;
+            button.title = TOOL_HINTS[tool];
+            button.addEventListener('click', () => chooseTool(tool));
+            toolButtons.append(button);
+        }
+    }
+
+    function buildChoices() {
+        const mapChoice = page('game-map-choice');
+        const yourMap = document.createElement('option');
+        yourMap.value = '-1';
+        yourMap.textContent = '(your own map)';
+        mapChoice.append(yourMap);
+        let group = null;
+        data.maps.forEach((gameMap, number) => {
+            if (!group || group.dataset.level !== String(gameMap.level)) {
+                group = document.createElement('optgroup');
+                group.dataset.level = String(gameMap.level);
+                group.label = `Level ${gameMap.level}: ${gameMap.levelName}`;
+                mapChoice.append(group);
+            }
+            const option = document.createElement('option');
+            option.value = String(number);
+            option.textContent = `${gameMap.level}-${gameMap.letter} ${gameMap.mapName}`;
+            group.append(option);
+        });
+        for (const choiceId of ['secret-look-choice', 'new-map-wall']) {
+            for (const digit of WALL_DIGITS) {
+                const option = document.createElement('option');
+                option.value = digit;
+                option.textContent = `wall ${digit} (${look.wallNames[digit]})`;
+                page(choiceId).append(option);
+            }
+        }
+        page('new-map-wall').value = '1';
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // BUTTONS, FIELDS AND KEYS
+    // ---------------------------------------------------------------------------------------------
+    function connectControls() {
+        page('game-map-choice').addEventListener('change', event => {
+            const number = Number(event.target.value);
+            if (number >= 0) {
+                openGameMap(number);
+                showToast(`Opened ${data.maps[number].fileName}. Undo brings back the map you had.`);
+            }
+        });
+        page('new-map-button').addEventListener('click', () => {
+            page('new-map-form').hidden = !page('new-map-form').hidden;
+            if (!page('new-map-form').hidden) page('new-map-width').focus();
+        });
+        page('new-map-cancel').addEventListener('click', () => { page('new-map-form').hidden = true; });
+        page('new-map-form').addEventListener('submit', event => {
+            event.preventDefault();
+            const clamp = value => Math.max(5, Math.min(64, Math.round(Number(value)) || 20));
+            newMap(clamp(page('new-map-width').value), clamp(page('new-map-height').value), page('new-map-wall').value);
+            page('new-map-form').hidden = true;
+            showToast('Made a new map. Undo brings back the map you had.');
+        });
+        page('open-file-input').addEventListener('change', event => {
+            const file = event.target.files[0];
+            if (file) openFile(file);
+            event.target.value = '';
+        });
+        // Drop a .txt file anywhere on the page to open it.
+        document.addEventListener('dragover', event => event.preventDefault());
+        document.addEventListener('drop', event => {
+            event.preventDefault();
+            const file = event.dataTransfer.files[0];
+            if (file) openFile(file);
+        });
+        page('undo-button').addEventListener('click', undo);
+        page('redo-button').addEventListener('click', redo);
+        page('copy-button').addEventListener('click', copyMapText);
+        const downloadButton = page('download-button');
+        if (data.canDownload) downloadButton.addEventListener('click', downloadMap);
+        else downloadButton.hidden = true;
+        page('revert-button').addEventListener('click', () => change(() => { mapState.rows = mapState.originalRows.slice(); }));
+        document.querySelectorAll('[data-resize]').forEach(button => {
+            const [direction, amount] = button.dataset.resize.split(':');
+            button.addEventListener('click', () => resizeMap(direction, Number(amount)));
+        });
+        page('file-name-input').addEventListener('input', event => {
+            mapState.fileName = event.target.value.replace(/\.txt$/i, '');
+            showMapDetails();
+            saveDraft();
+        });
+        page('secret-look-choice').addEventListener('change', event => change(() => { mapState.secretLook = event.target.value; }));
+        page('start-angle-choice').addEventListener('change', event => change(() => { mapState.startAngle = Number(event.target.value); }));
+        page('show-reach').addEventListener('change', drawMap);
+        page('show-safe-zone').addEventListener('change', drawMap);
+        page('zoom-input').addEventListener('input', event => {
+            editor.zoom = Number(event.target.value);
+            drawMap();
+            saveDraft();
+        });
+
+        // Typing in the map text: the map follows each key, and the whole bit of typing is one undo step.
+        const mapText = page('map-text');
+        mapText.addEventListener('focus', () => { editor.typingStartedFrom = snapshot(); });
+        mapText.addEventListener('input', () => {
+            mapState.rows = rowsFromText(mapText.value);
+            mapChanged({everything: true});
+        });
+        mapText.addEventListener('blur', () => {
+            const before = editor.typingStartedFrom;
+            editor.typingStartedFrom = null;
+            if (before && JSON.stringify(before.rows) !== JSON.stringify(mapState.rows)) remember(before);
+            mapChanged({everything: true});
+        });
+
+        document.addEventListener('keydown', event => {
+            const typingInAField = event.target.closest('input, textarea, select');
+            const commandKey = event.ctrlKey || event.metaKey;
+            if (commandKey && !typingInAField && event.key.toLowerCase() === 'z') {
+                event.preventDefault();
+                if (event.shiftKey) redo(); else undo();
+            } else if (commandKey && !typingInAField && event.key.toLowerCase() === 'y') {
+                event.preventDefault();
+                redo();
+            } else if (!commandKey && !event.altKey && !typingInAField && event.key.length === 1) {
+                const letter = event.key.toUpperCase();
+                if (PALETTE_LETTERS.includes(letter)) {
+                    event.preventDefault();
+                    chooseLetter(letter);
+                }
+            }
+        });
+    }
+
+    function openFile(file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const rows = rowsFromText(String(reader.result));
+            if (!rows.length) return showToast(`${file.name} is empty.`);
+            const fileName = file.name.replace(/\.txt$/i, '');
+            // A file named like a game map ("level 2 map B") gets that map's picture settings.
+            const gameMapNumber = data.maps.findIndex(gameMap => gameMap.fileName === fileName);
+            const gameMap = data.maps[gameMapNumber];
+            openMap({rows, fileName, gameMapNumber: -1,
+                     secretLook: gameMap ? gameMap.secretLook : mapState.secretLook,
+                     startAngle: gameMap ? gameMap.angle : mapState.startAngle});
+            showToast(`Opened ${file.name}. Undo brings back the map you had.`);
+        };
+        reader.readAsText(file);
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // START: the draft from last time, or the first map of the game
+    // ---------------------------------------------------------------------------------------------
+    buildPalette();
+    buildChoices();
+    connectControls();
+    if (!loadDraft()) {
+        const first = data.maps[0];
+        Object.assign(mapState, {rows: first.rows.slice(), originalRows: first.rows.slice(), fileName: first.fileName,
+                                 gameMapNumber: 0, secretLook: first.secretLook, startAngle: first.angle});
+    }
+    page('zoom-input').value = String(editor.zoom);
+    chooseLetter(editor.letter);
+    chooseTool('paint');
+    mapChanged({everything: true});
+    // Web fonts can arrive after the first drawing; draw again so the letters use them.
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { drawMap(); });
+})();
+
+</script>
+</body>
+</html>

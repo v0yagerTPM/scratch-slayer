@@ -18,7 +18,10 @@ That's why the files hold nothing but map rows: no comments or notes, because Sc
 import every line, notes included, as a row of the map. The notes about each map's layout
 are in this file instead, next to the map's settings further down.
 
-Edit a map in any plain text editor (Notepad, TextEdit in plain text mode, VS Code). Use a
+The easiest way to draw a map is the map editor: open docs/map-editor.html in a web browser.
+You paint squares with the mouse, it checks the map as you go, and it saves the file. (It is
+made by src/map_editor.py, and its map checker is a JavaScript copy of validate() below.)
+Or edit a map in any plain text editor (Notepad, TextEdit in plain text mode, VS Code). Use a
 monospace font such as Consolas or Courier so the columns line up; most code editors show the
 column number at the bottom, which helps find a square.
 
@@ -58,6 +61,7 @@ LEGEND (one character per grid cell)
   K      red key         J  blue key
   E      exploding barrel
 """
+import math
 import os
 # deque = a "double-ended queue": a list you can quickly take items off the FRONT of.
 # The flood fill in reachable_squares() below uses it as a to-do list of squares to visit.
@@ -752,13 +756,15 @@ def balance(map_rows, config, difficulty_name="normal"):
 
     def ammo_damage_of(letter):
         if letter == "?":    # a mystery item: on average, the average of what it can turn into
-            return sum(ammo_damage_of(choice) for choice in config.MYSTERY_ITEMS) / len(config.MYSTERY_ITEMS)
+            return math.fsum(ammo_damage_of(choice) for choice in config.MYSTERY_ITEMS) / len(config.MYSTERY_ITEMS)
         if letter not in config.AMMO_PICKUPS:
             return 0
         ammo_name, amount = config.AMMO_PICKUPS[letter]
         return damage_per_ammo[ammo_name] * config.scratch_round(amount * pickup_percent / 100)
     health_pack = config.scratch_round(config.HEALTH_PACK * pickup_percent / 100)
-    ammo_damage = sum(ammo_damage_of(letter) for letter in pickups_on_map)
+    # math.fsum() adds up without the tiny rounding errors of plain sum(), so a total like 365.5 is
+    # exactly 365.5 on every version of Python (and in the map editor's JavaScript copy).
+    ammo_damage = math.fsum(ammo_damage_of(letter) for letter in pickups_on_map)
     health = round(health_pack * (pickups_on_map.count("H") + pickups_on_map.count("?")
                                   * config.MYSTERY_ITEMS.count("H") / len(config.MYSTERY_ITEMS)))
     return dict(monsters=sum(whole_map_text.count(letter) for letter in monster_letters),
