@@ -36,8 +36,8 @@ pickup.script(as_clone(), setv("is clone", 1),
          comment="NEW CLONE: find my square and type, and wear the costume\n'item 1' to 'item 10' that matches my type.")
 
 def add_ammo(slot, amount):
-    """Add ammo, but never more than 'ammo limits' allows."""
-    return [replace("ammo counts", slot, add(item(slot, "ammo counts"), amount)),
+    """Add ammo (times the difficulty's 'pickup amount' percent), but never more than 'ammo limits' allows."""
+    return [replace("ammo counts", slot, add(item(slot, "ammo counts"), pickup_amount(amount))),
             if_(gt(item(slot, "ammo counts"), item(slot, "ammo limits")),
                 replace("ammo counts", slot, item(slot, "ammo limits")))]
 
@@ -58,18 +58,22 @@ pickup.script(recv(UPDATE), if_(and_(eq(V("is clone"), 1), eq(V("is taken"), 0))
                  "Health only counts if you're hurt (like in Doom), so it isn't wasted.\n"
                  "Ammo goes into 'ammo counts' (never above 'ammo limits').\n"
                  "A NEW weapon is switched to straight away; one you already own\n"
-                 "just gives you its ammo.",
+                 "just gives you its ammo.\n"
+                 "DIFFICULTY: health and ammo are multiplied by the 'pickup amount'\n"
+                 "percent (150 on easy: a box of 8 shells gives 12).",
                  if_(and_(eq(V("game state"), PLAYING), lt(V("distance to player"), 0.6)),
                      setv("was picked up", 0),
                      if_(and_(eq(V("item type"), 1), lt(V("health"), 100)),
-                         chg("health", 25), if_(gt(V("health"), 100), setv("health", 100)), setv("was picked up", 1)),
-                     if_(eq(V("item type"), 2), *add_ammo(2, 8), setv("was picked up", 1)),
+                         chg("health", pickup_amount(HEALTH_PACK)), if_(gt(V("health"), 100), setv("health", 100)),
+                         setv("was picked up", 1)),
+                     if_(eq(V("item type"), 2), *add_ammo(2, AMMO_PICKUPS["A"][1]), setv("was picked up", 1)),
                      if_(eq(V("item type"), 3), setv("has red key", 1), setv("was picked up", 1)),
                      if_(eq(V("item type"), 4), setv("has blue key", 1), setv("was picked up", 1)),
                      if_(eq(V("item type"), 5), setv("has skull key", 1), setv("was picked up", 1)),
-                     if_(eq(V("item type"), 6), *add_ammo(1, 20), setv("was picked up", 1)),
-                     if_(eq(V("item type"), 7), *add_ammo(3, 4), setv("was picked up", 1)),
-                     weapon_pickup(8, 3, 2, 8), weapon_pickup(9, 4, 1, 40), weapon_pickup(10, 5, 3, 4),
+                     if_(eq(V("item type"), 6), *add_ammo(1, AMMO_PICKUPS["I"][1]), setv("was picked up", 1)),
+                     if_(eq(V("item type"), 7), *add_ammo(3, AMMO_PICKUPS["U"][1]), setv("was picked up", 1)),
+                     weapon_pickup(8, 3, 2, AMMO_PICKUPS["N"][1]), weapon_pickup(9, 4, 1, AMMO_PICKUPS["Q"][1]),
+                     weapon_pickup(10, 5, 3, AMMO_PICKUPS["L"][1]),
                      note("Picked up: count it, flash gold, show 'picked up N' and play a sound.",
                           if_(eq(V("was picked up"), 1),
                               setv("is taken", 1), chg("level items collected", 1), setv("pickup flash timer", 4),

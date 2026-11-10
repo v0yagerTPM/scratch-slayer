@@ -20,19 +20,22 @@ options_panel.script(recv(DRAW_OPTIONS_PANEL),
 ROW_Y = pictures.options_menu.OPTION_ROW_Y
 TRACK_LEFT, TRACK_RIGHT = pictures.options_menu.TRACK_LEFT, pictures.options_menu.TRACK_RIGHT
 options_widgets = Target(project, "Options Widgets", layer=24, visible=False)
-options_widgets.costume("row highlight", pictures.options_menu.ROW_HIGHLIGHT, 190, 13)
+options_widgets.costume("row highlight", pictures.options_menu.ROW_HIGHLIGHT, 190, 12)
 options_widgets.costume("knob", pictures.options_menu.KNOB, 10, 10)
 options_widgets.costume("switch on", pictures.options_menu.TOGGLE_ON, 28, 11)
 options_widgets.costume("switch off", pictures.options_menu.TOGGLE_OFF, 28, 11)
 for difficulty_name in pictures.options_menu.DIFFICULTY_COLORS:
     options_widgets.costume(f"difficulty {difficulty_name}", pictures.options_menu.difficulty_word(difficulty_name), 50, 11)
+options_widgets.costume("map random", pictures.options_menu.map_word("RANDOM"), 50, 11)
+for map_letter in MAP_LETTERS[:MOST_MAPS_IN_A_LEVEL]:
+    options_widgets.costume(f"map {map_letter}", pictures.options_menu.map_word(map_letter), 50, 11)
 for name in ["is clone", "widget role"]:
     options_widgets.var(name)
-options_widgets.script(flag(), hide(), setv("is clone", 0), setv("widget role", 0), repeat(7, chg("widget role", 1), clone()),
-          comment="Seven clones, one per 'widget role':\n"
+options_widgets.script(flag(), hide(), setv("is clone", 0), setv("widget role", 0), repeat(8, chg("widget role", 1), clone()),
+          comment="Eight clones, one per 'widget role':\n"
                   "1 the highlight on the chosen row, 2 turn speed knob,\n"
                   "3 mouse steering switch, 4 sensitivity knob, 5 field of view knob,\n6 music switch, "
-                  "7 the difficulty word.")
+                  "7 the difficulty word, 8 the map word.")
 options_widgets.script(as_clone(), setv("is clone", 1))
 
 def knob_at(setting, low, high, stage_y):
@@ -69,6 +72,13 @@ options_widgets.script(recv(DRAW_OPTIONS_WIDGETS), if_(and_(eq(V("is clone"), 1)
                 gotoxy(sum(pictures.options_menu.DIFFICULTY_ARROWS_X) / 2, ROW_Y[5]),
                 note("Paused during a game, difficulty can't change, so the word is faded.",
                      ifelse(eq(V("options from game"), 1), [seteffect("GHOST", 50)], [seteffect("GHOST", 0)]))),
+            if_(eq(V("widget role"), 8),
+                note("The map word: 'map random' when 'map choice' is 0, otherwise\n"
+                     "'map A', 'map B' ... (letter 'map choice' of \"ABC...\").",
+                     ifelse(eq(V("map choice"), 0), [costume("map random")],
+                            [costume("map random", join("map ", letter(V("map choice"), MAP_LETTERS)))])),
+                gotoxy(sum(pictures.options_menu.MAP_ARROWS_X) / 2, ROW_Y[7]),
+                ifelse(eq(V("options from game"), 1), [seteffect("GHOST", 50)], [seteffect("GHOST", 0)])),
             show(), front()],
            [hide()])),
     comment="DRAW OPTIONS WIDGETS: each clone shows its own setting.")

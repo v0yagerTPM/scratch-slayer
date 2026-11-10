@@ -10,7 +10,7 @@ import tempfile
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 import levels  # noqa: E402
-from levels import LEVELS, LevelError, validate  # noqa: E402
+from levels import LEVELS, LevelError, every_map, map_title, validate  # noqa: E402
 
 # A tiny map that passes every check: the start, a red key, a barrel, a secret closet with a
 # health pack, a red door, a boss, a skull door, and the exit (in the outside wall).
@@ -51,8 +51,31 @@ def expect_problem(map_rows, *words):
 
 
 def test_real_levels_pass():
-    for level in LEVELS:
-        validate(level)
+    for level_number, map_letter, level, game_map in every_map():
+        validate(dict(name=map_title(level_number, map_letter, level, game_map), rows=game_map["rows"]))
+
+
+def test_every_level_has_maps():
+    levels.check_level_list()
+    assert all(level["maps"] for level in LEVELS)
+
+
+def test_level_without_maps():
+    saved_maps = LEVELS[0]["maps"]
+    LEVELS[0]["maps"] = []
+    try:
+        levels.check_level_list()
+    except LevelError as problem:
+        assert "has no maps" in str(problem), problem
+    else:
+        raise AssertionError("expected a problem for a level with no maps")
+    finally:
+        LEVELS[0]["maps"] = saved_maps
+
+
+def test_map_file_names():
+    assert levels.map_list_name(2, "B") == "level 2 map B"
+    assert levels.map_file_path(2, "B").endswith("level 2 map B.txt")
 
 
 def test_good_map_passes():
@@ -115,14 +138,20 @@ def test_skull_door_that_can_be_walked_around():
     expect_problem(change(change(GOOD_MAP, 5, 5, "0"), 5, 6, "0"), "without going through the skull door")
 
 
+
+def test_key_that_isnt_needed():
+    # A second way round the red door (a plain door in the wall at column 4, row 3): the red key
+    # no longer matters.
+    expect_problem(change(GOOD_MAP, 4, 3, "D"), "without going through a red door", "red key (K) isn't needed")
+
 def load_from_text(file_bytes):
     """Write a map file into a temporary maps folder, load it with load_map(), and return the rows."""
     with tempfile.TemporaryDirectory() as folder:
-        with open(os.path.join(folder, "level 1 map.txt"), "wb") as map_file:
+        with open(os.path.join(folder, "level 1 map A.txt"), "wb") as map_file:
             map_file.write(file_bytes)
         real_folder, levels.MAPS_FOLDER = levels.MAPS_FOLDER, folder
         try:
-            return levels.load_map(1)
+            return levels.load_map(1, "A")
         finally:
             levels.MAPS_FOLDER = real_folder
 
@@ -152,16 +181,32 @@ def test_empty_map_file():
 
 def test_missing_map_file():
     try:
-        levels.load_map(99)
+        levels.load_map(99, "A")
     except LevelError as problem:
-        assert "map file is missing" in str(problem) and "level 99 map.txt" in str(problem), str(problem)
+        assert "map file is missing" in str(problem) and "level 99 map A.txt" in str(problem), str(problem)
     else:
         raise AssertionError("a missing map file should fail")
 
 
-def test_every_level_has_its_map_file():
-    for number in range(1, len(LEVELS) + 1):
-        assert os.path.exists(levels.map_file_path(number)), levels.map_file_path(number)
+def test_every_map_has_its_file():
+    for level_number, map_letter, level, game_map in every_map():
+        path = levels.map_file_path(level_number, map_letter)
+        assert os.path.exists(path), path
+
+
+def test_map_previews_are_up_to_date():
+    """docs/maps has a picture of every map (made by src/map_preview.py). If a map changed and
+    the pictures didn't, this fails, so the pictures on GitHub always match the game."""
+    import map_preview
+    previews = map_preview.all_previews()
+    stale = []
+    for file_name, contents in previews.items():
+        path = os.path.join(map_preview.PREVIEW_FOLDER, file_name)
+        if not os.path.exists(path) or open(path, encoding="utf-8").read() != contents:
+            stale.append(file_name)
+    extra = sorted(set(os.listdir(map_preview.PREVIEW_FOLDER)) - set(previews))
+    assert not stale and not extra, (f"map previews are out of date ({', '.join(stale + extra)}). "
+                                     "Run: python3 src/map_preview.py")
 
 
 if __name__ == "__main__":

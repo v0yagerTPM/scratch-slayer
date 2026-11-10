@@ -7,15 +7,22 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const build = spawnSync(process.execPath, [path.join(__dirname, 'build.js')], {stdio: 'inherit'});
 if (build.status !== 0) process.exit(build.status || 1);
-// The map checker's own tests (Python). Tries "python3", then "python" (Windows), like build.js.
-for (const python of ['python3', 'python']) {
-    const checker = spawnSync(python, [path.join(__dirname, 'test_levels.py')], {stdio: 'inherit'});
-    if (checker.error) continue;
-    if (checker.status !== 0) process.exit(checker.status || 1);
-    break;
+// Runs a Python script with its arguments. Tries "python3", then "python" (Windows), like build.js.
+function runPython(...scriptAndArguments) {
+    for (const python of ['python3', 'python']) {
+        const result = spawnSync(python, scriptAndArguments, {stdio: 'inherit'});
+        if (result.error) continue;
+        if (result.status !== 0) process.exit(result.status || 1);
+        return;
+    }
+    console.error('Could not find Python. Install Python 3 from python.org.');
+    process.exit(1);
 }
+// The map checker's own tests.
+runPython(path.join(__dirname, 'test_levels.py'));
 const filter = process.argv[2] || '';
 const plans = fs.readdirSync(path.join(__dirname, 'plans')).filter(f => f.endsWith('.json') && f.includes(filter));
+
 let failed = 0;
 for (const plan of plans) {
     const name = plan.replace('.json', '');

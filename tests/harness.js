@@ -49,16 +49,23 @@ function expandNamedSteps(steps) {
             expanded.push({until: {'screen showing': 'level complete'}, note: 'reach the tally'},
                           {tap: 'space', while: {'screen showing': 'level complete'}, note: 'leave the tally'},
                           {until: {'game state': 'playing'}, note: 'next level card + melt'});
-        } else if (step.retryLevel) {    // from dying back into the same level
+        } else if (step.retryLevel) {    // from dying back into the same level, on the same map (SPACE)
             expanded.push({until: {'screen showing': 'died'}, note: 'death screen'},
                           {tap: 'space', while: {'screen showing': 'died'}, note: 'retry'},
                           {until: {'game state': 'playing'}, note: 'melt back in'});
+        } else if (step.retryWithNewMap) {   // from dying into the same level on a different map (R)
+            expanded.push({until: {'screen showing': 'died'}, note: 'death screen'},
+                          {tap: 'r', while: {'screen showing': 'died'}, note: 'ask for a new map'},
+                          {until: {'game state': 'playing'}, note: 'new map card + melt'});
+        } else if (step.finishLevel) {   // skip the level: stand next to the exit switch and press E
+            expanded.push({goToExit: true, frames: 1, note: 'go to the exit switch'},
+                          {tap: 'e', while: {'game state': 'playing'}, note: 'flip the exit switch'});
         } else {
             expanded.push(step);
             continue;
         }
         const extra = {...step};          // anything else on the named step (log, expect...) runs at the end
-        delete extra.startGame; delete extra.continueToNextLevel; delete extra.retryLevel;
+        for (const name of ['startGame', 'continueToNextLevel', 'retryLevel', 'retryWithNewMap', 'finishLevel']) delete extra[name];
         if (Object.keys(extra).length) expanded.push({frames: 0, ...extra});
     }
     return expanded;
@@ -140,7 +147,7 @@ console.error = (...parts) => { engineErrors.push(parts.join(' ')); };
 
 // ---- reading and changing the game ----
 const ALL_KEYS = ['space', 'up arrow', 'down arrow', 'left arrow', 'right arrow', 'w', 'a', 's', 'd', 'm', 'e', 'z', 'q',
-                  '1', '2', '3', '4', '5', 'o', 'p', 'n'];
+                  '1', '2', '3', '4', '5', 'o', 'p', 'n', 'r'];
 function scratchKeyName(key) {
     if (key === 'space') return ' ';
     if (key.includes('arrow')) { const direction = key.split(' ')[0]; return 'Arrow' + direction[0].toUpperCase() + direction.slice(1); }
@@ -176,11 +183,12 @@ function localValues(target, round) {
 
 // Does the game match these conditions? Same rules as "expect":
 // {"name": value} must be equal (compared as text), {"name": {"gt": n, "lt": n}} a range,
-// "list:name" compares a whole list.
+// {"name": {"not": value}} anything else, "list:name" compares a whole list.
 function valueOf(name) { return name.startsWith('list:') ? (stageVariable(name.slice(5)) || {}).value : stageValues()[name]; }
 function matches(got, want) {
     if (want && typeof want === 'object' && !Array.isArray(want)) {
-        return ('gt' in want ? +got > want.gt : true) && ('lt' in want ? +got < want.lt : true);
+        return ('gt' in want ? +got > want.gt : true) && ('lt' in want ? +got < want.lt : true) &&
+               ('not' in want ? String(got) !== String(want.not) : true);
     }
     if (Array.isArray(want)) return Array.isArray(got) && JSON.stringify(got.map(String)) === JSON.stringify(want.map(String));
     return String(got) === String(want);
@@ -265,9 +273,9 @@ function applySetup(step) {
             const list = stageVariable(name); list.value = items.slice(); list._monitorUpToDate = false;
         }
     }
-    if (step.setMonsterType) {
-        for (const clone of monsterClones()) {
-            if (+localVariable(clone, 'monster type').value !== step.setMonsterType.type) continue;
+    if (step.setMonsterType) {      // {"type": 1, "vars": {...}}, optionally "first": n to change only n of them
+        const clones = monsterClones().filter(clone => +localVariable(clone, 'monster type').value === step.setMonsterType.type);
+        for (const clone of clones.slice(0, step.setMonsterType.first || clones.length)) {
             for (const [name, value] of Object.entries(step.setMonsterType.vars)) localVariable(clone, name).value = value;
         }
     }
@@ -283,6 +291,18 @@ function applySetup(step) {
     if (step.mouse) {
         vm.runtime.ioDevices.mouse.postData({x: step.mouse.x + 240, y: 180 - step.mouse.y, canvasWidth: 480,
                                              canvasHeight: 360, isDown: !!step.mouse.down});
+    }
+    if (step.goToExit) {    // stand on the floor next to the exit switch X, facing it
+        const rows = stageVariable('current map').value.map(String);
+        const exitRow = rows.findIndex(row => row.toUpperCase().includes('X'));
+        const exitColumn = rows[exitRow].toUpperCase().indexOf('X');
+        // Each neighbor: column change, row change, and the angle that faces back at the switch.
+        const sides = [[-1, 0, 0], [1, 0, 180], [0, -1, 90], [0, 1, 270]];
+        const [columnStep, rowStep, angle] = sides.find(([columnStep, rowStep]) =>
+            (rows[exitRow + rowStep] || '')[exitColumn + columnStep] === '0');
+        stageVariable('player x').value = exitColumn + columnStep + 0.5;
+        stageVariable('player y').value = exitRow + rowStep + 0.5;
+        stageVariable('player angle').value = angle;
     }
     if (step.toBossKey) {
         stageVariable('player x').value = +stageVariable('boss death x').value;
@@ -331,6 +351,15 @@ function checkExpectations(step) {
         for (const [name, want] of Object.entries(step.expect)) {
             const got = valueOf(name);
             if (!matches(got, want)) fail(`${describe(step)}: ${name} = ${JSON.stringify(got)}, expected ${JSON.stringify(want)}`);
+        }
+    }
+    if (step.expectCostume) {       // {"Card Background": "card 1 B"}: the sprite's costume right now.
+        // {stage variable} in the name is filled in: "card 1 {map variant letter}".
+        for (const [spriteName, pattern] of Object.entries(step.expectCostume)) {
+            const want = pattern.replace(/\{([^}]+)\}/g, (whole, name) => stageValues()[name]);
+            const sprite = vm.runtime.targets.find(target => target.isOriginal && target.sprite.name === spriteName);
+            const got = sprite ? sprite.getCostumes()[sprite.currentCostume].name : `(no sprite called ${spriteName})`;
+            if (got !== want) fail(`${describe(step)}: ${spriteName} costume = ${JSON.stringify(got)}, expected ${JSON.stringify(want)}`);
         }
     }
     if (step.expectMonsters) {      // {"type": 1, "monster health": 2}: every clone of that type must match

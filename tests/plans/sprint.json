@@ -1,6 +1,10 @@
 [
  {
-  "frames": 30
+  "frames": 30,
+  "set": {
+   "map choice": 1
+  },
+  "note": "MAP: always map A, so the positions below are on level 1's Front Gate"
  },
  {
   "startGame": true

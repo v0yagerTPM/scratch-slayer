@@ -3,7 +3,7 @@ the level maps as lists, the HUD number slots, and the list boxes shown on the s
 from sb3extra import *
 from game.config import *
 import pictures.options_menu, pictures.tally_screen, pictures.title_screen, pictures.victory_screen, pictures.world
-from levels import LEVELS
+from levels import LEVELS, every_map, map_list_name
 
 project = Project()
 stage = Target(project, "Stage", is_stage=True)
@@ -38,6 +38,16 @@ stage.var("speed boost", 1); stage.var("stamina rest timer", 0)
 stage.var("turn speed", 4); stage.var("mouse steering", 0); stage.var("mouse sensitivity", 5)
 stage.var("field of view", 66); stage.var("music is on", 1); stage.var("start level choice", 1)
 stage.var("highest level reached", 1); stage.var("difficulty", NORMAL_DIFFICULTY)
+stage.var("map choice", 0)   # the options menu's MAP setting: 0 = random, 1 = always map A, 2 = map B ...
+# WHICH MAP is being played (worked out by the Engine's 'pick map' blocks):
+#   map variant         1 = the level's map A, 2 = map B, 3 = map C ...
+#   map variant letter  the same as a letter: A, B, C ...
+#   map name            the name of its list, e.g. "level 1 map B"
+#   map item number     which item of the "map ..." lists (start angles, colors, par times...)
+#                       belongs to this map: its position in "map list names"
+#   level map count     how many maps the current level has
+stage.var("map variant", 1); stage.var("map variant letter", "A"); stage.var("map name", "level 1 map A")
+stage.var("map item number", 1); stage.var("level map count", 1)
 # LEVEL TALLY: worked out when you finish a level. The "... shown" numbers count up on screen.
 stage.var("level time", 0); stage.var("par was beaten", 0)
 for name in ["kills percent", "items percent", "secrets percent", "level seconds", "par seconds",
@@ -46,20 +56,27 @@ for name in ["kills percent", "items percent", "secrets percent", "level seconds
     stage.var(name, 0)
 stage.var("game state", TITLE); stage.var("screen showing", TITLE); stage.var("message name", "")
 
-LEVEL_LISTS = [f"level {level_number} map" for level_number in range(1, len(LEVELS) + 1)]
-for name, level in zip(LEVEL_LISTS, LEVELS):
-    stage.lst(name, level["rows"])
-stage.lst("level start angles", [level["angle"] for level in LEVELS])
-stage.lst("level ceiling hues", [level["ceil"][0] for level in LEVELS])
-stage.lst("level ceiling saturations", [level["ceil"][1] for level in LEVELS])
-stage.lst("level floor hues", [level["floor"][0] for level in LEVELS])
-stage.lst("level floor saturations", [level["floor"][1] for level in LEVELS])
-stage.lst("level secret wall looks", [level["secret_look"] for level in LEVELS])
-stage.lst("level max ray steps", [level["max_ray_steps"] for level in LEVELS])
-stage.lst("level light falloffs", [level["light_falloff"] for level in LEVELS])
-stage.lst("level sprite darkness", [level["sprite_darkness"] for level in LEVELS])
+# THE MAPS: one list per map, named "level 1 map A", "level 1 map B" ... (one item per row).
+# Then one item per MAP in each "map ..." list, in the same order as "map list names":
+# level 1's maps first (A, B, C), then level 2's, and so on.
+MAP_LISTS = [map_list_name(level_number, map_letter) for level_number, map_letter, level, game_map in every_map()]
+ALL_MAPS = [game_map for level_number, map_letter, level, game_map in every_map()]
+for name, game_map in zip(MAP_LISTS, ALL_MAPS):
+    stage.lst(name, game_map["rows"])
+stage.lst("map list names", MAP_LISTS)
+stage.lst("map start angles", [game_map["angle"] for game_map in ALL_MAPS])
+stage.lst("map ceiling hues", [game_map["ceil"][0] for game_map in ALL_MAPS])
+stage.lst("map ceiling saturations", [game_map["ceil"][1] for game_map in ALL_MAPS])
+stage.lst("map floor hues", [game_map["floor"][0] for game_map in ALL_MAPS])
+stage.lst("map floor saturations", [game_map["floor"][1] for game_map in ALL_MAPS])
+stage.lst("map secret wall looks", [game_map["secret_look"] for game_map in ALL_MAPS])
+stage.lst("map max ray steps", [game_map["max_ray_steps"] for game_map in ALL_MAPS])
+stage.lst("map light falloffs", [game_map["light_falloff"] for game_map in ALL_MAPS])
+stage.lst("map sprite darkness", [game_map["sprite_darkness"] for game_map in ALL_MAPS])
+stage.lst("map par times", [game_map["par_seconds"] for game_map in ALL_MAPS])
+# One item per LEVEL. The game counts the items in "level names" to know how many levels there are.
+stage.lst("level names", [level["name"] for level in LEVELS])
 stage.lst("level select best weapon", [level["best_weapon"] for level in LEVELS])
-stage.lst("level par times", [level["par_seconds"] for level in LEVELS])
 stage.lst("level intro monster", [level["card_monster"] for level in LEVELS])   # walks onto the level card
 stage.lst("level intro boss", [level["card_boss"] for level in LEVELS])         # waits in the card's background
 stage.lst("melt offsets", [0] * 24)
@@ -79,7 +96,7 @@ stage.lst("monster x positions"); stage.lst("monster y positions"); stage.lst("m
 stage.lst("wall letters", [wall[0] for wall in WALLS]); stage.lst("wall hues", [wall[1] for wall in WALLS])
 stage.lst("wall saturations", [wall[2] for wall in WALLS]); stage.lst("wall brightnesses", [wall[3] for wall in WALLS])
 stage.lst("wall styles", [wall[4] for wall in WALLS])
-stage.lst("current map"); stage.lst("wall distance per column", [0] * RAY_COUNT)
+stage.lst("rows to load"); stage.lst("current map"); stage.lst("wall distance per column", [0] * RAY_COUNT)
 for name in ["monster start x", "monster start y", "monster start type", "item start x", "item start y",
              "item start type", "barrel start x", "barrel start y",
              "new shot x", "new shot y", "new shot speed x", "new shot speed y", "new shot damage", "new shot look",
@@ -112,5 +129,5 @@ def list_monitor(name, left, top, width, height):
                        "spriteName": None, "value": [], "width": width, "height": height, "x": left, "y": top,
                        "visible": False})
 list_monitor("map problems", 10, 10, 460, 230)
-for name in LEVEL_LISTS:
+for name in MAP_LISTS:
     list_monitor(name, 5, 5, 300, 350)

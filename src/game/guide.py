@@ -6,9 +6,11 @@ from game.stage import stage
 GUIDE = [
 """HOW THE LEVELS WORK  (start here!)
 
-Every level is a LIST on the Stage: "level 1 map", "level 2 map" ... "level 6 map".
+Every map is a LIST on the Stage: "level 1 map A", "level 2 map A" ...
 Each ITEM in the list is one ROW of the map, top row first.
 Each LETTER in a row is one SQUARE of the map, left to right.
+A level can have SEVERAL maps (map A, map B, map C): when the level
+starts, the game picks one of them at random. See "MAPS" below.
 
 So a level is just a grid of letters. Example (a tiny 7 x 5 room):
    1111111
@@ -17,8 +19,9 @@ So a level is just a grid of letters. Example (a tiny 7 x 5 room):
    1000H01
    1111111
 
-When a level starts, the Engine's "load level" block reads this grid
-one letter at a time and builds the level from it. The 3D view is
+When a level starts, the Engine's "pick map" block chooses one of the
+level's maps, then "load level" reads its grid one letter at a time
+and builds the level from it. The 3D view is
 drawn from the grid on every frame, so the grid IS the level.""",
 
 """THE LETTERS (the map legend)
@@ -60,7 +63,9 @@ Upper or lower case both work. Scratch treats "m" and "M" as the same.""",
 """WHAT "load level" DOES, STEP BY STEP  (Engine sprite)
 
 1. Empties "current map" and the start lists for monsters and items.
-2. Picks the list for "current level" (level 1 map, level 2 map ...).
+2. Copies the rows of the picked map into "rows to load". 'map name'
+   says which list ("level 1 map B"). Scratch can't pick a list by
+   its name, so there is one 'if' per map list.
 3. Goes through it ROW by ROW (item 1, item 2 ...) and inside each
    row LETTER by LETTER.
 4. For each letter:
@@ -75,15 +80,16 @@ Upper or lower case both work. Scratch treats "m" and "M" as the same.""",
      anything else (walls, doors, 0) is copied unchanged
    It also checks the letter for mistakes (see MAP CHECKER below).
 5. Adds the finished row to "current map".
-6. Reads the start angle and the ceiling/floor colors for this level.
+6. Reads the start angle and the ceiling/floor colors for this map:
+   item 'map item number' of "map start angles" and the others.
 
 After that, "start level" broadcasts "spawn monsters and objects".
 The Monster, Pickup and Barrel sprites make one CLONE for every
 entry in their start lists.
 
-Why copy to "current map" instead of using "level 1 map" directly?
+Why copy to "current map" instead of using "level 1 map A" directly?
 Opening a door changes its letter to 0 in "current map" only.
-"level 1 map" is never changed, so retrying a level resets every door.""",
+"level 1 map A" is never changed, so retrying a level resets every door.""",
 
 """SQUARES AND COORDINATES
 
@@ -102,7 +108,7 @@ Angles: 0 = facing right along a row (toward the end of the row)
 
 EASY WAY (small changes):
 1. Click the Stage, then the Variables category.
-2. Tick the checkbox next to "level 1 map". The list appears on the stage.
+2. Tick the checkbox next to "level 1 map A". The list appears on the stage.
 3. Click any item to edit that row. Press Enter when done.
 4. Untick the box to hide it again, then click the green flag to play.
 
@@ -114,8 +120,8 @@ BETTER WAY (big changes or a whole new map):
 4. Edit the grid. One row per line. Save the file.
 5. Right-click the list on the stage -> "import" and pick your file.
 (Teachers: the game's Python source keeps its maps in exactly this
-format, in src/maps/level 1 map.txt and so on, so an exported map can
-go straight into the project.)
+format, in src/maps/level 1 map A.txt and so on, so an exported map
+can go straight into the project.)
 
 RULES FOR A MAP THAT WORKS
 - Every row must be the SAME LENGTH.
@@ -126,12 +132,14 @@ RULES FOR A MAP THAT WORKS
   otherwise players just walk around them.
 - The red key K must be reachable BEFORE the red door R
   (same for J and B), or the level can't be finished.
+- And the key must MATTER: no second way round its door, or
+  players can skip the key.
 - Keys, monsters and the exit must be reachable WITHOUT opening a
   secret wall or blowing up a barrel. Hide bonus items behind secrets.
 - Put a secret wall S in a wall, with a closed-off closet behind it.
 - Big maps (levels 4-6 are 36 to 40 wide) need a limit on how far rays
-  travel: item N of "level max ray steps" (about 26-36 for big maps).
-  Walls that far away are black anyway, so nobody notices.
+  travel: the map's item of "map max ray steps" (about 26-36 for big
+  maps). Walls that far away are black anyway, so nobody notices.
 
 MAP CHECKER: when a level starts, the loader checks rows of different
 lengths, holes in the outside wall, unknown letters, and a missing P
@@ -140,11 +148,17 @@ stage telling you the row and letter number to fix.""",
 
 """CHANGING THE START DIRECTION AND COLORS
 
-"level start angles"         item N = which way you face on level N
-"level ceiling hues"         item N = ceiling color on level N
-"level ceiling saturations"  item N = how colorful the ceiling is
-"level floor hues"           item N = floor color
-"level floor saturations"    item N = how colorful the floor is
+Every MAP has its own settings. The "map ..." lists have one item per
+map, in the same order as "map list names": level 1 map A, level 1
+map B ... then level 2's maps. So to change "level 2 map A", find its
+item number in "map list names" and change that item:
+"map start angles"         which way you face at the start
+"map ceiling hues"         ceiling color
+"map ceiling saturations"  how colorful the ceiling is
+"map floor hues"           floor color
+"map floor saturations"    how colorful the floor is
+"map light falloffs"       how fast walls fade to black (bigger = darker)
+"map sprite darkness"      how much far-away monsters and items darken
 
 Hue uses Scratch's pen color numbers (0 to 100):
   0 red, 8 orange, 15 yellow, 33 green, 50 cyan, 63 blue,
@@ -159,9 +173,9 @@ a hue, saturation, brightness and style (0) to the other four lists.
 Don't use P M V G W C F T H A I U N Q L K J E or 0 for walls: those
 already mean something.
 
-SECRET WALLS (S) copy the look of one wall per level:
-"level secret wall looks" item N = which wall digit S looks like on
-level N. Secret walls have no dark seams: sharp-eyed players can spot them.""",
+SECRET WALLS (S) copy the look of one wall per map: "map secret wall
+looks" = which wall digit S looks like on that map. Secret walls have
+no dark seams: sharp-eyed players can spot them.""",
 
 """MONSTER TYPES  (all the numbers live in lists you can edit)
 
@@ -194,25 +208,59 @@ then give the Monster sprite four costumes named
 Its letter works in maps right away. (Optional: give the Death Message
 sprite a "killed by <name>" costume with a tip for your monster.)""",
 
+"""MAPS: EVERY LEVEL CAN HAVE SEVERAL  (map A, map B, map C)
+
+Each level can have up to 9 maps, lettered A to I. They share the
+level's name, its new enemy and its music, but each map is its own
+place: its own grid, start angle, colors, darkness and par time.
+
+PICKING ONE: when a level starts, the Engine's "pick map" block counts
+the level's maps (it tries "level 2 map A", "level 2 map B" ... until
+a name isn't in "map list names") and picks one with
+'pick random 1 to (level map count)'. The options menu's MAP setting
+('map choice': 0 = random, 1 = A, 2 = B ...) can pick one for every
+level instead, so a whole class can play the same maps.
+
+DYING: SPACE tries the SAME map again. R asks for a DIFFERENT map,
+with its own level card ("pick a different map"). Learn the map, or
+roll a new one: your choice.
+
+The variables: 'map variant' (2), 'map variant letter' (B),
+'map name' ("level 1 map B"), 'map item number' (where this map is in
+"map list names", so where its settings are in the "map ..." lists)
+and 'level map count'.
+
+HOW TO ADD A MAP TO A LEVEL (say a map B for level 2):
+1. Make a list "level 2 map B" (For all sprites) and fill it with your
+   grid. The name matters: the game looks maps up by name.
+2. Add "level 2 map B" to the END of "map list names", and add one item
+   to the END of every "map ..." list: "map start angles",
+   "map ceiling hues", "map ceiling saturations", "map floor hues",
+   "map floor saturations", "map secret wall looks", "map max ray
+   steps", "map light falloffs", "map sprite darkness" and
+   "map par times" (seconds).
+3. In the Engine sprite, find "define load level". Duplicate one of the
+   'if map name = ...' blocks, change the name to level 2 map B, and
+   pick the list "level 2 map B" in both of its list blocks.
+4. (Optional) A level card: duplicate a "card ..." costume in the Card
+   Background sprite and a "heading ..." costume in Card Heading, and
+   name them "card 2 B" and "heading 2 B". Without them, the game shows
+   a "NEXT LEVEL" card. (The options menu's MAP setting stops at the
+   most maps any level had when the game was built.)""",
+
 """HOW TO ADD A 7TH LEVEL
 
-1. Variables -> Make a List -> name it "level 7 map" (For all sprites).
-   Fill it with your grid (export/import is easiest).
+1. Make its first map: a list "level 7 map A" (For all sprites), and do
+   steps 2 and 3 of "HOW TO ADD A MAP TO A LEVEL" for it.
 2. Add one item to the END of each of these lists:
-   "level start angles", "level ceiling hues", "level ceiling saturations",
-   "level floor hues", "level floor saturations", "level secret wall looks",
-   "level intro monster" (monster type 1 to 7 shown on the level card),
-   "level intro boss" (a boss type, or 0 for none), "level max ray steps",
-   "level light falloffs", "level sprite darkness",
-   "level select best weapon" and "level par times" (seconds).
-   The game counts the items in "level start angles" to know how many
-   levels there are, so it plays your new level after level 6 by itself.
-3. In the Engine sprite, find "define load level". It has THREE blocks
-   that say  if current level = 6 then ... "level 6 map".
-   Duplicate each one, change 6 to 7, and pick "level 7 map".
-4. (Optional) Give it a level card: duplicate the costume "card 6" in the
-   Card Background sprite and "heading 6" in the Card Heading sprite,
-   rename the copies "card 7" and "heading 7", and change the words.
+   "level names" (its name), "level intro monster" (monster type 1 to 7
+   shown on the level card), "level intro boss" (a boss type, or 0 for
+   none) and "level select best weapon".
+   The game counts the items in "level names" to know how many levels
+   there are, so it plays your new level after level 6 by itself.
+3. (Optional) Give it a level card: costumes "card 7 A" in the Card
+   Background sprite and "heading 7 A" in the Card Heading sprite (copy
+   "card 6 A" and "heading 6 A", rename them and change the words).
    Without them, the game shows a "NEXT LEVEL" card instead.""",
 
 """HOW THE TITLE SCREEN AND LEVEL CARDS ARE ANIMATED
@@ -240,6 +288,8 @@ See 'start melt' and 'draw melt curtain' in the Engine sprite.
 
 Death screen: whatever hurts you sets 'killer type'. When you die, the
 monster that did it looms up and gloats, with a tip for beating it.
+SPACE retries the same map; on a level with more than one map, R
+picks a different one.
 Victory screen: fireworks are clones too. A rocket clone slows as it
 rises (gravity), then makes 14 spark clones that fly apart and fade.""",
 
@@ -298,9 +348,13 @@ music is on         1 = music plays (N also switches it)
 difficulty          1 easy, 2 normal, 3 hard (see DIFFICULTY below)
 start level choice  level select (only levels you have reached:
                     "highest level reached")
+map choice          MAP: 0 = RANDOM (each level picks one of its maps),
+                    1 = always map A, 2 = map B ... A level without
+                    that map picks one of its own at random.
 
-Difficulty and start level can only be changed on the title screen,
-not while a game is paused, so you can't switch to easy mid-fight!
+Difficulty, start level and map can only be changed on the title
+screen, not while a game is paused, so you can't switch to easy
+mid-fight!
 These are NOT reset by the green flag, so settings stick while the
 project is open. The menu is drawn by the Options Panel and Options
 Widgets sprites; the Engine's 'handle options input' block reads the
@@ -318,13 +372,28 @@ difficulty damage to you   every hit on you is multiplied by this / 100.
 difficulty monster health  every monster starts with this percent of
                            its "monster health", rounded. Hard = 125,
                            so an imp (3) needs 4 pistol shots.
+difficulty supplies kept   how many of the map's health packs and ammo
+                           boxes (H A I U) appear. Hard = 70: 7 in every
+                           10. Keys and weapons always appear.
+difficulty pickup amount   how much each health pack and ammo pickup
+                           gives. Easy = 150: 8 shells become 12.
+
+SHARING OUT THE SUPPLIES: 'load level' doesn't pick the missing ones at
+random. Each supply adds 'supplies kept' to 'supply share' (which starts
+at 50), and the item only appears when the share reaches 100; then 100
+comes off. At 70: 120 yes (20 left), 90 no, 160 yes (60), 130 yes (30),
+100 yes (0), 70 no ... so the gaps are spread evenly over the map, and
+the same items are missing every time you play that map on hard.
+The tally's items percent only counts the items that appeared.
 
 Where it happens: search for "difficulty" in the Monster sprite (when
-a clone starts) and in every block that does 'change health by'
-(Monster, Barrel and Projectile sprites).
+a clone starts), in every block that does 'change health by'
+(Monster, Barrel and Projectile sprites), in the Engine's 'load level'
+(supplies) and in the Pickup sprite (pickup amounts).
 
 Doom (1993) had five skill levels. Its easiest one also halved the
-damage you take, just like our easy setting.""",
+damage you take and doubled the ammo you picked up, a lot like our
+easy setting.""",
 
 """THE LEVEL TALLY  (the screen after each level)
 
@@ -337,7 +406,8 @@ block works out:
   level seconds   = how long you played the level. 'level time'
                     goes up by the time each frame took, using
                     Scratch's timer. The pause menu doesn't count.
-  par seconds     = item 'current level' of "level par times"
+  par seconds     = item 'map item number' of "map par times"
+                    (each map has its own par time)
 
 Then 'count up level stats' counts the numbers up from 0 for one second
 with a ticking sound,

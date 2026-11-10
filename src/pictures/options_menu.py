@@ -7,16 +7,17 @@ from pictures.lettering import LETTERS, block_text, text_width
 OPTIONS_LETTERS = dict(LETTERS, I="11111 00100 00100 00100 00100 00100 11111")
 
 OPTION_ROWS = ["TURN SPEED", "MOUSE STEERING", "MOUSE SENSITIVITY", "FIELD OF VIEW", "MUSIC", "DIFFICULTY",
-               "START AT LEVEL"]
+               "START AT LEVEL", "MAP"]
+TITLE_SCREEN_ONLY_ROWS = 3                            # the last 3 rows can't be changed while paused
 
-OPTION_ROW_STEP = 27                                  # pixels between rows
+OPTION_ROW_STEP = 25                                  # pixels between rows
 
-OPTION_ROW_Y = [88 - OPTION_ROW_STEP * row for row in range(len(OPTION_ROWS))]   # stage y of each row
+OPTION_ROW_Y = [92 - OPTION_ROW_STEP * row for row in range(len(OPTION_ROWS))]   # stage y of each row
 
 TRACK_LEFT, TRACK_RIGHT = 0, 120                    # stage x of the slider tracks
 
-# The < > arrows (stage x) for the two "pick one" rows. They are only drawn on the title screen.
-DIFFICULTY_ARROWS_X, LEVEL_ARROWS_X = (0, 100), (16, 84)
+# The < > arrows (stage x) for the three "pick one" rows. They are only drawn on the title screen.
+DIFFICULTY_ARROWS_X, LEVEL_ARROWS_X, MAP_ARROWS_X = (0, 100), (16, 84), (0, 100)
 
 def options_panel(paused):
     picture = ('<rect width="480" height="360" fill="#000" fill-opacity="0.55"/>'
@@ -33,12 +34,13 @@ def options_panel(paused):
         if name in ("TURN SPEED", "MOUSE SENSITIVITY", "FIELD OF VIEW"):
             picture += (f'<line x1="{240 + TRACK_LEFT}" y1="{picture_y}" x2="{240 + TRACK_RIGHT}" y2="{picture_y}" stroke="#4a3a34" '
                   'stroke-width="5" stroke-linecap="round"/>')
-    level_y = 180 - OPTION_ROW_Y[-1] + 5
+    level_y = 180 - OPTION_ROW_Y[6] + 5
     if paused:
         picture += (f'<text x="300" y="{level_y}" font-family="Sans Serif" font-size="11" fill="#8a8a8a" '
-              'text-anchor="middle">(change these two on the title screen)</text>')
+              'text-anchor="middle">(change these on the title screen)</text>')
     else:
-        for arrows_x, row_y in ((DIFFICULTY_ARROWS_X, OPTION_ROW_Y[-2]), (LEVEL_ARROWS_X, OPTION_ROW_Y[-1])):
+        for arrows_x, row_y in ((DIFFICULTY_ARROWS_X, OPTION_ROW_Y[5]), (LEVEL_ARROWS_X, OPTION_ROW_Y[6]),
+                                (MAP_ARROWS_X, OPTION_ROW_Y[7])):
             picture_y = 180 - row_y + 5
             picture += (f'<text x="{240 + arrows_x[0]}" y="{picture_y}" font-family="Sans Serif" font-size="16" font-weight="bold" '
                   f'fill="#ffd23f" text-anchor="middle">&lt;</text><text x="{240 + arrows_x[1]}" y="{picture_y}" '
@@ -53,7 +55,7 @@ def options_panel(paused):
 
 OPTIONS_TITLE, OPTIONS_PAUSED = options_panel(False), options_panel(True)
 
-ROW_HIGHLIGHT = svg(380, 26, '<rect x="1" y="1" width="378" height="24" rx="6" fill="#ff6a00" fill-opacity="0.2" '
+ROW_HIGHLIGHT = svg(380, 24, '<rect x="1" y="1" width="378" height="22" rx="6" fill="#ff6a00" fill-opacity="0.2" '
                              'stroke="#ffb347" stroke-opacity="0.8" stroke-width="1.5"/>')
 
 KNOB = svg(20, 20, '<circle cx="10" cy="10" r="8" fill="#ffd23f" stroke="#000" stroke-width="2"/>'
@@ -78,3 +80,11 @@ def difficulty_word(name):
     return svg(100, 22, f'<text x="50" y="17" font-family="Sans Serif" font-size="15" font-weight="bold" '
                         f'fill="{color}" stroke="#000" stroke-width="0.6" text-anchor="middle" '
                         f'letter-spacing="2">{name.upper()}</text>')
+
+# ---------------- map words (options menu) ----------------
+# The MAP row: RANDOM (each level picks one of its maps at random), or always map A, B, C ...
+def map_word(text):
+    color = "#ffd23f" if text == "RANDOM" else "#ff9a3c"
+    return svg(100, 22, f'<text x="50" y="17" font-family="Sans Serif" font-size="15" font-weight="bold" '
+                        f'fill="{color}" stroke="#000" stroke-width="0.6" text-anchor="middle" '
+                        f'letter-spacing="2">{text}</text>')

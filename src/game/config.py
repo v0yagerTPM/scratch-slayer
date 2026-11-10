@@ -2,7 +2,7 @@
 of broadcasts and game states, and a few block helpers every part of the game uses."""
 from sb3extra import *
 import sounds.synth
-from levels import LEVELS, validate
+from levels import LEVELS, MAP_LETTERS, check_level_list, every_map, map_title, validate
 
 RAY_COUNT, STRIPE_WIDTH = 80, 6      # 80 rays, each drawn as a 6-px-wide vertical stripe
 WALK_SPEED, MONSTER_SPEED, TURN_SPEED = 0.07, 0.025, 4   # per frame, at 30 frames per second
@@ -47,25 +47,42 @@ WEAPON_TYPES = [
     ["rocket launcher", 3, 30, 0, 0, 0,   1],
 ]
 AMMO = [("bullets", START_BULLETS, 200), ("shells", 0, 99), ("rockets", 0, 50)]   # name, new-game amount, most you can carry
+# What each ammo or weapon pickup gives you: map letter -> (ammo name, how much).
+AMMO_PICKUPS = {"I": ("bullets", 20), "A": ("shells", 8), "U": ("rockets", 4),
+                "N": ("shells", 8), "Q": ("bullets", 40), "L": ("rockets", 4)}
+HEALTH_PACK = 25   # health one health pack (H) gives, at normal difficulty
+# An explosion (barrel or rocket) does this much damage to a monster close to it, half as much
+# further away.
+EXPLOSION_DAMAGE_UP_CLOSE = 6
 # Everything about each level (map, colors, draw distance, par time, card...) is in its record in
 # LEVELS, in src/levels.py. The one thing worked out here: where episode 1 ends, for the music
 # (one track per episode) and the "EPISODE 1 COMPLETE" screen.
 LAST_LEVEL_OF_EPISODE_1 = max(level_number for level_number, level in enumerate(LEVELS, start=1)
                               if level["episode"] == 1)
 
-# DIFFICULTY: one row per setting. Both numbers are percentages of the normal amount.
+# DIFFICULTY: one row per setting. All the numbers are percentages of the normal amount.
 #   damage to you    how much each hit on the player hurts (50 = half as much)
 #   monster health   how many hit points every monster starts with (rounded to a whole number)
-DIFFICULTY_COLUMNS = ["names", "damage to you", "monster health"]
+#   supplies kept    how many of a map's health packs and ammo boxes (H, A, I, U) appear. At 70,
+#                    7 in every 10 do, spread evenly over the map. Keys and weapons always appear.
+#   pickup amount    how much each health pack and each ammo pickup (weapons too) gives you
+#                    (150 = one and a half times as much, rounded). Doom's easiest skill doubled ammo.
+DIFFICULTY_COLUMNS = ["names", "damage to you", "monster health", "supplies kept", "pickup amount"]
 DIFFICULTIES = [
-    ["easy",   50,  75],
-    ["normal", 100, 100],
-    ["hard",   150, 125],
+    ["easy",   50,  75,  100, 150],
+    ["normal", 100, 100, 100, 100],
+    ["hard",   150, 125, 70,  100],
 ]
+SUPPLY_LETTERS = "HAIU"     # the pickups 'supplies kept' can leave out: health, shells, bullets, rockets
+SUPPLY_SHARE_START = 50     # where the sharing-out count starts (see 'load level' and supplies_kept())
 NORMAL_DIFFICULTY = 2
 
-for level in LEVELS:
-    validate(level)
+# Check every map of every level (see validate() in levels.py). A broken map stops the build here.
+check_level_list()
+for level_number, map_letter, level, game_map in every_map():
+    validate(dict(name=map_title(level_number, map_letter, level, game_map), rows=game_map["rows"]))
+# The most maps any level has. The options menu's MAP setting goes up to this many letters.
+MOST_MAPS_IN_A_LEVEL = max(len(level["maps"]) for level in LEVELS)
 
 # ---------------- names used in Scratch ----------------
 # broadcasts
@@ -89,6 +106,32 @@ def hurt_player(amount):
     """change health by -(amount x the difficulty's 'damage to you' percent / 100), rounded.
     EVERY hit on the player goes through this, so the difficulty setting works everywhere."""
     return chg("health", mul(-1, round_(mul(amount, div(item(V("difficulty"), "difficulty damage to you"), 100)))))
+
+def pickup_amount(amount):
+    """amount x the difficulty's 'pickup amount' percent / 100, rounded. Every health pack and
+    ammo pickup goes through this, so the difficulty setting works for all of them."""
+    return round_(mul(amount, div(item(V("difficulty"), "difficulty pickup amount"), 100)))
+
+def scratch_round(number):
+    """Python's round() rounds 2.5 to 2 (to the even number); Scratch's 'round' block rounds it
+    up to 3. The balance report uses this one so its numbers match the game's."""
+    return int(number + 0.5) if number >= 0 else -int(-number + 0.5)
+
+def supplies_kept(map_rows, percent_kept):
+    """Which of a map's supply pickups appear at this 'supplies kept' percent: a list of
+    (column, row, letter), in the order 'load level' reads them. It shares them out the same way
+    the game does: a running count goes up by the percent at each supply; when it reaches 100 the
+    pickup appears and 100 comes off the count. At 70 that gives keep, skip, keep, keep, keep,
+    skip ... 7 in every 10, spread evenly."""
+    share, kept = SUPPLY_SHARE_START, []
+    for row, row_text in enumerate(map_rows):
+        for column, letter in enumerate(row_text.upper()):
+            if letter in SUPPLY_LETTERS:
+                share += percent_kept
+                if share >= 100:
+                    share -= 100
+                    kept.append((column, row, letter))
+    return kept
 
 def add_sound(sprite, sound_name, make_sound):
     """Make a sound with one of the functions in sounds/ and give it to a sprite."""

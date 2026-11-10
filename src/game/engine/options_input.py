@@ -5,10 +5,12 @@ import pictures.options_menu
 from game.engine.sprite import engine
 
 ROW_Y, ROW_STEP = pictures.options_menu.OPTION_ROW_Y, pictures.options_menu.OPTION_ROW_STEP
-OPTION_ROW_COUNT = len(ROW_Y)   # 7. The last two rows (difficulty, start level) are title-screen only.
+OPTION_ROW_COUNT = len(ROW_Y)   # 8. The last three rows (difficulty, start level, map) are title-screen only.
+TITLE_ONLY = pictures.options_menu.TITLE_SCREEN_ONLY_ROWS
 TRACK_LEFT, TRACK_RIGHT = pictures.options_menu.TRACK_LEFT, pictures.options_menu.TRACK_RIGHT
 DIFFICULTY_MIDDLE_X = sum(pictures.options_menu.DIFFICULTY_ARROWS_X) / 2
 LEVEL_MIDDLE_X = sum(pictures.options_menu.LEVEL_ARROWS_X) / 2
+MAP_MIDDLE_X = sum(pictures.options_menu.MAP_ARROWS_X) / 2
 def clamp(var, low, high):
     return [if_(lt(V(var), low), setv(var, low)), if_(gt(V(var), high), setv(var, high))]
 
@@ -45,7 +47,7 @@ engine.script(Def("handle options input"),
          if_(or_(key("o"), key("p")), setv("options open", 0))),
     setv("last options row", V("options row")),
     note("UP / DOWN (or W / S) pick a row, once per key press. From the game\n"
-         "the last two rows (difficulty, start level) can't be picked.",
+         "the last three rows (difficulty, start level, map) can't be picked.",
          ifelse(or_(key("up arrow"), key("w")),
                 [if_(eq(V("up key was held"), 0), chg("options row", -1)), setv("up key was held", 1)],
                 [setv("up key was held", 0)])),
@@ -53,8 +55,8 @@ engine.script(Def("handle options input"),
            [if_(eq(V("down key was held"), 0), chg("options row", 1)), setv("down key was held", 1)],
            [setv("down key was held", 0)]),
     if_(lt(V("options row"), 1), setv("options row", 1)),
-    if_(gt(V("options row"), sub(OPTION_ROW_COUNT, mul(2, V("options from game")))),
-        setv("options row", sub(OPTION_ROW_COUNT, mul(2, V("options from game"))))),
+    if_(gt(V("options row"), sub(OPTION_ROW_COUNT, mul(TITLE_ONLY, V("options from game")))),
+        setv("options row", sub(OPTION_ROW_COUNT, mul(TITLE_ONLY, V("options from game"))))),
     note("LEFT / RIGHT (or A / D) change the value. Holding the key repeats the\n"
          "change every 5 frames, like a keyboard does.",
          setv("change direction", 0)),
@@ -66,7 +68,7 @@ engine.script(Def("handle options input"),
     if_(not_(eq(V("change direction"), 0)),
         note("Row 1 turn speed, 2 mouse steering (on/off), 3 mouse sensitivity,\n"
              "4 field of view (2 degrees a step), 5 music (on/off), 6 difficulty,\n"
-             "7 start level.",
+             "7 start level, 8 map (0 random, 1 map A, 2 map B ...).",
              if_(eq(V("options row"), 1), chg("turn speed", V("change direction")))),
         if_(eq(V("options row"), 2), setv("mouse steering", sub(1, V("mouse steering")))),
         if_(eq(V("options row"), 3), chg("mouse sensitivity", V("change direction"))),
@@ -74,6 +76,7 @@ engine.script(Def("handle options input"),
         if_(eq(V("options row"), 5), setv("music is on", sub(1, V("music is on"))), bcast(APPLY_MUSIC)),
         if_(eq(V("options row"), 6), chg("difficulty", V("change direction"))),
         if_(eq(V("options row"), 7), chg("start level choice", V("change direction"))),
+        if_(eq(V("options row"), 8), chg("map choice", V("change direction"))),
         play("menu click")),
     note("MOUSE: hold the button down on a row to pick it. On a slider, the\n"
          "knob jumps to the mouse (so you can drag it). A click on a switch\n"
@@ -82,8 +85,8 @@ engine.script(Def("handle options input"),
          ifelse(mouse_down(),
                 [setv("mouse row", add(round_(div(sub(ROW_Y[0], mouse_y()), ROW_STEP)), 1)),
                  if_(and_(and_(gt(V("mouse row"), 0),
-                               lt(V("mouse row"), sub(OPTION_ROW_COUNT + 1, mul(2, V("options from game"))))),
-                          lt(abs_(sub(mouse_y(), sub(ROW_Y[0], mul(sub(V("mouse row"), 1), ROW_STEP)))), 13)),
+                               lt(V("mouse row"), sub(OPTION_ROW_COUNT + 1, mul(TITLE_ONLY, V("options from game"))))),
+                          lt(abs_(sub(mouse_y(), sub(ROW_Y[0], mul(sub(V("mouse row"), 1), ROW_STEP)))), ROW_STEP // 2 + 1)),
                      setv("options row", V("mouse row")),
                      setv("slider fraction", div(sub(mouse_x(), TRACK_LEFT), TRACK_RIGHT - TRACK_LEFT)),
                      if_(lt(V("slider fraction"), 0), setv("slider fraction", 0)),
@@ -100,6 +103,8 @@ engine.script(Def("handle options input"),
                          if_(eq(V("mouse row"), 7),
                              ifelse(lt(mouse_x(), LEVEL_MIDDLE_X), [chg("start level choice", -1)],
                                     [chg("start level choice", 1)])),
+                         if_(eq(V("mouse row"), 8),
+                             ifelse(lt(mouse_x(), MAP_MIDDLE_X), [chg("map choice", -1)], [chg("map choice", 1)])),
                          play("menu click"))),
                  setv("mouse was down", 1)],
                 [setv("mouse was down", 0)])),
@@ -110,5 +115,9 @@ engine.script(Def("handle options input"),
     if_(gt(V("difficulty"), length("difficulty names")), setv("difficulty", length("difficulty names"))),
     if_(lt(V("start level choice"), 1), setv("start level choice", 1)),
     if_(gt(V("start level choice"), V("highest level reached")), setv("start level choice", V("highest level reached"))),
+    note(f"MAP goes from 0 (random) up to {MOST_MAPS_IN_A_LEVEL}, the most maps any level has.\n"
+         "A level without the chosen map picks one of its own at random.",
+         if_(lt(V("map choice"), 0), setv("map choice", 0))),
+    if_(gt(V("map choice"), MOST_MAPS_IN_A_LEVEL), setv("map choice", MOST_MAPS_IN_A_LEVEL)),
     if_(not_(eq(V("options row"), V("last options row"))), play("menu click")),
     comment="HANDLE OPTIONS INPUT: one frame of the options menu.")

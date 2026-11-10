@@ -17,7 +17,8 @@ the blocks must stay readable.
 - **Keep the Stage guide comments current.** `GUIDE` in `game/guide.py` (map letters, monster and
   weapon tables, options, how to add a level) is what students read first. Update it with
   every feature.
-- After every change: `npm test` (it builds first). For a map change also run `python3 src/levels.py`.
+- After every change: `npm test` (it builds first). For a map change also run `python3 src/levels.py`
+  and `python3 src/map_preview.py` (npm test fails if the map pictures in `docs/maps` are out of date).
 - **Refactors must not change the game.** For any change that shouldn't affect what students see
   (renaming, moving code), `npm run compare` must say IDENTICAL. The build is deterministic, so
   any difference it lists is real.
@@ -34,7 +35,8 @@ npm test                                        # build + all headless test plan
 npm test -- full-game                           # one plan
 node tests/harness.js dist/scratch-slayer.sb3 tests/plans/sprint.json tests/out/sprint
 node tests/render.js tests/out/sprint <snap names...>   # snapshots -> PNG (needs sharp)
-python3 src/levels.py                           # validate all maps
+python3 src/levels.py                           # validate all maps + balance report
+python3 src/map_preview.py                      # redraw docs/maps (top-down picture of every map)
 python3 tests/test_levels.py                    # map checker tests (npm test runs them too)
 npm run compare                                 # is the built project identical to main's? (-- <ref> for another)
 ```
@@ -64,17 +66,26 @@ npm run compare                                 # is the built project identical
   `victory_screen`, `options_screen` (Options Panel and Widgets) and `music`. Each sprite's Python
   handle is its name in snake_case (`engine`, `options_widgets`); give a sprite a sound with
   `add_sound(sprite, name, sounds_function)`.
-- `maps/level N map.txt`: the six maps, one row per line, nothing else. Same format and file name as
-  Scratch's list export/import (right-click the list "level N map"), so a student's exported map can
-  be dropped in as-is. Never add comments or a ruler to these files: Scratch would import them as rows.
-- `levels.py`: `load_map()` reads the files into lists of strings (`map_rows[row][column]`), and
-  `LEVELS` has **one record per level with everything about it**: map, episode, start angle, colors,
-  secret look, draw distance, darkness, level-select weapon, par time, card text and card monsters,
-  plus a written plan of the map. `stage.py` turns the records into Scratch lists and
-  `pictures/level_cards.py` draws the cards from them. Adding a level in Python = one map file + one
-  record (tested by building a 7-level copy and playing level 7). `validate()` raises
-  `LevelError` with a message naming the level and square. It checks reachability, keys, and that
-  a skull door (`Z`) really gates the exit behind the boss.
+- `maps/level N map A.txt` (`map B`, `map C` ...): every map, one row per line, nothing else. **A level
+  can have several maps** (up to 9, lettered A-I); the game picks one at random when the level starts.
+  Same format and file name as Scratch's list export/import (right-click the list "level N map A"),
+  so a student's exported map can be dropped in as-is. Never add comments or a ruler to these files:
+  Scratch would import them as rows.
+- `levels.py`: `load_map(level, letter)` reads a file into a list of strings (`map_rows[row][column]`),
+  and `LEVELS` has **one record per level**: name, episode, level-select weapon, card enemy text and
+  card monsters, and `maps`, a list with **one record per map**: map name, rows, goal, card tint,
+  start angle, colors, secret look, draw distance, darkness, par time, plus a written plan of the map.
+  `every_map()` walks them in order (that order is the order of the Scratch "map ..." lists).
+  `stage.py` turns the records into Scratch lists and `pictures/level_cards.py` draws one card per map
+  ("card 1 B", heading "LEVEL 1-B"; a level with one map shows plain "LEVEL 1"). Adding a map in
+  Python = one map file + one map record; adding a level = a map file + a level record (tested by
+  building a 7-level copy and playing level 7). `validate()` checks one map and raises `LevelError`
+  with a message naming the map and square. It checks reachability, keys, and that a skull door
+  (`Z`) really gates the exit behind the boss, and that no key's door can be walked round (check 9). `python3 src/levels.py` also prints a **balance
+  report** per map (monster health vs. the damage in the ammo lying around, health packs).
+- `map_preview.py`: draws every map as a top-down SVG in `docs/maps/` (walls in their game colors,
+  tokens for things, edge numbers every 5 squares, a legend, the balance numbers) plus
+  `docs/maps/README.md` showing them all. Generated files: never edit them by hand.
 - `pictures/`: every costume and backdrop as hand-written SVG, **by subject**: `drawing` (svg(),
   `text_label`, `full_screen`, gradients), `lettering` (the block-letter font `LETTERS` and digit
   glyphs; `block_text(..., font=)` takes a variant, e.g. `OPTIONS_LETTERS`), `monsters`, `weapons`,
@@ -92,13 +103,20 @@ npm run compare                                 # is the built project identical
 One frame = input → movement/sprint → shooting → plain broadcasts in a fixed order:
 `update monsters and objects` → `draw HUD` → `draw HUD numbers`, plus the raycaster drawing
 with the pen. The level flow (title → card → melt → play → complete/died → next) is in the
-Engine's green-flag script. After the exit, `work out level stats` + `count up level stats` run the
+Engine's green-flag script. `pick map` runs before every `start level` of a new level (random, or
+the options menu's `map choice`); after dying, SPACE keeps the map and R calls `pick a different map`
+(only when `level map count` > 1). Per-map settings are read with `item(V("map item number"), "map ...")`;
+per-level ones (`level intro monster`, `level select best weapon`) with `current level`. After the exit, `work out level stats` + `count up level stats` run the
 tally screen. 'level time' adds the timer difference each frame; closing the options menu resets
 'time at last frame' so pauses don't count.
 
 **Difficulty** (stage var `difficulty`, lists `difficulty ...`) scales monster health when a clone
 starts (`full health`) and every hit on the player: always damage the player with `hurt_player()`
-in `game/config.py`, never `chg("health", ...)` directly.
+in `game/config.py`, never `chg("health", ...)` directly. It also decides which supplies (`H A I U`)
+appear (`supplies kept`, shared out evenly in reading order by `supply share` in `load level`;
+`supplies_kept()` in config.py is the same rule in Python) and how much every health and ammo pickup
+gives: always go through `pickup_amount()`. The balance report and map previews show all three
+difficulties, using the game's own rounding (`scratch_round()`).
 
 ## Scratch quirks learned the hard way
 
@@ -115,7 +133,7 @@ in `game/config.py`, never `chg("health", ...)` directly.
   (`build.py` checks this). Shared state goes on the Stage.
 - **Don't put boolean (hexagon) blocks in number slots.** Set a variable with an `if` instead.
 - Switching to a costume name that doesn't exist silently does nothing, so check names.
-- Scratch's clone limit is 300. The game currently uses about 105.
+- Scratch's clone limit is 300. The game currently uses up to about 130 (the episode 2 maps have up to 39 monsters).
 - Front/back layering is "last `go to front` wins". Sprites that must stay on top (options
   menu, digits) call `front()` every frame after the others.
 - **Clones run in layer order, so clones that all `go to front` in one broadcast swap places
@@ -140,7 +158,9 @@ and steps it frame by frame. A plan is a JSON list of steps:
 |---|---|
 | `startGame` | named step: from the title screen into level play |
 | `continueToNextLevel` | named step: from reaching the exit, through the tally, into the next level |
-| `retryLevel` | named step: from dying back into the same level |
+| `retryLevel` | named step: from dying back into the same level, same map (SPACE) |
+| `retryWithNewMap` | named step: from dying into the same level on a different map (R) |
+| `finishLevel` | named step: teleport next to the exit switch and press E (skips the level) |
 | `until` | play frames until conditions hold, e.g. `{"game state": "playing"}` (same rules as `expect`); fails after `timeout` frames (default 900) |
 | `tap` + `while` | tap a key (2 frames down, 2 up) while conditions hold, e.g. `{"tap": "space", "while": {"screen showing": "died"}}` |
 | `note` | a description, used in failure messages |
@@ -149,13 +169,16 @@ and steps it frame by frame. A plan is a JSON list of steps:
 | `set` | set stage variables first (aliases: `px`, `py`, `ang`, `HEALTH`, `state`, ...) |
 | `setList` | replace stage lists, e.g. `{"weapons owned": [1,1,1,1,1]}` |
 | `hit` | `{"type": 7, "damage": 31}`: the first live monster of that type takes a hit |
-| `setMonsterType` | set local variables on every clone of a monster type |
+| `setMonsterType` | set local variables on every clone of a monster type (`"first": n` = only the first n) |
 | `toBossKey` | move the player onto the boss's skull key |
 | `mouse` | `{"x":..,"y":..,"down":true}` in stage coordinates |
 | `log` / `snap` | print state / save a snapshot (render with `tests/render.js`) |
 | `dumpMonsters` | print every monster (or one type) |
 | `expectMonsters` | `{"type": 1, "monster health": 2}`: every clone of that monster type must have these local values |
-| `expect` | assertions: `{"current weapon": 3, "list:ammo counts": [48,7,0], "health": {"lt": 100}}` |
+| `expect` | assertions: `{"current weapon": 3, "list:ammo counts": [48,7,0], "health": {"lt": 100}, "map name": {"not": "level 1 map B"}}` |
+| `expectCostume` | `{"Card Background": "card 1 {map variant letter}"}`: a sprite's costume; `{var}` is filled from stage variables |
+
+Plans that walk to exact squares set `"map choice": 1` in their first step, so they always get map A.
 
 The harness exits non-zero if any `expect` fails, an `until` times out, or the VM logs an error.
 Add a plan (or steps with `expect`) for every new feature. **Prefer the named steps and `until` to
