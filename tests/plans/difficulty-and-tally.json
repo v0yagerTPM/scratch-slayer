@@ -10,7 +10,9 @@
     "hard"
    ],
    "list:map par times": [
-    60,
+    90,
+    105,
+    90,
     90,
     135,
     165,
@@ -27,7 +29,11 @@
     100,
     100
    ]
-  }
+  },
+  "set": {
+   "map choice": 1
+  },
+  "note": "MAP: always map A, so the positions below are on level 1's Front Gate"
  },
  {
   "frames": 2,
@@ -200,7 +206,7 @@
   "expect": {
    "game state": "playing",
    "difficulty": 1,
-   "level item count": 9
+   "level item count": 10
   },
   "expectMonsters": {
    "type": 1,
@@ -211,8 +217,8 @@
  {
   "frames": 3,
   "set": {
-   "px": 8.5,
-   "py": 11.5
+   "px": 25.5,
+   "py": 7.5
   },
   "log": "easy: a box of 8 shells gives 12 (pickup amount 150)",
   "expect": {
@@ -226,8 +232,8 @@
  {
   "frames": 3,
   "set": {
-   "px": 2.5,
-   "py": 10.5,
+   "px": 26.5,
+   "py": 14.5,
    "HEALTH": 50
   },
   "log": "easy: a health pack gives 38 instead of 25",
@@ -257,15 +263,17 @@
     "monster y": 2.5,
     "attack cooldown": 0,
     "is chasing": 1
-   }
+   },
+   "first": 1
   },
   "log": "easy claws",
   "expect": {
    "health": {
-    "gt": 45,
-    "lt": 74
+    "gt": 89,
+    "lt": 98
    }
-  }
+  },
+  "note": "one imp claws: 6-12 damage, halved on easy"
  },
  {
   "frames": 2,
@@ -280,14 +288,17 @@
     "monster y": 2.5,
     "attack cooldown": 0,
     "is chasing": 1
-   }
+   },
+   "first": 1
   },
   "log": "hard claws",
   "expect": {
    "health": {
-    "lt": 20
+    "gt": 81,
+    "lt": 92
    }
-  }
+  },
+  "note": "one imp claws: 6-12 damage, x1.5 on hard"
  },
  {
   "frames": 30,
@@ -304,7 +315,7 @@
  },
  {
   "frames": 80,
-  "log": "retry on hard: imps have 125% health (3 -> 4), and 7 of level 1's 9 items appear (supplies kept 70)",
+  "log": "retry on hard: imps have 125% health (3 -> 4), and 7 of Front Gate's 10 items appear (supplies kept 70)",
   "expect": {
    "game state": "playing",
    "level item count": 7
@@ -318,11 +329,11 @@
  {
   "frames": 1,
   "set": {
-   "px": 2.5,
-   "py": 10.5,
+   "px": 10.5,
+   "py": 16.5,
    "HEALTH": 50
   },
-  "note": "the health pack at column 2, row 10 is one hard leaves out"
+  "note": "the health pack at column 10, row 16 is one hard leaves out"
  },
  {
   "frames": 3,
@@ -334,8 +345,8 @@
  {
   "frames": 3,
   "set": {
-   "px": 8.5,
-   "py": 11.5
+   "px": 25.5,
+   "py": 7.5
   },
   "log": "hard: a box of shells gives the normal 8",
   "expect": {
@@ -419,19 +430,19 @@
  },
  {
   "frames": 70,
-  "log": "tally over par (items: 1 of the 7 that appeared on hard = 14%)",
+  "log": "tally over par (kills: 1 of 17 = 6%; items: 1 of the 7 that appeared on hard = 14%; par 1:30)",
   "snap": "tally_over_par",
   "expect": {
    "screen showing": "level complete",
-   "kills percent": 11,
-   "kills percent shown": 11,
+   "kills percent": 6,
+   "kills percent shown": 6,
    "items percent shown": 14,
    "secrets percent shown": 0,
    "level seconds": 125,
    "time minutes shown": 2,
    "time seconds shown": "05",
    "par minutes shown": 1,
-   "par seconds shown": "00",
+   "par seconds shown": 30,
    "par was beaten": 0
   }
  },

@@ -9,11 +9,23 @@ normal / hard: the difficulty changes monster health, how many supplies appear a
 
 ## Level 1: The Outpost (episode 1)
 
-### Map A: Three Halls
+### Map A: Front Gate
 
-20 x 20 squares · 9 monsters · par 60 s · ammo ratio 10.0 / 4.44 / 2.78, health 114 / 75 / 50 (easy / normal / hard)
+28 x 28 squares · 17 monsters · par 90 s · ammo ratio 4.41 / 1.96 / 1.18, health 190 / 125 / 75 (easy / normal / hard)
 
 ![The Outpost, map A](level%201%20map%20A.svg)
+
+### Map B: Barracks
+
+30 x 26 squares · 18 monsters · par 105 s · ammo ratio 4.17 / 1.85 / 1.39, health 152 / 100 / 50 (easy / normal / hard)
+
+![The Outpost, map B](level%201%20map%20B.svg)
+
+### Map C: Motor Pool
+
+30 x 28 squares · 18 monsters · par 90 s · ammo ratio 4.17 / 1.85 / 1.11, health 190 / 125 / 75 (easy / normal / hard)
+
+![The Outpost, map C](level%201%20map%20C.svg)
 
 ## Level 2: The Processing Plant (episode 1)
 

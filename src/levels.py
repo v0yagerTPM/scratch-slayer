@@ -177,17 +177,53 @@ LEVELS = [
     dict(name="The Outpost", episode=1, best_weapon=2,
          card=dict(enemy="IMP", lines=["Fast and vicious up close.", "Keep your distance and blast it."], boss=None),
          card_monster=1, card_boss=0, maps=[
-        # LEVEL 1, MAP A: THREE HALLS (20 x 20). Monsters: imps.
-        #   rows 1-5    the start room (P at 1, 2, the shotgun N just below), then a door (D at 5, 2)
-        #               into the north hall
-        #   row 6       a wall of 2s with one door (column 12)
-        #   rows 7-11   the middle hall: the imp pack, two barrels (E), crates (3 and 4)
-        #   row 12      a wall with one door (column 15)
-        #   rows 13-18  the bottom room. The exit X is in the LEFT wall (0, 16). Bottom right: a
-        #               secret wall S (15, 18) hides a closet with shells (A) and health (H).
-        dict(name="Three Halls", rows=load_map(1, "A"), goal="Find the exit switch", tint="#5a2a10",
-             angle=0, ceil=(0, 10), floor=(7, 45), secret_look="2",
-             max_ray_steps=64, light_falloff=4.5, sprite_darkness=0, par_seconds=60),
+        # LEVEL 1, MAP A: FRONT GATE (28 x 28). 17 imps. No keys. Route: about 63 squares.
+        #   rows 22-26  the approach, outside the walls: the player starts at the bottom (P at 13, 25)
+        #               facing the gate, between two sandbag walls (3). Two imps, a barrel.
+        #   row 21      the outer wall with the main gate (D at 13, 21)
+        #   rows 16-20  the gatehouse: a hall in the middle (columns 10-17) and two guard rooms,
+        #               west and east, with doors at (9, 18) and (18, 18). The WEST room has the
+        #               shotgun N (2, 17) and the only door on into the courtyard (4, 15). The east
+        #               room is a side trip: a secret wall S (24, 19) hides shells and health.
+        #   rows 6-14   the courtyard: crates (2), sandbags (3), a red monument (4) in the middle,
+        #               two barrels and six imps
+        #   row 5       the command post's front wall, with ONE door, on the far east side (23, 5)
+        #   rows 1-4    the command post: east office -> door (19, 3) -> the hall with the exit X
+        #               (13, 0) in its top wall. A door (8, 3) leads on to the west office (health).
+        dict(name="Front Gate", rows=load_map(1, "A"), goal="Reach the command post", tint="#5a2a10",
+             angle=270, ceil=(0, 10), floor=(7, 45), secret_look="5",
+             max_ray_steps=40, light_falloff=4.5, sprite_darkness=0, par_seconds=90),
+        # LEVEL 1, MAP B: BARRACKS (30 x 26). 18 imps, indoors and darker. No keys. Route: about 69.
+        #   The building has a corridor down the middle (columns 14-15) and a long corridor across
+        #   (rows 12-13), but the walls block the short ways:
+        #   rows 15-24  the player starts at the south end of the middle corridor (P at 14, 23).
+        #               West: the mess hall with its tables (2), door (13, 19), and a pantry behind
+        #               a secret wall S (3, 23). East: the armory with the shotgun N (24, 23), door
+        #               (16, 21), and a bunk room above it (door 22, 20). The armory side is a dead
+        #               end: the way on is through the mess hall's far door (2, 14).
+        #   rows 12-13  the cross corridor. It joins the north half of the middle corridor and the
+        #               north-east bunk room (door 23, 11).
+        #   rows 6-10   bunk rooms full of beds (2), west (door 13, 8, from the middle corridor) and
+        #               east (door 23, 11)
+        #   rows 1-4    the commander's office in the middle with the exit X (14, 0), between two
+        #               small rooms. Only the north-east room has a door into it (20, 3): go
+        #               corridor -> north-east bunk room -> door (25, 5) -> door (20, 3).
+        dict(name="Barracks", rows=load_map(1, "B"), goal="Find the commander's office", tint="#24304a",
+             angle=270, ceil=(60, 12), floor=(33, 22), secret_look="9",
+             max_ray_steps=40, light_falloff=5.5, sprite_darkness=1, par_seconds=105),
+        # LEVEL 1, MAP C: MOTOR POOL (30 x 28). 18 imps, out in the open (sky-blue ceiling, grey
+        # asphalt floor). No keys. Route: about 61 squares.
+        #   rows 21-26  the player starts in the entry lane (P at 14, 25). Its doors lead west into
+        #               the workshop (shotgun N at 2, 22, door 10, 23) and east into the office
+        #               (door 19, 23), where a secret wall S (26, 25) hides shells and health.
+        #   row 20      the workshop's door (5, 20) is the only way out into the yard
+        #   rows 7-19   the yard: trucks (6), a jeep (2), a tank (9) and, in the south-east corner,
+        #               a fenced fuel depot full of barrels (E) with an opening on its west side
+        #   rows 1-5    four garage bays. Only bay 1 opens to the yard (3, 6); then bay 1 -> bay 2
+        #               (door 7, 4) -> bay 3 (14, 3) -> bay 4 (22, 2), which has the exit X (26, 0).
+        dict(name="Motor Pool", rows=load_map(1, "C"), goal="Get into the last garage", tint="#34452a",
+             angle=270, ceil=(58, 35), floor=(0, 0), secret_look="5",
+             max_ray_steps=40, light_falloff=4.0, sprite_darkness=0, par_seconds=90),
     ]),
 
     dict(name="The Processing Plant", episode=1, best_weapon=3,

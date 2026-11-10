@@ -6,8 +6,6 @@
 // A plan is a JSON list of steps. Each step can set things up, hold keys for some frames (or until
 // something happens), then log, snapshot and check what it expects. The step keys are listed in
 // CLAUDE.md ("Tests"). The harness exits with code 1 if any check fails or the engine logs an error.
-// A plan can also be {"project": "map variant copy", "steps": [...]}: run_tests.js then plays it on
-// that test copy of the game (see build_map_variant_copy.py). The harness only reads the steps.
 
 // ---- fake clock: the game reads Scratch's timer, so time must move exactly one frame per frame ----
 // (This must happen before scratch-vm is loaded.)
@@ -36,8 +34,7 @@ const ScratchStorage = require('scratch-storage').ScratchStorage || require('scr
 const [,, projectPath, planPath, outputFolder] = process.argv;
 fs.mkdirSync(outputFolder, {recursive: true});
 const failures = [];
-const planFile = JSON.parse(fs.readFileSync(planPath, 'utf8'));
-const plan = expandNamedSteps(Array.isArray(planFile) ? planFile : planFile.steps);
+const plan = expandNamedSteps(JSON.parse(fs.readFileSync(planPath, 'utf8')));
 
 // ---- named steps: common moves through the game, written once ----
 // Each one becomes a few ordinary steps. They wait for the game to get somewhere instead of
@@ -276,9 +273,9 @@ function applySetup(step) {
             const list = stageVariable(name); list.value = items.slice(); list._monitorUpToDate = false;
         }
     }
-    if (step.setMonsterType) {
-        for (const clone of monsterClones()) {
-            if (+localVariable(clone, 'monster type').value !== step.setMonsterType.type) continue;
+    if (step.setMonsterType) {      // {"type": 1, "vars": {...}}, optionally "first": n to change only n of them
+        const clones = monsterClones().filter(clone => +localVariable(clone, 'monster type').value === step.setMonsterType.type);
+        for (const clone of clones.slice(0, step.setMonsterType.first || clones.length)) {
             for (const [name, value] of Object.entries(step.setMonsterType.vars)) localVariable(clone, name).value = value;
         }
     }

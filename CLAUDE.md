@@ -169,7 +169,7 @@ and steps it frame by frame. A plan is a JSON list of steps:
 | `set` | set stage variables first (aliases: `px`, `py`, `ang`, `HEALTH`, `state`, ...) |
 | `setList` | replace stage lists, e.g. `{"weapons owned": [1,1,1,1,1]}` |
 | `hit` | `{"type": 7, "damage": 31}`: the first live monster of that type takes a hit |
-| `setMonsterType` | set local variables on every clone of a monster type |
+| `setMonsterType` | set local variables on every clone of a monster type (`"first": n` = only the first n) |
 | `toBossKey` | move the player onto the boss's skull key |
 | `mouse` | `{"x":..,"y":..,"down":true}` in stage coordinates |
 | `log` / `snap` | print state / save a snapshot (render with `tests/render.js`) |
@@ -178,10 +178,7 @@ and steps it frame by frame. A plan is a JSON list of steps:
 | `expect` | assertions: `{"current weapon": 3, "list:ammo counts": [48,7,0], "health": {"lt": 100}, "map name": {"not": "level 1 map B"}}` |
 | `expectCostume` | `{"Card Background": "card 1 {map variant letter}"}`: a sprite's costume; `{var}` is filled from stage variables |
 
-A plan file is a list of steps, or `{"project": "map variant copy", "steps": [...]}` to play it on a
-**test copy** built by `tests/build_map_variant_copy.py`, where levels 1 and 2 have maps A, B
-(mirrored) and C (upside down). `npm test` builds the copy when a plan needs it. It exists so map
-picking can be tested while the real levels have fewer maps; it is never shipped.
+Plans that walk to exact squares set `"map choice": 1` in their first step, so they always get map A.
 
 The harness exits non-zero if any `expect` fails, an `until` times out, or the VM logs an error.
 Add a plan (or steps with `expect`) for every new feature. **Prefer the named steps and `until` to

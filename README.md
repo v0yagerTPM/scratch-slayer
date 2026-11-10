@@ -80,7 +80,6 @@ files: Scratch would import every line, notes included, as a row of the map.
 | `src/sounds/` | Every sound effect and piece of music, made from math (synthesized WAV), one file per subject. Nothing is downloaded from the internet. |
 | `tests/harness.js` | Runs the `.sb3` in a headless Scratch VM, presses keys, and checks variables. |
 | `tests/plans/*.json` | Test scripts: which keys to press for how many frames, and what should be true afterwards. |
-| `tests/build_map_variant_copy.py` | Builds a test-only copy of the game where levels 1 and 2 have three maps, to test map picking. |
 | `tests/render.js` | Turns test snapshots into PNG screenshots. |
 | `src/map_preview.py` | Draws every map as a top-down picture in `docs/maps/`. |
 | `docs/maps/` | The map pictures (generated: run `python3 src/map_preview.py`, don't edit). |

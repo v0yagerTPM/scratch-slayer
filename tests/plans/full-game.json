@@ -1,7 +1,11 @@
 [
  {
   "frames": 40,
-  "snap": "title"
+  "snap": "title",
+  "set": {
+   "map choice": 1
+  },
+  "note": "MAP: always map A, so the positions below are on level 1's Front Gate"
  },
  {
   "frames": 2,
@@ -135,10 +139,11 @@
  {
   "frames": 1,
   "set": {
-   "px": 2.5,
-   "py": 3.3,
-   "ang": 90
-  }
+   "px": 3.6,
+   "py": 17.5,
+   "ang": 180
+  },
+  "note": "Front Gate: walk west onto the shotgun in the west guard room (2, 17)"
  },
  {
   "frames": 16,
@@ -273,10 +278,11 @@
  {
   "frames": 1,
   "set": {
-   "px": 1.5,
-   "py": 16.5,
-   "ang": 180
-  }
+   "px": 13.5,
+   "py": 1.5,
+   "ang": 270
+  },
+  "note": "Front Gate: face the exit switch (13, 0)"
  },
  {
   "frames": 2

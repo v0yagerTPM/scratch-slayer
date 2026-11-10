@@ -1,6 +1,10 @@
 [
  {
-  "frames": 30
+  "frames": 30,
+  "set": {
+   "map choice": 1
+  },
+  "note": "MAP: always map A, so the positions below are on level 1's Front Gate"
  },
  {
   "startGame": true
@@ -8,11 +12,12 @@
  {
   "frames": 1,
   "set": {
-   "px": 10.5,
-   "py": 4.5,
+   "px": 11.5,
+   "py": 3.5,
    "ang": 0,
    "HEALTH": 4
-  }
+  },
+  "note": "Front Gate: next to the imp at (11, 2) in the command post"
  },
  {
   "frames": 90,
@@ -49,11 +54,12 @@
  {
   "frames": 1,
   "set": {
-   "px": 12.5,
-   "py": 9.6,
+   "px": 9.5,
+   "py": 24.6,
    "ang": 270,
    "HEALTH": 5
-  }
+  },
+  "note": "Front Gate: facing the barrel at (9, 23), right in front of it"
  },
  {
   "frames": 2,
